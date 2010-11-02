@@ -1,0 +1,1 @@
+class TowerProjectile extends DynamicSMActor;

@@ -1,0 +1,1 @@
+class TowerPlayerPawn extends TowerPawn;
