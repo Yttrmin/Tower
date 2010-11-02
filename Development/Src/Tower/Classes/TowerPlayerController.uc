@@ -1,0 +1,1 @@
+class TowerPlayerController extends UTPlayerController;

@@ -1,0 +1,1 @@
+class TowerModule extends DynamicSMActor;
