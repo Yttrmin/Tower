@@ -290,6 +290,11 @@ function CompleteCloseTimer()
 	SetVisible(true);
 }
 
+event Tick(float DeltaTime)
+{
+
+}
+
 DefaultProperties
 {
 	bEnableActorOverlays=true

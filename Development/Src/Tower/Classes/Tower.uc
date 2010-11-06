@@ -1,3 +1,15 @@
 class Tower extends Actor;
 
-var TowerModule Modules[100];
+var TowerBlock Modules[100];
+var string TowerName;
+
+replication
+{
+	if(bNetDirty)
+		TowerName, Modules;
+}
+
+DefaultProperties
+{
+	RemoteRole=ROLE_SimulatedProxy
+}
