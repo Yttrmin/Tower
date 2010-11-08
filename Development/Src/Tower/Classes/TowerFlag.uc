@@ -1,3 +1,9 @@
+/**
+TowerFlag
+
+Lives on from Cube. A cloth-ready skeletal mesh with a ScriptedTexture that draws an image to it from a file on the
+user's computer.
+*/
 class TowerFlag extends SkeletalMeshActorSpawnable
 	config(Tower)
 	DLLBind(DevILWrapper);
