@@ -1,3 +1,9 @@
+/**
+TowerGame
+
+Base game mode of Tower, will probably be extending in the future.
+Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
+*/
 class TowerGame extends UTGame;
 
 enum Factions

@@ -6,6 +6,30 @@ simulated event PostBeginPlay()
 //	TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower = Spawn(class'Tower');
 }
 
+exec function TestClass(class AClass)
+{
+	`log(AClass);
+	`log(class'GameEngine'.static.GetOnlineSubsystem());
+	OnlineSUbsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(
+		PlayerReplicationInfo.UniqueId, OnReadOnlineAvatarComplete);
+}
+
+/**
+ * Notifies the interested party that the avatar read has completed
+ *
+ * @param PlayerNetId Id of the Player whose avatar this is.
+ * @param Avatar the avatar texture. None on error or no avatar available.
+ */
+function OnReadOnlineAvatarComplete(const UniqueNetId PlayerNetId, Texture2D Avatar)
+{
+	`log(PlayerNetId.UID.A);
+	`log(PlayerNetId.UID.B);
+	`log(Avatar);
+	`log(Avatar.SizeX);
+	`log(Avatar.SizeY);
+	`log(Avatar.Format);
+}
+
 exec function CreateTower(string TowerName, int XBlock, int YBlock, int ZBlock)
 {
 	ServerCreateTower(TowerName, XBlock, YBlock, ZBlock);
@@ -29,7 +53,13 @@ exec function CLerp(float A, float B, float Alpha)
 reliable server function ServerCreateTower(string TowerName, int XBlock, int YBlock, int ZBlock)
 {
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower = Spawn(class'Tower');
+	ServerAddBlock(TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower, XBlock, YBlock, ZBlock);
 	ServerSetTowerName(TowerName);
+}
+
+reliable server function ServerAddBlock(Tower Tower, int XBlock, int YBlock, int ZBlock)
+{
+	Tower.Spawn(class'TowerBlockDebug', Tower, , Vect(0,0,0), Rot(0,0,0));
 }
 
 reliable server function ServerSetTowerName(string NewName)

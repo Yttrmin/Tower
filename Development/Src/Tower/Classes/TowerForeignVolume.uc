@@ -1,3 +1,8 @@
+/**
+TowerForeignVolume
+
+A volume that specifies where factions can spawn projectiles, units, etc.
+*/
 class TowerForeignVolume extends Volume
 	dependson(TowerGame);
 
