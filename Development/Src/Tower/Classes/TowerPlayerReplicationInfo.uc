@@ -2,10 +2,12 @@ class TowerPlayerReplicationInfo extends UTPlayerReplicationInfo;
 
 var Tower Tower;
 
+var Texture2D SteamAvatar;
+
 replication
 {
 	if(bNetDirty)
-		Tower;
+		Tower, SteamAvatar;
 }
 
 /** Utility for seeing if this PRI is for a locally controller player. */
