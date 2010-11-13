@@ -47,9 +47,9 @@ function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, class<T
 	MapZBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).ZBlocks;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
-	NewBlockLocation.X = (BlockClass.default.XSize / MapXBlocks)*(XBlock);
-	NewBlockLocation.Y = 0;
-	NewBlockLocation.Z = 0;
+	NewBlockLocation.X = (BlockClass.default.XSize / MapBlockWidth)*(XBlock * MapBlockWidth);
+	NewBlockLocation.Y = (BlockClass.default.YSize / MapBlockWidth)*(YBlock * MapBlockWidth);;
+	NewBlockLocation.Z = (BlockClass.default.ZSize / MapBlockHeight)*(ZBlock * MapBlockHeight);;
 	return NewBlockLocation;
 }
 
