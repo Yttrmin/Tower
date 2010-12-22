@@ -14,6 +14,11 @@ replication
 		TowerName, Blocks;
 }
 
+function AddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
+{
+	
+}
+
 DefaultProperties
 {
 	RemoteRole=ROLE_SimulatedProxy

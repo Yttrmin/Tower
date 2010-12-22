@@ -6,7 +6,7 @@ simulated event PostBeginPlay()
 //	TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower = Spawn(class'Tower');
 }
 
-exec function AddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
+exec function AddBlock(int XBlock, int YBlock, int ZBlock)
 {
 	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
 }

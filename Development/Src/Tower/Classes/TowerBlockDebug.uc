@@ -22,7 +22,7 @@ DefaultProperties
 	YSize = 256
 	ZSize = 256
 	Begin Object Name=StaticMeshComponent0
-	    StaticMesh=StaticMesh'TowerDebugBlocks.DebugBlock'
-		Materials(0)=Material'TowerDebugBlocks.DebugBlockMaterial'
+	    StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
+		//Materials(0)=Material'TowerDebugBlocks.DebugBlockMaterial'
 	End Object
 }

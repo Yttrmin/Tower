@@ -36,21 +36,46 @@ function SetTowerName(Tower Tower, string NewTowerName)
 
 function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
-	Tower.Blocks[0] = Spawn(BlockClass, Tower,, GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass));
+	local vector SpawnLocation;
+	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
+	// Pivot point is in middle, bump it up so we're not in the ground.
+	SpawnLocation.Z += 128;
+	if(CanAddBlock(XBlock, YBlock, ZBlock))
+	{
+		Tower.Blocks[0] = Spawn(BlockClass, Tower,, SpawnLocation);
+		Broadcast(Tower, "Block added");
+	}
+	else
+	{
+		Broadcast(Tower, "Could not add block");
+	}
+}
+
+function bool CanAddBlock(int XBlock, int YBlock, int ZBlock)
+{
+	return (IsGridLocationFree(XBlock, YBlock, ZBlock) && IsGridLocationOnGrid(XBlock, YBlock, ZBlock));
 }
 
 function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, class<TowerBlock> BlockClass)
 {
-	local int MapXBlocks, MapZBlocks, MapBlockWidth, MapBlockHeight;
+	local int MapBlockWidth, MapBlockHeight;
 	local Vector NewBlockLocation;
-	MapXBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).XBlocks;
-	MapZBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).ZBlocks;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
 	NewBlockLocation.X = (BlockClass.default.XSize / MapBlockWidth)*(XBlock * MapBlockWidth);
 	NewBlockLocation.Y = (BlockClass.default.YSize / MapBlockWidth)*(YBlock * MapBlockWidth);;
 	NewBlockLocation.Z = (BlockClass.default.ZSize / MapBlockHeight)*(ZBlock * MapBlockHeight);;
 	return NewBlockLocation;
+}
+
+function bool IsGridLocationOnGrid(int XBlock, int YBlock, int ZBlock)
+{
+	return true;
+}
+
+function bool IsGridLocationFree(int XBlock, int YBlock, int ZBlock)
+{
+	return true;
 }
 
 function UTBot AddBot(optional string BotName, optional bool bUseTeamIndex, optional int TeamIndex){}

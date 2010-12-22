@@ -7,7 +7,7 @@ var Texture2D SteamAvatar;
 replication
 {
 	if(bNetDirty)
-		Tower, SteamAvatar;
+		Tower;
 }
 
 /** Utility for seeing if this PRI is for a locally controller player. */
