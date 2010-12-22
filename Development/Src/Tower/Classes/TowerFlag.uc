@@ -5,8 +5,8 @@ Lives on from Cube. A cloth-ready skeletal mesh with a ScriptedTexture that draw
 user's computer.
 */
 class TowerFlag extends SkeletalMeshActorSpawnable
-	config(Tower)
-	DLLBind(DevILWrapper);
+	config(Tower);
+//	DLLBind(DevILWrapper);
 
 var ScriptedTexture Texture;
 var MaterialInstanceConstant MaterialInstance;
@@ -25,15 +25,16 @@ var config bool bLogDrawing;
 var config string ExternalTextureFilePath;
 
 /** Ensures that DevIL is initialized. Subsequent calls have no effect if already initialzed.*/
-dllimport final function Initialize();
+//dllimport final function Initialize();
 /** Loads given image. For supported formats see DevIL site. Transparency values are discarded.
 * If returns true, Width and Height hold the loaded image's width and height.*/
-dllimport final function bool DevILLoadImage(string FilePath, out int ImageWidth, out int ImageHeight);
+//dllimport final function bool DevILLoadImage(string FilePath, out int ImageWidth, out int ImageHeight);
 /** Gets next pixel RGB values. Internally counted by DevILWrapper.*/
-dllimport final function GetNextPixel(out int Red, out int Green, out int Blue);
-dllimport final function DevILUnloadImage();
+//dllimport final function GetNextPixel(out int Red, out int Green, out int Blue);
+//dllimport final function DevILUnloadImage();
 //dllimport final function bool GetLogString()
 
+/*
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
@@ -53,7 +54,7 @@ simulated event PostBeginPlay()
 }
 
 // FIXME: Broke NumberOfFramesToCompleteRenderBy
-/** Rendering delegate for ScriptedTexture.*/
+// Rendering delegate for ScriptedTexture.
 function DrawCustomTexture(Canvas Canvas)
 {
 	local int R, G, B;
@@ -105,9 +106,9 @@ function DrawCustomTexture(Canvas Canvas)
 DefaultProperties
 {
 	
-	/*Begin Object Name=SkeletalMeshComponent0
+	*//*Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'TestMess.TestCloth06'
 		Materials(0)=Material'TestMess.Materials.TestFlag'
 		bEnableClothSimulation=true
 	End Object*/
-}
+//}
