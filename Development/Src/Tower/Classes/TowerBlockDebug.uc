@@ -10,10 +10,6 @@ var MaterialInstanceConstant MaterialInstance;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
-	MaterialInstance.SetTextureParameterValue('AvatarTexture', 
-		TowerPlayerReplicationInfo(TowerPlayerController(Owner.Owner).PlayerReplicationInfo).SteamAvatar);
-	ReplicatedMaterial = MaterialInstance;
 }
 
 DefaultProperties

@@ -2,8 +2,6 @@ class TowerPlayerReplicationInfo extends UTPlayerReplicationInfo;
 
 var Tower Tower;
 
-var Texture2D SteamAvatar;
-
 replication
 {
 	if(bNetDirty)
