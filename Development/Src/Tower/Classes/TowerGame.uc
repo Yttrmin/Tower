@@ -100,21 +100,7 @@ event PostLogin(PlayerController NewPlayer)
 	Info.PlayerNetID = NewPlayer.PlayerReplicationInfo.UniqueID;
 	Info.PRI = TowerPlayerReplicationInfo(NewPlayer.PlayerReplicationInfo);
 	PlayerInfo.AddItem(Info);
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(
-		NewPlayer.PlayerReplicationInfo.UniqueId, OnReadOnlineAvatarComplete);
 	AddTower(TowerPlayerController(NewPlayer));
-}
-
-function OnReadOnlineAvatarComplete(const UniqueNetId PlayerNetId, Texture2D Avatar)
-{
-	local NetIDPRI Info;
-	foreach PlayerInfo(Info)
-	{
-		if(Info.PlayerNetId == PlayerNetId)
-		{
-			Info.PRI.SteamAvatar = Avatar;
-		}
-	}
 }
 
 function RestartPlayer(Controller aPlayer)
