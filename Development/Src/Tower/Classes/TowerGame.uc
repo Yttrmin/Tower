@@ -42,7 +42,7 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		Tower.Blocks[0] = Spawn(BlockClass, Tower,, SpawnLocation);
+		Tower.AddBlock(BlockClass, SpawnLocation);
 		Broadcast(Tower, "Block added");
 	}
 	else

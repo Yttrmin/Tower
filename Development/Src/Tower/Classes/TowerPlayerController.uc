@@ -11,6 +11,11 @@ exec function AddBlock(int XBlock, int YBlock, int ZBlock)
 	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
 }
 
+exec function RemoveAllBlocks()
+{
+	ServerRemoveAllBlocks();
+}
+
 exec function SetTowerName(string NewName)
 {
 	ServerSetTowerName(NewName);
@@ -19,6 +24,15 @@ exec function SetTowerName(string NewName)
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
 	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, XBlock, YBlock, ZBlock);
+}
+
+reliable server function ServerRemoveAllBlocks()
+{
+	local TowerBlock Block;
+	foreach GetTower().Blocks(Block)
+	{
+		Block.Destroy();
+	}
 }
 
 reliable server function ServerSetTowerName(string NewName)
