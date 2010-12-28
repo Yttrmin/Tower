@@ -5,54 +5,47 @@ Represents a player's tower, which a player can only have one of. Tower's are es
 */
 class Tower extends Actor;
 
-/** Replicated to clients so they know whether to add or remove this block to the tower's
-block array. */
-enum RepCode
-{
-	/** This block was added to the world. */
-	RC_Add,
-	/** This block was deleted from the world. */
-	RC_Delete
-};
-
-struct BlockRep
-{
-	var TowerBlock Block;
-	var RepCode Code;
-	var int ArrayPos;
-};
-
+// Unordered array of TowerBlocks.
 var array<TowerBlock> Blocks;
-var repnotify BlockRep ReplicatedBlock;
 var string TowerName;
 
 replication
 {
 	if(bNetDirty)
-		TowerName, ReplicatedBlock;
+		TowerName;
 }
 
-simulated event ReplicatedEvent(name VarName)
+function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock, int YBlock, int ZBlock)
 {
-	switch(VarName)
-	{
-	case 'ReplicatedBlock':
-		AddReplicatedBlock();
-		return;
-	}
+	local TowerBlock Block;
+	local Vector GridLocation;
+	GridLocation.X = XBlock;
+	GridLocation.Y = YBlock;
+	GridLocation.Z = ZBlock;
+	Block = Spawn(BlockClass, self,, SpawnLocation);
+	Block.GridLocation = GridLocation;
+	Blocks.AddItem(Block);
 }
 
-simulated function AddReplicatedBlock()
+function bool RemoveBlock(int BlockIndex)
 {
-
+	Blocks[BlockIndex].Destroy();
+	Blocks.Remove(BlockIndex, 1);
+	return true;
 }
 
-function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation)
+function CheckBlockSupport()
 {
-	Blocks.AddItem(Spawn(BlockClass, self,, SpawnLocation));
+	// Toggling between PHYS_None and PHYS_RigidBody is not a solution at all, the physics simulation keeps going.
+}
+
+function FindBlock()
+{
+
 }
 
 DefaultProperties
 {
+	bAlwaysRelevant = true;
 	RemoteRole=ROLE_SimulatedProxy
 }

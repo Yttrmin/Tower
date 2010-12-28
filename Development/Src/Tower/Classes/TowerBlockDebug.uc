@@ -21,4 +21,5 @@ DefaultProperties
 	    StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
 		//Materials(0)=Material'TowerDebugBlocks.DebugBlockMaterial'
 	End Object
+	CollisionComponent=StaticMeshComponent0
 }
