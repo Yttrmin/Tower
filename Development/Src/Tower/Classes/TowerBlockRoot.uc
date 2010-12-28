@@ -1,0 +1,1 @@
+class TowerBlockRoot extends TowerBlock;

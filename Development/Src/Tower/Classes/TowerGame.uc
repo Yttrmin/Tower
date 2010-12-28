@@ -4,28 +4,57 @@ TowerGame
 Base game mode of Tower, will probably be extending in the future.
 Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
+
+//@TODO: Making all the 'XBlock, YBlock, ZBlock' into a single vector would be beautiful.
+
 class TowerGame extends UTGame;
-
-struct NetIDPRI
-{
-	var UniqueNetID PlayerNetID;
-	var TowerPlayerReplicationInfo PRI;
-};
-
-var array<NetIDPRI> PlayerInfo;
 
 enum Factions
 {
-	FA_Player
+	F_Debug,
+	// F_Player represents all humans players in the game since it's co-op only.
+	F_Player
 };
+
+var TowerSaveSystem SaveSystem;
+var array<TowerFactionAI> FactionAIs;
+
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	AddFactionAIs();
+	StartNextRound();
+}
+
+function AddFactionAIs()
+{
+	FactionAIs.AddItem(Spawn(class'TowerFactionAIDebug'));
+}
+
+function StartNextRound()
+{
+	local TowerFactionAI Faction;
+	local int BudgetPerFaction;
+	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
+	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionAIs.Length;
+	foreach FactionAIs(Faction)
+	{
+		Faction.RoundStarted(BudgetPerFaction);
+	}
+}
 
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
-	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower = Spawn(class'Tower', Player);
-	//ServerAddBlock(TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower, XBlock, YBlock, ZBlock);
+	local TowerPlayerReplicationInfo TPRI;
+	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
+	TPRI.Tower = Spawn(class'Tower', Player);
+	// Need to make this dependent on player count in future.
+	//@FIXME - This can be done a bit more cleanly and safely.
+	AddBlock(TPRI.Tower, class'TowerBlockDebug', 8*(NumPlayers-1), 0, 0);
+	TPRI.Tower.Blocks[0].bRootBlock = true;
 	if(TowerName != "")
 	{
-		SetTowerName(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower, TowerName);
+		SetTowerName(TPRI.Tower, TowerName);
 	}
 }
 
@@ -42,7 +71,7 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		Tower.AddBlock(BlockClass, SpawnLocation);
+		Tower.AddBlock(BlockClass, SpawnLocation, XBlock, YBlock, ZBlock);
 		Broadcast(Tower, "Block added");
 	}
 	else
@@ -51,26 +80,80 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 	}
 }
 
+/** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/
+function bool RemoveBlock(Tower CallingTower, int XBlock, int YBlock, int ZBlock)
+{
+	//@DELETEME - All these broadcasts.
+	local TowerBlock Block;
+	local int OutBlockIndex;
+	Block = GetBlockFromGrid(XBlock, YBlock, ZBlock, OutBlockIndex);
+	if(Block == None)
+	{
+		Broadcast(None, "No block at given location");
+		return false;
+	}
+	if(Block.bRootBlock)
+	{
+		Broadcast(None, "Block is bRootBlock, can't be destroyed.");
+		return false;
+	}
+	else if(CallingTower != Block.Owner)
+	{
+		Broadcast(None, "A Tower asked to remove a block it didn't own, not allowed!");
+		return false;
+	}
+	else
+	{
+		if(Tower(Block.Owner).RemoveBlock(OutBlockIndex))
+		{
+			Broadcast(None, "Block destroyed.");
+			return true;
+		}
+		else
+		{
+			Broadcast(None, "Block can't be destroyed for unknown reason.");
+			return false;
+		}
+	}
+}
+
 function bool CanAddBlock(int XBlock, int YBlock, int ZBlock)
 {
 	return (IsGridLocationFree(XBlock, YBlock, ZBlock) && IsGridLocationOnGrid(XBlock, YBlock, ZBlock));
 }
 
-function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, class<TowerBlock> BlockClass)
+function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, optional class<TowerBlock> BlockClass)
 {
 	local int MapBlockWidth, MapBlockHeight;
 	local Vector NewBlockLocation;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
-	NewBlockLocation.X = (BlockClass.default.XSize / MapBlockWidth)*(XBlock * MapBlockWidth);
-	NewBlockLocation.Y = (BlockClass.default.YSize / MapBlockWidth)*(YBlock * MapBlockWidth);;
-	NewBlockLocation.Z = (BlockClass.default.ZSize / MapBlockHeight)*(ZBlock * MapBlockHeight);;
+	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
+	NewBlockLocation.X = (MapBlockWidth / MapBlockWidth)*(XBlock * MapBlockWidth);
+	NewBlockLocation.Y = (MapBlockWidth / MapBlockWidth)*(YBlock * MapBlockWidth);
+	// Z is the very bottom of the block.
+	NewBlockLocation.Z = (MapBlockHeight / MapBlockHeight)*(ZBlock * MapBlockHeight);
 	return NewBlockLocation;
 }
 
 function bool IsGridLocationOnGrid(int XBlock, int YBlock, int ZBlock)
 {
-	return true;
+	local int MapXBlocks; 
+	local int MapYBlocks; 
+	local int MapZBlocks;
+	MapXBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).XBlocks;
+	MapYBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).YBlocks;
+	MapZBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).ZBlocks;
+	if((XBlock <= MapXBlocks/2 && XBlock >= -MapXBlocks/2) && 
+		(YBlock <= MapYBlocks/2 && YBlock >= -MapYBlocks/2) &&
+		(ZBlock <= MapZBlocks/2 && ZBlock >= -MapZBlocks/2))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 function bool IsGridLocationFree(int XBlock, int YBlock, int ZBlock)
@@ -78,12 +161,33 @@ function bool IsGridLocationFree(int XBlock, int YBlock, int ZBlock)
 	return true;
 }
 
-function UTBot AddBot(optional string BotName, optional bool bUseTeamIndex, optional int TeamIndex){}
-
-event PostBeginPlay()
+function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int BlockIndex)
 {
-	Super.PostBeginPlay();
+	//@BUG - Blocks don't like to be traced.
+	// Seriously need a helper function to make grid vectors, or at least make all XBlocks etc into vectors.
+	local Vector GridLocation;
+	local TowerBlock Block;
+	local PlayerReplicationInfo PRI;
+	local TowerPlayerReplicationInfo TPRI;
+
+	GridLocation.X = XBlock;
+	GridLocation.Y = YBlock;
+	GridLocation.Z = ZBlock;
+	foreach GameReplicationInfo.PRIArray(PRI)
+	{
+		TPRI = TowerPlayerReplicationInfo(PRI);
+		foreach TPRI.Tower.Blocks(Block, BlockIndex)
+		{
+			if(Block.GridLocation == GridLocation)
+			{
+				return Block;
+			}
+		}
+	}
+	return None;
 }
+
+function UTBot AddBot(optional string BotName, optional bool bUseTeamIndex, optional int TeamIndex){}
 
 event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
 {
@@ -95,11 +199,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 
 event PostLogin(PlayerController NewPlayer)
 {
-	local NetIDPRI Info;
 	Super.PostLogin(NewPlayer);
-	Info.PlayerNetID = NewPlayer.PlayerReplicationInfo.UniqueID;
-	Info.PRI = TowerPlayerReplicationInfo(NewPlayer.PlayerReplicationInfo);
-	PlayerInfo.AddItem(Info);
 	AddTower(TowerPlayerController(NewPlayer));
 }
 
@@ -131,6 +231,9 @@ DefaultProperties
 	PlayerReplicationInfoClass=class'Tower.TowerPlayerReplicationInfo'
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
 	DefaultPawnClass=class'Tower.TowerPawn'
+	HUDType=class'Tower.TowerGFxHUDWrapper'
 	bAutoNumBots = False
 	DesiredPlayerCount = 1
+
+	bSkipPlaySound=true
 }

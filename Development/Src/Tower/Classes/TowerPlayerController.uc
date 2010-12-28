@@ -11,6 +11,11 @@ exec function AddBlock(int XBlock, int YBlock, int ZBlock)
 	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
 }
 
+exec function RemoveBlock(int XBlock, int YBlock, int ZBlock)
+{
+	ServerRemoveBlock(XBlock, YBlock, ZBlock);
+}
+
 exec function RemoveAllBlocks()
 {
 	ServerRemoveAllBlocks();
@@ -24,6 +29,11 @@ exec function SetTowerName(string NewName)
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
 	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, XBlock, YBlock, ZBlock);
+}
+
+reliable server function ServerRemoveBlock(int XBlock, int YBlock, int ZBlock)
+{
+	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), XBlock, YBlock, ZBlock);
 }
 
 reliable server function ServerRemoveAllBlocks()
@@ -45,6 +55,7 @@ function Tower GetTower()
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower;
 }
 
+//@FIXME
 state Master extends Spectating
 {
 
@@ -52,12 +63,5 @@ state Master extends Spectating
 
 DefaultProperties
 {
-	Begin Object Class=SpriteComponent Name=Sprite
-		Sprite=Texture2D'EditorResources.LightIcons.Light_Point_Stationary_Statics'
-		Scale=1  // we are using 128x128 textures so we need to scale them down
-		HiddenGame=False
-		AlwaysLoadOnClient=True
-		AlwaysLoadOnServer=True
-	End Object
-	Components.add(Sprite)
+
 }
