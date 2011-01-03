@@ -26,6 +26,53 @@ event PostBeginPlay()
 	StartNextRound();
 }
 
+function GenericPlayerInitialization(Controller C)
+{
+local PlayerController PC;
+
+	PC = PlayerController(C);
+	if (PC != None)
+	{
+		// Keep track of the best host to migrate to in case of a disconnect
+		UpdateBestNextHosts();
+
+		// Notify the game that we can now be muted and mute others
+		UpdateGameplayMuteList(PC);
+
+		// tell client what hud class to use
+		PC.ClientSetHUD(HudType);
+
+		ReplicateStreamingStatus(PC);
+
+		// see if we need to spawn a CoverReplicator for this player
+		if (CoverReplicatorBase != None)
+		{
+			PC.SpawnCoverReplicator();
+		}
+
+		// Set the rich presence strings on the client (has to be done there)
+		PC.ClientSetOnlineStatus();
+	}
+
+	if (BaseMutator != None)
+	{
+		BaseMutator.NotifyLogin(C);
+	}
+}
+
+exec function LaunchMissile()
+{
+
+}
+
+exec function TestTrace()
+{
+	local Actor HitTrace;
+	local Vector HitLoc, HitNorm;
+	HitTrace = Trace(HitLoc, HitNorm, Vect(0,0,-1024), Vect(0,0,2048), TRUE);
+	`log("Hit"@HitTrace@"at"@HitLoc@"with a"@HitNorm@"normal!");
+}
+
 function AddFactionAIs()
 {
 	FactionAIs.AddItem(Spawn(class'TowerFactionAIDebug'));
@@ -231,7 +278,7 @@ DefaultProperties
 	PlayerReplicationInfoClass=class'Tower.TowerPlayerReplicationInfo'
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
 	DefaultPawnClass=class'Tower.TowerPawn'
-	HUDType=class'Tower.TowerGFxHUDWrapper'
+	HUDType=class'Tower.TowerHUD'
 	bAutoNumBots = False
 	DesiredPlayerCount = 1
 

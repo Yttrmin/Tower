@@ -1,5 +1,11 @@
 class TowerPlayerController extends UTPlayerController;
 
+/** Called on button press, toggles between locked movement with full HUD interaction, and full movement but no interaction. */
+exec function ToggleHUDFocus()
+{
+
+}
+
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
