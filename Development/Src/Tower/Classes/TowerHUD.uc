@@ -2,11 +2,10 @@ class TowerHUD extends HUD;
 
 enum HUDMode
 {
-	HM_Add
+	HM_Add,
+	HM_Remove
 };
 
-//@DELETEME
-var Vector2D EndPoint;
 var TowerHUDMoviePlayer HUDMovie;
 var HUDMode Mode;
 
@@ -19,9 +18,30 @@ event PreBeginPlay()
 	HUDMovie.Start();
 }
 
-event BlockClicked(TowerBlock Block)
+/** Called by Flash side of HUD. ClickNormal can be used to determine which side of a block was clicked. */
+event BlockClicked(TowerBlock Block, Vector ClickNormal)
 {
-
+	local Vector FinalGridLocation;
+	`log("Clicked block:"@Block.Name@ClickNormal@Block.GridLocation.Z);
+	`log(Block.GridLocation.Z + ClickNormal.Z);
+	`log(Block.GridLocation.Z + -ClickNormal.Z);
+	switch(Mode)
+	{
+	case HM_Add:
+		// For some reason as floats this seemed a bit wonky with positioning.
+		// Something's screwed up here in the 32-bit version.
+		
+		FinalGridLocation = Block.GridLocation+ClickNormal;
+		`log(FinalGridLocation);
+		TowerPlayerController(PlayerOwner).AddBlock(Round(FinalGridLocation.X), 
+			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
+		break;
+	case HM_Remove:
+		TowerPlayerController(PlayerOwner).RemoveBlock(Block.GridLocation.X, 
+			Block.GridLocation.Y, Block.GridLocation.Z);
+		break;
+	}
+	
 }
 
 event Focus()
@@ -36,16 +56,7 @@ event UnFocus()
 
 event PostRender()
 {
-	local Vector EndOrigin, EndDir;
 	Super.PostRender();
-	//@DELETEME
-	if(EndPoint != Vect2D(0,0))
-	{
-		Canvas.DeProject(EndPoint, EndOrigin, EndDir);
-		`log("Point:"@EndPoint.X@EndPoint.Y@"Origin:"@EndOrigin@"Direction:"@EndDir);
-		DrawDebugLine(EndOrigin+EndDir, (EndOrigin+EndDir)+EndDir*10000, 255, 0, 0, TRUE);
-		EndPoint = Vect2D(0,0);
-	}
 }
 
 DefaultProperties

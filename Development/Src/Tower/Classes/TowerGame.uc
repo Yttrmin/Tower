@@ -130,6 +130,7 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 /** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/
 function bool RemoveBlock(Tower CallingTower, int XBlock, int YBlock, int ZBlock)
 {
+	//@TODO - Now that tracing works fine, do traces instead.
 	//@DELETEME - All these broadcasts.
 	local TowerBlock Block;
 	local int OutBlockIndex;
@@ -175,11 +176,12 @@ function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, optiona
 	local Vector NewBlockLocation;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
+	`log(XBlock@YBlock@ZBlock);
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (MapBlockWidth / MapBlockWidth)*(XBlock * MapBlockWidth);
-	NewBlockLocation.Y = (MapBlockWidth / MapBlockWidth)*(YBlock * MapBlockWidth);
+	NewBlockLocation.X = (XBlock * MapBlockWidth);
+	NewBlockLocation.Y = (YBlock * MapBlockWidth);
 	// Z is the very bottom of the block.
-	NewBlockLocation.Z = (MapBlockHeight / MapBlockHeight)*(ZBlock * MapBlockHeight);
+	NewBlockLocation.Z = (ZBlock * MapBlockHeight);
 	return NewBlockLocation;
 }
 
