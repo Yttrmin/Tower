@@ -14,6 +14,7 @@ simulated event PostBeginPlay()
 
 exec function AddBlock(int XBlock, int YBlock, int ZBlock)
 {
+	`log(XBlock@YBlock@ZBlock);
 	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
 }
 
