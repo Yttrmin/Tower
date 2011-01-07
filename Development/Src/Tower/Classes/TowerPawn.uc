@@ -1,1 +1,1 @@
-class TowerPawn extends UTPawn;
+class TowerPawn extends UDKPawn;

@@ -1,4 +1,4 @@
-class TowerGameReplicationInfo extends UTGameReplicationInfo;
+class TowerGameReplicationInfo extends GameReplicationInfo;
 
 var byte Phase;
 var byte Round;

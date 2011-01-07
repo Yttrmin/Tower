@@ -17,6 +17,28 @@ var Vector GridLocation;
 var const editconst int XSize, YSize, ZSize;
 var bool bRootBlock;
 
+var MaterialInstanceConstant MaterialInstance;
+var const LinearColor Black;
+
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	MaterialInstance = new(None) class'MaterialInstanceConstant';
+	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
+	StaticMeshComponent.SetMaterial(0, MaterialInstance);
+}
+
+function Highlight()
+{
+	MaterialInstance.SetVectorParameterValue('HighlightColor', 
+		TowerPlayerController(Owner.Owner).HighlightColor);
+}
+
+function UnHighlight()
+{
+	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
+}
+
 /** Called by support block when it no longer supports */
 event SupportRemoved(TowerBlock Support)
 {
@@ -65,8 +87,11 @@ DefaultProperties
 		// Characters and other important skeletal meshes should set bSynthesizeSHLight=true
 	End Object
 	 // 256x256x256 cube.
+	/**
 	Begin Object Name=StaticMeshComponent0
 		BlockRigidBody=true
 	    StaticMesh=StaticMesh'EngineMeshes.Cube'
+		Materials(0)=Material'TowerDebugBlocks.DebugBlockMaterial'
 	End Object
+	*/
 }
