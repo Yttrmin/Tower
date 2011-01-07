@@ -7,7 +7,7 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 
 //@TODO: Making all the 'XBlock, YBlock, ZBlock' into a single vector would be beautiful.
 
-class TowerGame extends UTGame;
+class TowerGame extends FrameworkGame;
 
 enum Factions
 {
@@ -63,14 +63,6 @@ local PlayerController PC;
 exec function LaunchMissile()
 {
 
-}
-
-exec function TestTrace()
-{
-	local Actor HitTrace;
-	local Vector HitLoc, HitNorm;
-	HitTrace = Trace(HitLoc, HitNorm, Vect(0,0,-1024), Vect(0,0,2048), TRUE);
-	`log("Hit"@HitTrace@"at"@HitLoc@"with a"@HitNorm@"normal!");
 }
 
 function AddFactionAIs()
@@ -176,7 +168,6 @@ function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, optiona
 	local Vector NewBlockLocation;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
-	`log(XBlock@YBlock@ZBlock);
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
 	NewBlockLocation.X = (XBlock * MapBlockWidth);
 	NewBlockLocation.Y = (YBlock * MapBlockWidth);
@@ -236,8 +227,6 @@ function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int
 	return None;
 }
 
-function UTBot AddBot(optional string BotName, optional bool bUseTeamIndex, optional int TeamIndex){}
-
 event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
 {
 	local PlayerController NewPlayer;
@@ -262,17 +251,6 @@ function RestartPlayer(Controller aPlayer)
 	TowerPlayerController(aPlayer).GotoState('Master');
 }
 
-function AddInitialBots()
-{
-	local int AddCount;
-	return;
-	// add any bots immediately
-	while (NeedPlayers() && AddBot() != None && AddCount < 16)
-	{
-		AddCount++;
-	}
-}
-
 DefaultProperties
 {
 	MaxPlayersAllowed = 4
@@ -281,8 +259,4 @@ DefaultProperties
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
 	DefaultPawnClass=class'Tower.TowerPawn'
 	HUDType=class'Tower.TowerHUD'
-	bAutoNumBots = False
-	DesiredPlayerCount = 1
-
-	bSkipPlaySound=true
 }

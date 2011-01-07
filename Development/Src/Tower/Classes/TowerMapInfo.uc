@@ -1,4 +1,4 @@
-class TowerMapInfo extends UTMapInfo;
+class TowerMapInfo extends MapInfo;
 
 var() const int XBlocks;
 var() const int YBlocks;

@@ -1,20 +1,27 @@
-class TowerPlayerController extends UTPlayerController;
+class TowerPlayerController extends GamePlayerController
+	config(Tower);
 
-/** Called on button press, toggles between locked movement with full HUD interaction, and full movement but no interaction. */
-exec function ToggleHUDFocus()
-{
-
-}
+/** Color used to highlight blocks when mousing over it. Setting this to black disables it. */
+var config LinearColor HighlightColor;
+/** How much to mutliply HighlightColor by, so it actually glows. Setting this to 0 disables it. */
+var config byte HighlightFactor;
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-//	TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower = Spawn(class'Tower');
+	HighlightColor.R *= HighlightFactor;
+	HighlightColor.G *= HighlightFactor;
+	HighlightColor.B *= HighlightFactor;
+}
+
+/** Called on button press, toggles between locked movement with full HUD interaction, and full movement but no interaction. */
+exec function ToggleHUDFocus()
+{
+	
 }
 
 exec function AddBlock(int XBlock, int YBlock, int ZBlock)
 {
-	`log(XBlock@YBlock@ZBlock);
 	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
 }
 
