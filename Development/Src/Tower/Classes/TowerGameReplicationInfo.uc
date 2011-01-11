@@ -8,6 +8,8 @@ var bool bRoundInProgress;
 var int EnemyCount;
 var int MaxEnemyCount;
 
+var float Time;
+
 replication
 {
 	if(bNetDirty)

@@ -54,7 +54,7 @@ event PostRender()
 	Super.PostRender();
 	TraceForBlock(HudMovie.GetVariableNumber("_root.MouseCursor._x"),
 		HudMovie.GetVariableNumber("_root.MouseCursor._y"), Block);
-	if(LastHighlightedBlock != Block && LastHighlightedBlock != None)
+	if(LastHighlightedBlock != Block)
 	{
 		LastHighlightedBlock.UnHighlight();
 	}

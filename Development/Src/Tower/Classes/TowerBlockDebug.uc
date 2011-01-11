@@ -11,6 +11,8 @@ DefaultProperties
 	YSize = 256
 	ZSize = 256
 	Begin Object Name=StaticMeshComponent0
+		CollideActors=True
+		BlockActors=true
 	    StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
 		Materials(0)=Material'TowerBlocks.DebugBlockMaterial'
 	End Object

@@ -1,17 +1,16 @@
 class TowerPlayerController extends GamePlayerController
 	config(Tower);
 
-/** Color used to highlight blocks when mousing over it. Setting this to black disables it. */
-var config LinearColor HighlightColor;
-/** How much to mutliply HighlightColor by, so it actually glows. Setting this to 0 disables it. */
-var config byte HighlightFactor;
+var TowerSaveSystem SaveSystem;
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	HighlightColor.R *= HighlightFactor;
-	HighlightColor.G *= HighlightFactor;
-	HighlightColor.B *= HighlightFactor;
+}
+
+exec function SetHighlightColor(LinearColor NewColor)
+{
+	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
 /** Called on button press, toggles between locked movement with full HUD interaction, and full movement but no interaction. */
@@ -38,6 +37,23 @@ exec function RemoveAllBlocks()
 exec function SetTowerName(string NewName)
 {
 	ServerSetTowerName(NewName);
+}
+
+exec function SaveGame(string FileName, bool bTowerOnly)
+{
+	if(FileName == "")
+	{
+		return;
+	}
+	SaveSystem.SaveGame(FileName, bTowerOnly, self);
+}
+
+exec function LoadGame(string FileName, bool bTowerOnly)
+{
+	if(FileName == "")
+	{
+		return;
+	}
 }
 
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
@@ -75,7 +91,25 @@ state Master extends Spectating
 
 }
 
+event k2override Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
+{
+	Super.Touch(Other, OtherComp, HitLocation, HitNormal);
+	`log("TOUCH");
+}
+
 DefaultProperties
 {
-
+	CollisionType=COLLIDE_BlockAll
+	bCollideActors=true
+	bCollideWorld=true
+	bBlockActors=true
+	Begin Object Name=CollisionCylinder
+		CollisionRadius=+0034.000000
+		CollisionHeight=+0078.000000
+		BlockNonZeroExtent=true
+		BlockZeroExtent=true
+		BlockActors=true
+		CollideActors=true
+	End Object
+	CollisionComponent=CollisionCylinder
 }
