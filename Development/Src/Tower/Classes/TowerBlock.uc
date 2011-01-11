@@ -19,8 +19,15 @@ var bool bRootBlock;
 
 var MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
+var TowerPlayerReplicationInfo OwnerPRI;
 
-event PostBeginPlay()
+replication
+{
+	if(bNetInitial)
+		GridLocation, OwnerPRI;
+}
+
+simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	MaterialInstance = new(None) class'MaterialInstanceConstant';
@@ -28,13 +35,13 @@ event PostBeginPlay()
 	StaticMeshComponent.SetMaterial(0, MaterialInstance);
 }
 
-function Highlight()
+simulated function Highlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', 
-		TowerPlayerController(Owner.Owner).HighlightColor);
+		OwnerPRI.HighlightColor);
 }
 
-function UnHighlight()
+simulated function UnHighlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
 }
@@ -74,6 +81,7 @@ function Drop()
 
 DefaultProperties
 {
+	bAlwaysRelevant = true;
 	bCollideActors=true
 	bBlockActors=true
 	bRootBlock = false

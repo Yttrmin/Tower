@@ -16,7 +16,6 @@ enum Factions
 	F_Player
 };
 
-var TowerSaveSystem SaveSystem;
 var array<TowerFactionAI> FactionAIs;
 
 event PostBeginPlay()
@@ -86,7 +85,11 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
-	TPRI.Tower = Spawn(class'Tower', Player);
+	// For whatever reason PlayerController won't collide with children, so we're breaking
+	// the ownership chain right here. There's probably a flag for child collision but
+	// I can't find it.
+	TPRI.Tower = Spawn(class'Tower');
+	TPRI.Tower.OwnerPRI = TPRI;
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
 	AddBlock(TPRI.Tower, class'TowerBlockDebug', 8*(NumPlayers-1), 0, 0);
@@ -243,9 +246,7 @@ event PostLogin(PlayerController NewPlayer)
 
 function RestartPlayer(Controller aPlayer)
 {
-	`log("RESTARTED");
-	`log(aPlayer.GetStateName());
-	ScriptTrace();
+	Super.RestartPlayer(aPlayer);
 	// aPlayer default state is PlayerWaiting
 	// self default state is PendingMatch
 	TowerPlayerController(aPlayer).GotoState('Master');

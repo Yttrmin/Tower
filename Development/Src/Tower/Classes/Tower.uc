@@ -8,17 +8,20 @@ class Tower extends Actor;
 // Unordered array of TowerBlocks.
 var array<TowerBlock> Blocks;
 var string TowerName;
+var TowerPlayerReplicationInfo OwnerPRI;
 
 replication
 {
 	if(bNetDirty)
-		TowerName;
+		TowerName, OwnerPRI;
 }
 
 function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock, int YBlock, int ZBlock)
 {
 	local TowerBlock Block;
 	Block = Spawn(BlockClass, self,, SpawnLocation);
+//	Block.Tower = self;
+	Block.OwnerPRI = OwnerPRI;
 	Block.GridLocation.X = XBlock;
 	Block.GridLocation.Y = YBlock;
 	Block.GridLocation.Z = ZBlock;
