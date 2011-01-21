@@ -10,4 +10,6 @@ event PostBeginPlay()
 DefaultProperties
 {
 	AtWar.Add(F_Player)
+	Begin Object Name=FactionInfo0
+	End Object
 }

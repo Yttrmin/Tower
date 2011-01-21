@@ -58,6 +58,7 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
+	ScriptTrace();
 	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, XBlock, YBlock, ZBlock);
 }
 
@@ -88,14 +89,9 @@ function Tower GetTower()
 //@FIXME
 state Master extends Spectating
 {
-
+	ignores StartFire, StopFire;
 }
 
-event k2override Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
-{
-	Super.Touch(Other, OtherComp, HitLocation, HitNormal);
-	`log("TOUCH");
-}
 
 DefaultProperties
 {

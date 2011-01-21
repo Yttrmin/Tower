@@ -17,12 +17,34 @@ enum Factions
 };
 
 var array<TowerFactionAI> FactionAIs;
+var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	PopulateSpawnPointArrays();
 	AddFactionAIs();
 	StartNextRound();
+}
+
+function PopulateSpawnPointArrays()
+{
+	local TowerSpawnPoint Point;
+	foreach WorldInfo.AllNavigationPoints(class'TowerSpawnPoint', Point)
+	{
+		if(Point.bCanSpawnInfantry)
+		{
+			InfantryPoints.AddItem(Point);
+		}
+		if(Point.bCanSpawnProjectile)
+		{
+			ProjectilePoints.AddItem(Point);
+		}
+		if(Point.bCanSpawnVehicle)
+		{
+			VehiclePoints.AddItem(Point);
+		}
+	}
 }
 
 function GenericPlayerInitialization(Controller C)
@@ -64,6 +86,11 @@ exec function LaunchMissile()
 
 }
 
+exec function SkipRound()
+{
+	StartNextRound();
+}
+
 function AddFactionAIs()
 {
 	FactionAIs.AddItem(Spawn(class'TowerFactionAIDebug'));
@@ -74,6 +101,7 @@ function StartNextRound()
 	local TowerFactionAI Faction;
 	local int BudgetPerFaction;
 	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
+	//SetGameTimer(120);
 	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionAIs.Length;
 	foreach FactionAIs(Faction)
 	{
@@ -81,10 +109,17 @@ function StartNextRound()
 	}
 }
 
+function SetGameTimer(float NewTime)
+{
+	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = NewTime;
+	TowerGameReplicationInfo(WorldInfo.GRI).SetGameTimer();
+}
+
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
+	//@BUG
 	// For whatever reason PlayerController won't collide with children, so we're breaking
 	// the ownership chain right here. There's probably a flag for child collision but
 	// I can't find it.
@@ -254,7 +289,7 @@ function RestartPlayer(Controller aPlayer)
 
 DefaultProperties
 {
-	MaxPlayersAllowed = 4
+	MaxPlayersAllowed=4
 	PlayerControllerClass=class'Tower.TowerPlayerController'
 	PlayerReplicationInfoClass=class'Tower.TowerPlayerReplicationInfo'
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
