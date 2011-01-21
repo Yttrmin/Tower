@@ -10,6 +10,12 @@ var TowerHUDMoviePlayer HUDMovie;
 var HUDMode Mode;
 var TowerBlock LastHighlightedBlock;
 
+event Tick(float DeltaTime)
+{
+	Super.Tick(DeltaTime);
+//	HUDMovie.SetTimeRemaining(TowerGameReplicationInfo(WorldInfo.GRI).GetRemainingTime());
+}
+
 event PreBeginPlay()
 {
 	super.PreBeginPlay();
@@ -17,6 +23,12 @@ event PreBeginPlay()
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
 	HudMovie.LockMouseToCenter(false);
+}
+
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
 }
 
 /** Called by Flash side of HUD. ClickNormal can be used to determine which side of a block was clicked. */
@@ -54,7 +66,7 @@ event PostRender()
 	Super.PostRender();
 	TraceForBlock(HudMovie.GetVariableNumber("_root.MouseCursor._x"),
 		HudMovie.GetVariableNumber("_root.MouseCursor._y"), Block);
-	if(LastHighlightedBlock != Block)
+	if(LastHighlightedBlock != Block && LastHighlightedBlock != None)
 	{
 		LastHighlightedBlock.UnHighlight();
 	}

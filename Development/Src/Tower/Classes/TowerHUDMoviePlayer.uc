@@ -1,3 +1,9 @@
+/**
+* TowerHUDMoviePlayer
+*
+* The UnrealScript side of the Flash HUD SWF.
+* This will not work in the iOS build for obvious reasons!
+*/
 class TowerHUDMoviePlayer extends GFxMoviePlayer;
 
 var TowerHUD HUD;
@@ -16,6 +22,10 @@ event OnMouseClick(float X, float Y)
 	}
 }
 
+//@TODO: Move as much of these functions out of Flash and into UnrealScript as possible.
+// You can alter all the same things on the scene that Flash does from UnrealScript, so there's
+// no reason for this huge function chain. It's also much more convenient to 
+
 function LockMouseToCenter(bool bMakeInvisible)
 {
 	ActionScriptVoid("LockMouseToCenter");
@@ -29,6 +39,16 @@ function LockMouseToCurrentLocation(bool bMakeInvisible)
 function UnlockMouse(bool bMakeVisible)
 {
 	ActionScriptVoid("UnlockMouse");
+}
+
+function SetTimeRemaining(coerce string Seconds)
+{
+	SetVariableString("_root.TimeRemaining.text", Seconds);
+}
+
+function SetRoundNumber(coerce String Round)
+{
+	SetVariableString("_root.Round.text", Round);
 }
 
 function TraceForBlock(out float X, out float Y, out TowerBlock Block, out Vector HitNormal)

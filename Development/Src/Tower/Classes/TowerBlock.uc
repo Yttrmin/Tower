@@ -21,6 +21,8 @@ var MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
 var TowerPlayerReplicationInfo OwnerPRI;
 
+var NavMeshObstacle Obstacle;
+
 replication
 {
 	if(bNetInitial)
@@ -33,6 +35,9 @@ simulated event PostBeginPlay()
 	MaterialInstance = new(None) class'MaterialInstanceConstant';
 	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
 	StaticMeshComponent.SetMaterial(0, MaterialInstance);
+	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
+//	Obstacle = Spawn(class'NavMeshObstacle');
+//	Obstacle.SetEnabled(TRUE);
 }
 
 simulated function Highlight()

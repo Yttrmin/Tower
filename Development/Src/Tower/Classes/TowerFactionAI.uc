@@ -9,11 +9,14 @@ class TowerFactionAI extends Actor
 	abstract;
 /** Note anytime "Troops" is used it includes missiles and such, not just infantry. */
 
+var TowerFactionInfo FactionInfo;
+
 /** Strategy the AI uses during the current round. */ 
 enum Strategies
 {
 	/** Default, used when not at war with anyone and thus not fighting. */
-	S_None
+	S_None,
+	S_Spam_Projectile
 };
 
 var() Strategies Strategy;
@@ -32,12 +35,23 @@ var() bool bInfringeBorders;
 /** FALSE during cool-down between rounds, disallowing the AI from spawning troops. */
 var bool bCanFight;
 
-event RoundStarted(int AwardedBudget)
+event RoundStarted(const int AwardedBudget)
 {
 	TroopBudget = AwardedBudget;
 	bCanFight = True;
 }
 
+event Tick(float DeltaTime)
+{
+	Super.Tick(DeltaTime);
+}
+
+event Think()
+{
+
+}
+
+/** Called directly after the round is declared over, before cool-down period. */
 event RoundEnded()
 {
 	bCanFight = False;
@@ -45,6 +59,10 @@ event RoundEnded()
 
 DefaultProperties
 {
-	Strategy=S_None
+	Strategy=S_Spam_Projectile
 	RemoteRole=ROLE_None
+	Begin Object Class=TowerFactionInfo Name=FactionInfo0
+	End Object
+	Components.Add(FactionInfo0)
+	FactionInfo=FactionInfo0
 }
