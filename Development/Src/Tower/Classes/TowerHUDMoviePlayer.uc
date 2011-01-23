@@ -41,14 +41,14 @@ function UnlockMouse(bool bMakeVisible)
 	ActionScriptVoid("UnlockMouse");
 }
 
-function SetTimeRemaining(coerce string Seconds)
-{
-	SetVariableString("_root.TimeRemaining.text", Seconds);
-}
-
 function SetRoundNumber(coerce String Round)
 {
 	SetVariableString("_root.Round.text", Round);
+}
+
+function SetRoundTime(float NewTime)
+{
+	ActionScriptVoid("SetRoundTime");
 }
 
 function TraceForBlock(out float X, out float Y, out TowerBlock Block, out Vector HitNormal)

@@ -56,6 +56,12 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	}
 }
 
+exec function RequestUpdateTime()
+{
+	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
+	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
+}
+
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
 	ScriptTrace();

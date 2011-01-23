@@ -1,24 +1,25 @@
 /**
 TowerBlock
 
-Base class of all the blocks that make up a Tower. Blocks can be of different shapes and sizes, and have their own
-features. Weapons are typically added on to blocks, rather than blocks coming already armed.
+Base class of all the blocks that make up a Tower.
+
+Keep in mind this class and its children will likely be opened up to modding!
 */
 class TowerBlock extends DynamicSMActor_Spawnable
 	abstract;
 
 /** Blocks that rely on this one for support. */
-var array<TowerBlock> DependantBlocks;
+var() array<TowerBlock> DependantBlocks;
 /** Blocks that this one relies on for support. */
-var array<TowerBlock> SupportBlocks;
+var() array<TowerBlock> SupportBlocks;
 
 /** Block's position on the grid. */
-var Vector GridLocation;
+var() editconst Vector GridLocation;
 var const editconst int XSize, YSize, ZSize;
 var bool bRootBlock;
 
 var MaterialInstanceConstant MaterialInstance;
-var const LinearColor Black;
+var const editconst LinearColor Black;
 var TowerPlayerReplicationInfo OwnerPRI;
 
 var NavMeshObstacle Obstacle;
@@ -49,6 +50,11 @@ simulated function Highlight()
 simulated function UnHighlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
+}
+
+simulated function SetColor()
+{
+
 }
 
 /** Called by support block when it no longer supports */
