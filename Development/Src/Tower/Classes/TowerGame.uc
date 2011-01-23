@@ -5,8 +5,6 @@ Base game mode of Tower, will probably be extending in the future.
 Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
-//@TODO: Making all the 'XBlock, YBlock, ZBlock' into a single vector would be beautiful.
-
 class TowerGame extends FrameworkGame;
 
 enum Factions
@@ -24,7 +22,7 @@ event PostBeginPlay()
 	Super.PostBeginPlay();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
-	StartNextRound();
+//	StartNextRound();
 }
 
 function PopulateSpawnPointArrays()
@@ -86,6 +84,11 @@ exec function LaunchMissile()
 
 }
 
+exec function StartGame()
+{
+	StartCoolDown();
+}
+
 exec function SkipRound()
 {
 	StartNextRound();
@@ -96,12 +99,19 @@ function AddFactionAIs()
 	FactionAIs.AddItem(Spawn(class'TowerFactionAIDebug'));
 }
 
+/** Very first part of a game, and happens between every round. */
+function StartCoolDown()
+{
+	`log("Starting 5 second cooldown round!");
+	SetCoolDownTimer(5);
+}
+
 function StartNextRound()
 {
 	local TowerFactionAI Faction;
 	local int BudgetPerFaction;
 	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
-	//SetGameTimer(120);
+	SetGameTimer(120);
 	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionAIs.Length;
 	foreach FactionAIs(Faction)
 	{
@@ -109,10 +119,31 @@ function StartNextRound()
 	}
 }
 
-function SetGameTimer(float NewTime)
+function SetCoolDownTimer(float NewTime)
 {
+	SetTimer(NewTime, false, 'CoolDownTimerExpired');
 	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = NewTime;
 	TowerGameReplicationInfo(WorldInfo.GRI).SetGameTimer();
+}
+
+event CoolDownTimerExpired()
+{
+	`log("Cool down over");
+	StartNextRound();
+}
+
+function SetGameTimer(float NewTime)
+{
+	`log("Started"@NewTime@"second round.");
+	SetTimer(NewTime, false, 'GameTimerExpired');
+	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = NewTime;
+	TowerGameReplicationInfo(WorldInfo.GRI).SetGameTimer();
+}
+
+event GameTimerExpired()
+{
+	`log("Round over.");
+	StartCoolDown();
 }
 
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
@@ -285,6 +316,12 @@ function RestartPlayer(Controller aPlayer)
 	// aPlayer default state is PlayerWaiting
 	// self default state is PendingMatch
 	TowerPlayerController(aPlayer).GotoState('Master');
+
+}
+
+function int GetRemainingTime()
+{
+	return (GetTimerRate('GameTimerExpired') - GetTimerCount('GameTimerExpired')+1);
 }
 
 DefaultProperties

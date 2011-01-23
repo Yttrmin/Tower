@@ -1,7 +1,7 @@
 class TowerGameReplicationInfo extends GameReplicationInfo;
 
 var byte Phase;
-var byte Round;
+var repnotify byte Round;
 
 var bool bRoundInProgress;
 
@@ -9,7 +9,6 @@ var int EnemyCount;
 var int MaxEnemyCount;
 
 var repnotify float ReplicatedTime;
-var float Time;
 
 replication
 {
@@ -20,14 +19,12 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	RequestUpdatedTime();
 }
 
 simulated event ReplicatedEvent(name VarName)
 {
 	if(VarName == 'Round')
 	{
-		`log("ROUND REPLICATED!!!!!~~~~~~~~~~~~~~~~~~~~~~");
 		UpdateRoundCount();
 	}
 	else if(VarName == 'ReplicatedTime')
@@ -51,27 +48,10 @@ simulated function TowerPlayerController GetPlayerController()
 	}
 }
 
-reliable server function RequestUpdatedTime()
-{
-	ReplicatedTime = Time;
-}
-
 /** Called whenever ReplicatedTime is replicated. */
 simulated event SetGameTimer()
 {
-	//@TODO - What if this is called more than once? Overwrites the timer?
-	SetTimer(ReplicatedTime, false, 'GameTimerExpired');
-	Time = ReplicatedTime;
-}
-
-simulated function float GetRemainingTime()
-{
-	return GetTimerRate('GameTimerExpired') - GetTimerCount('GameTimerExpired');
-}
-
-event GameTimerExpired()
-{
-
+	TowerHUD(GetPlayerController().myHUD).HUDMovie.SetRoundTime(ReplicatedTime);
 }
 
 /** Called by TowerGame when cool-down period ends. */

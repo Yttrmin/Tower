@@ -10,12 +10,6 @@ var TowerHUDMoviePlayer HUDMovie;
 var HUDMode Mode;
 var TowerBlock LastHighlightedBlock;
 
-event Tick(float DeltaTime)
-{
-	Super.Tick(DeltaTime);
-//	HUDMovie.SetTimeRemaining(TowerGameReplicationInfo(WorldInfo.GRI).GetRemainingTime());
-}
-
 event PreBeginPlay()
 {
 	super.PreBeginPlay();
