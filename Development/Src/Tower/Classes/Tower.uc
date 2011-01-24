@@ -16,15 +16,17 @@ replication
 		TowerName, OwnerPRI;
 }
 
-function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock, int YBlock, int ZBlock)
+function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock, int YBlock, 
+	int ZBlock, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
+	local Vector GridLocation;
+	GridLocation.X = XBlock;
+	GridLocation.Y = YBlock;
+	GridLocation.Z = ZBlock;
 	Block = Spawn(BlockClass, self,, SpawnLocation);
+	Block.Initialize(GridLocation, OwnerPRI, bRootBlock);
 //	Block.Tower = self;
-	Block.OwnerPRI = OwnerPRI;
-	Block.GridLocation.X = XBlock;
-	Block.GridLocation.Y = YBlock;
-	Block.GridLocation.Z = ZBlock;
 	Blocks.AddItem(Block);
 }
 

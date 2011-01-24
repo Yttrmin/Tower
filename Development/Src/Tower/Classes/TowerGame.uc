@@ -14,6 +14,7 @@ enum Factions
 	F_Player
 };
 
+var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
 var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -158,8 +159,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	TPRI.Tower.OwnerPRI = TPRI;
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
-	AddBlock(TPRI.Tower, class'TowerBlockDebug', 8*(NumPlayers-1), 0, 0);
-	TPRI.Tower.Blocks[0].bRootBlock = true;
+	AddBlock(TPRI.Tower, class'TowerBlockDebug', 8*(NumPlayers-1), 0, 0, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
@@ -171,7 +171,8 @@ function SetTowerName(Tower Tower, string NewTowerName)
 	Tower.TowerName = NewTowerName;
 }
 
-function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
+function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock,
+	optional bool bRootBlock = false)
 {
 	local vector SpawnLocation;
 	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
@@ -179,7 +180,7 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		Tower.AddBlock(BlockClass, SpawnLocation, XBlock, YBlock, ZBlock);
+		Tower.AddBlock(BlockClass, SpawnLocation, XBlock, YBlock, ZBlock, bRootBlock);
 		Broadcast(Tower, "Block added");
 	}
 	else

@@ -48,7 +48,8 @@ simulated function TowerPlayerController GetPlayerController()
 	}
 }
 
-/** Called whenever ReplicatedTime is replicated. */
+/** Called whenever ReplicatedTime is replicated for clients, when rounds/cool-downs start
+for servers. Updates the player's HUD to display the proper time. */
 simulated event SetGameTimer()
 {
 	TowerHUD(GetPlayerController().myHUD).HUDMovie.SetRoundTime(ReplicatedTime);

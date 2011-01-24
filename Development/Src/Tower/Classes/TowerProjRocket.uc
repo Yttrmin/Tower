@@ -1,1 +1,5 @@
-class TowerProjRocket extends TowerProjectile;
+/**
+TowerProjRocket
+*/
+class TowerProjRocket extends TowerProjectile
+	deprecated;
