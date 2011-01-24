@@ -7,6 +7,8 @@ class TowerFactionInfo extends ActorComponent;
 
 // This is all completely made-up pretty much and will be changed!
 
+var() const editconst array<class<TowerKProjectile> > KProjectiles;
+
 var() const editconst array<class<TowerEnemyPawn> > LightInfantry, MediumInfantry, HeavyInfantry;
 
 var() const editconst array<class<TowerProjectile> > LightMissile, MediumMissile, HeavyMissile;

@@ -6,23 +6,24 @@ Base class of all the blocks that make up a Tower.
 Keep in mind this class and its children will likely be opened up to modding!
 */
 class TowerBlock extends DynamicSMActor_Spawnable
+	placeable
 	abstract;
 
 /** Blocks that rely on this one for support. */
-var() array<TowerBlock> DependantBlocks;
+var() protected array<TowerBlock> DependantBlocks;
 /** Blocks that this one relies on for support. */
-var() array<TowerBlock> SupportBlocks;
+var() protected array<TowerBlock> SupportBlocks;
 
 /** Block's position on the grid. */
-var() editconst Vector GridLocation;
+var() protectedwrite editconst Vector GridLocation;
 var const editconst int XSize, YSize, ZSize;
-var bool bRootBlock;
+var protectedwrite bool bRootBlock;
 
-var MaterialInstanceConstant MaterialInstance;
+var protected MaterialInstanceConstant MaterialInstance;
 var const editconst LinearColor Black;
-var TowerPlayerReplicationInfo OwnerPRI;
+var protected TowerPlayerReplicationInfo OwnerPRI;
 
-var NavMeshObstacle Obstacle;
+var protected NavMeshObstacle Obstacle;
 
 replication
 {
@@ -41,18 +42,25 @@ simulated event PostBeginPlay()
 //	Obstacle.SetEnabled(TRUE);
 }
 
-simulated function Highlight()
+function Initialize(Vector NewGridLocation, TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
+{
+	GridLocation = NewGridLocation;
+	OwnerPRI = NewOwnerPRI;
+	bRootBlock = bNewRootBlock;
+}
+
+final simulated function Highlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', 
 		OwnerPRI.HighlightColor);
 }
 
-simulated function UnHighlight()
+final simulated function UnHighlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
 }
 
-simulated function SetColor()
+final simulated function SetColor()
 {
 
 }
@@ -90,11 +98,18 @@ function Drop()
 	SetLocation(NewLocation);
 }
 
+event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent,
+				const out CollisionImpactData RigidCollisionData, int ContactIndex )
+{
+	`log("BLOCK IN COLLISION!"@HitComponent@OtherComponent);
+}
+
 DefaultProperties
 {
-	bAlwaysRelevant = true;
+	bCollideWorld=false
+	bAlwaysRelevant = true
 	bCollideActors=true
-	bBlockActors=true
+	bBlockActors=TRUE
 	bRootBlock = false
 	XSize = 0
 	YSize = 0
@@ -106,11 +121,12 @@ DefaultProperties
 		// Characters and other important skeletal meshes should set bSynthesizeSHLight=true
 	End Object
 	 // 256x256x256 cube.
-	/**
 	Begin Object Name=StaticMeshComponent0
+		ScriptRigidBodyCollisionThreshold=0.01
+		BlockActors=true
+		RBChannel=RBCC_GameplayPhysics
+		RBCollideWithChannels=(Default=TRUE,BlockingVolume=TRUE,GameplayPhysics=TRUE,EffectPhysics=TRUE)
+		bNotifyRigidBodyCollision=TRUE
 		BlockRigidBody=true
-	    StaticMesh=StaticMesh'EngineMeshes.Cube'
-		Materials(0)=Material'TowerDebugBlocks.DebugBlockMaterial'
 	End Object
-	*/
 }

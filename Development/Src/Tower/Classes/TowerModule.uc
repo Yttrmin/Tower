@@ -1,1 +1,2 @@
-class TowerModule extends DynamicSMActor;
+class TowerModule extends DynamicSMActor
+	deprecated;
