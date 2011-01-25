@@ -5,7 +5,8 @@ Base game mode of Tower, will probably be extending in the future.
 Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
-class TowerGame extends FrameworkGame;
+class TowerGame extends FrameworkGame
+	config(Tower);
 
 enum Factions
 {
@@ -14,6 +15,10 @@ enum Factions
 	F_Player
 };
 
+/** Holds the PackageName.ClassName of TowerModInfos to load in the order given. */
+var globalconfig array<String> ModClasses;
+var protected array<TowerModInfo> Mods;
+
 var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
 var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
@@ -21,9 +26,28 @@ var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	CheckForMods();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
 //	StartNextRound();
+}
+
+function CheckForMods()
+{
+	//@TODO - Convert package name to class name and such.
+	local class<TowerModInfo> ModInfo;
+	local String TMIClass;
+	local TowerModInfo TMI;
+	`log("LOADING MODS");
+	foreach ModClasses(TMIClass)
+	{
+		`log("LOADING MOD:"@TMIClass);
+		ModInfo = class<TowerModInfo>(DynamicLoadObject(TMIClass,class'class',false));
+		`log("MOD CLASS:"@ModInfo);
+		TMI = Spawn(ModInfo);
+		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
+		Mods.AddItem(TMI);
+	}
 }
 
 function PopulateSpawnPointArrays()
@@ -92,7 +116,8 @@ exec function StartGame()
 
 exec function SkipRound()
 {
-	StartNextRound();
+	ClearTimer('GameTimerExpired');
+	GameTimerExpired(); 
 }
 
 function AddFactionAIs()
@@ -144,6 +169,7 @@ function SetGameTimer(float NewTime)
 event GameTimerExpired()
 {
 	`log("Round over.");
+	TowerGameReplicationInfo(WorldInfo.GRI).EndRound();
 	StartCoolDown();
 }
 

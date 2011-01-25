@@ -9,9 +9,6 @@ class TowerFactionAI extends Actor
 	dependson(TowerGame)
 	abstract;
 
-var Tower TargetTower;
-var TowerFactionInfo FactionInfo;
-
 /** Strategy the AI uses during the current round. */ 
 enum Strategies
 {
@@ -19,6 +16,13 @@ enum Strategies
 	S_None,
 	S_Spam_Projectile
 };
+
+var Tower TargetTower;
+var TowerFactionInfo FactionInfo;
+
+// These exist purely to cut down on the typecasting and function calling every tick.
+var protected TowerGame Game;
+var protected TowerGameReplicationInfo GRI;
 
 var() Strategies Strategy;
 
@@ -33,23 +37,29 @@ var() int TroopBudget;
 /** Whether or not the AI is willing to spawn troops in other faction's borders. */
 var() bool bInfringeBorders;
 
+/** Set to TRUE after spawning a troop, during which no more can be spanwed. */
+var() editconst protected bool bCoolDown;
+
 /** FALSE during cool-down between rounds, disallowing the AI from spawning troops. */
 var bool bCanFight;
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	Game = TowerGame(WorldInfo.Game);
+	GRI = TowerGameReplicationInfo(Game.GameReplicationInfo);
 }
 
 function GetNewTarget()
 {
 	//@TODO - 3rd player and on are not counted, make something better.
 	local Tower PlayerTower;
-	foreach TowerGame(WorldInfo.Game).PlayerTowers(PlayerTower)
+	foreach AllActors(class'Tower', PlayerTower)
 	{
 		if(PlayerTower != TargetTower)
 		{
 			TargetTower = PlayerTower;
+			`log("FOUND TARGETTOWER:"@TargetTower);
 			return;
 		}
 	}
@@ -73,13 +83,17 @@ event RoundStarted(const int AwardedBudget)
 event Tick(float DeltaTime)
 {
 	Super.Tick(DeltaTime);
-	Think();
+	if(GRI.bRoundInProgress)
+	{
+		Think();
+	}
 }
 
 event Think()
 {
 	if(TargetTower == None)
 	{
+		`log("GRAB NEW ONE");
 		GetNewTarget();
 	}
 }
@@ -97,7 +111,9 @@ event bool LaunchProjectile()
 		break;
 	}
 	Proj.Launch(TargetBlock.Location);
-	`log("SHOT PROJECTILE");
+	`log("SHOT PROJECTILE, COOL DOWN");
+	SetTimer(2, false, 'CooledDown');
+	bCoolDown = TRUE;
 	return true;
 }
 
@@ -105,6 +121,11 @@ event bool LaunchProjectile()
 event RoundEnded()
 {
 	bCanFight = False;
+}
+
+event CooledDown()
+{
+	bCoolDown = FALSE;
 }
 
 DefaultProperties

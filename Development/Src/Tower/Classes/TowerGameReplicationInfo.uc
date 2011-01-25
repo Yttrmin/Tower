@@ -3,7 +3,7 @@ class TowerGameReplicationInfo extends GameReplicationInfo;
 var byte Phase;
 var repnotify byte Round;
 
-var bool bRoundInProgress;
+var protectedwrite bool bRoundInProgress;
 
 var int EnemyCount;
 var int MaxEnemyCount;

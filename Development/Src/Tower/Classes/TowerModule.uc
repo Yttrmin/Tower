@@ -1,2 +1,2 @@
-class TowerModule extends DynamicSMActor
-	deprecated;
+class TowerModule extends ActorComponent
+	abstract;

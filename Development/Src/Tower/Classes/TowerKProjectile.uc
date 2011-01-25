@@ -10,7 +10,7 @@ function Launch(Vector Direction)
 {
 	local Vector LaunchVector;
 	LaunchVector = Vect(0,0,0)-Location;
-	LaunchVector.Z = 0.75;
+	LaunchVector.Z = 1;
 	Initialize();
 	ApplyImpulse(LaunchVector, 50000, Vect(0,0,0));
 }
@@ -19,13 +19,14 @@ function Launch(Vector Direction)
 event ImpactedBlock(TowerBlock Block, const out CollisionImpactData RigidCollisionData)
 {
 	`log("PROJECTILE IMPACTED BLOCK!"@Block);
+	Block.Destroy();
 	Destroy();
 }
 
 event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent,
 				const out CollisionImpactData RigidCollisionData, int ContactIndex )
 {
-	`log("PROJECTILE IN COLLISION!"@OtherComponent.Owner);
+//	`log("PROJECTILE IN COLLISION!"@OtherComponent.Owner);
 	if(TowerBlock(OtherComponent.Owner) != None)
 	{
 		ImpactedBlock(TowerBlock(OtherComponent.Owner), RigidCollisionData);
@@ -34,13 +35,14 @@ event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent Ot
 
 DefaultProperties
 {
+	LifeSpan=1500
 	bCollideActors=TRUE
 	bCollideWorld=false
 	bBlockActors=TRUE
 	BlockRigidBody=TRUE
 	bCollideComplex=false
 	Begin Object Name=StaticMeshComponent0
-		ScriptRigidBodyCollisionThreshold=500
+		ScriptRigidBodyCollisionThreshold=250
 		BlockRigidBody=true
 		BlockActors=true
 		bNotifyRigidBodyCollision=TRUE
