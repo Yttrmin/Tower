@@ -12,9 +12,16 @@ event PostBeginPlay()
 event Think()
 {
 	Super.Think();
-	if(!bTemp)
-		if(LaunchProjectile())
-			bTemp = True;
+	if(TroopBudget > 0 && !bCoolDown)
+	{
+		LaunchProjectile();
+	}
+}
+
+event CooledDown()
+{
+	Super.CooledDown();
+	`log("COOLED DOWN");
 }
 
 DefaultProperties
