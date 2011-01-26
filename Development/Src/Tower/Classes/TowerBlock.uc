@@ -9,10 +9,8 @@ class TowerBlock extends DynamicSMActor_Spawnable
 	placeable
 	abstract;
 
-/** Blocks that rely on this one for support. */
-var() protected array<TowerBlock> DependantBlocks;
-/** Blocks that this one relies on for support. */
-var() protected array<TowerBlock> SupportBlocks;
+var() editconst TowerBlock PreviousNode;
+var() editconst array<TowerBlock> NextNodes;
 
 /** Block's position on the grid. */
 var() protectedwrite editconst Vector GridLocation;
@@ -65,9 +63,16 @@ final simulated function SetColor()
 
 }
 
+/** Called when this Block loses its support and there are no other blocks available to support it. */
+event Orphaned()
+{
+
+}
+
 /** Called by support block when it no longer supports */
 event SupportRemoved(TowerBlock Support)
 {
+	/*
 	local TowerBlock Block;
 	SupportBlocks.RemoveItem(Support);
 	// If true, this block was our only support.
@@ -79,16 +84,21 @@ event SupportRemoved(TowerBlock Support)
 		}
 		Drop();
 	}
+	*/
 }
 
 event Destroyed()
 {
+	Super.Destroyed();
+	/*
 	local TowerBlock Block;
 	foreach DependantBlocks(Block)
 	{
 		Block.SupportRemoved(self);
 	}
+	*/
 }
+
 
 function Drop()
 {

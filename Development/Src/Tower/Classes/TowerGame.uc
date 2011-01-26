@@ -16,7 +16,11 @@ enum Factions
 };
 
 /** Holds the PackageName.ClassName of TowerModInfos to load in the order given. */
-var globalconfig array<String> ModClasses;
+var protected globalconfig array<String> ModClasses;
+/** If TRUE, ModLoaded() in TowerModInfo contains an array of mod names, if FALSE, it contains an
+empty array.*/
+var protected globalconfig bool bShareModNamesWithMods;
+var protected globalconfig bool bDebugMods;
 var protected array<TowerModInfo> Mods;
 
 var array<Tower> PlayerTowers;
@@ -185,7 +189,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	TPRI.Tower.OwnerPRI = TPRI;
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
-	AddBlock(TPRI.Tower, class'TowerBlockDebug', 8*(NumPlayers-1), 0, 0, true);
+	AddBlock(TPRI.Tower, class'TowerBlockDebug', None, 8*(NumPlayers-1), 0, 0, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
@@ -197,8 +201,10 @@ function SetTowerName(Tower Tower, string NewTowerName)
 	Tower.TowerName = NewTowerName;
 }
 
-function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock,
-	optional bool bRootBlock = false)
+/** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn
+it. */
+function AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlock ParentBlock, int XBlock, 
+	int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local vector SpawnLocation;
 	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
@@ -206,7 +212,7 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		Tower.AddBlock(BlockClass, SpawnLocation, XBlock, YBlock, ZBlock, bRootBlock);
+		Tower.AddBlock(BlockClass, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, bRootBlock);
 		Broadcast(Tower, "Block added");
 	}
 	else
@@ -216,8 +222,25 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, int XBlock, int YBl
 }
 
 /** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/
-function bool RemoveBlock(Tower CallingTower, int XBlock, int YBlock, int ZBlock)
+function bool RemoveBlock(Tower CallingTower, TowerBlock Block)
 {
+	//@TODO - Check some conditions before arbitrarily removing blocks!
+	if(Block != None)
+	{
+		if(!Block.bRootBlock)
+		{
+			return CallingTower.RemoveBlock(Block);
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+	/*
 	//@TODO - Now that tracing works fine, do traces instead.
 	//@DELETEME - All these broadcasts.
 	local TowerBlock Block;
@@ -251,6 +274,7 @@ function bool RemoveBlock(Tower CallingTower, int XBlock, int YBlock, int ZBlock
 			return false;
 		}
 	}
+	*/
 }
 
 function bool CanAddBlock(int XBlock, int YBlock, int ZBlock)
@@ -299,7 +323,7 @@ function bool IsGridLocationFree(int XBlock, int YBlock, int ZBlock)
 
 function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int BlockIndex)
 {
-	//@BUG - Blocks don't like to be traced.
+	/*
 	// Seriously need a helper function to make grid vectors, or at least make all XBlocks etc into vectors.
 	local Vector GridLocation;
 	local TowerBlock Block;
@@ -320,6 +344,7 @@ function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int
 			}
 		}
 	}
+	*/
 	return None;
 }
 

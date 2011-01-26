@@ -33,12 +33,11 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 	{
 	case HM_Add:
 		FinalGridLocation = Block.GridLocation + ClickNormal;
-		TowerPlayerController(PlayerOwner).AddBlock(Round(FinalGridLocation.X), 
+		TowerPlayerController(PlayerOwner).AddBlock(Block, Round(FinalGridLocation.X), 
 			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 		break;
 	case HM_Remove:
-		TowerPlayerController(PlayerOwner).RemoveBlock(Block.GridLocation.X, 
-			Block.GridLocation.Y, Block.GridLocation.Z);
+		TowerPlayerController(PlayerOwner).RemoveBlock(Block);
 		break;
 	}
 }

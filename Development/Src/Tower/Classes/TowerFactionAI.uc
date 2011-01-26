@@ -100,6 +100,7 @@ event Think()
 
 event bool LaunchProjectile()
 {
+	/**
 	local TowerSpawnPoint SpawnPoint;
 	local TowerKProjRock Proj;
 	local TowerBlock Block, TargetBlock;
@@ -110,10 +111,12 @@ event bool LaunchProjectile()
 		TargetBlock = Block;
 		break;
 	}
+
 	Proj.Launch(TargetBlock.Location);
 	`log("SHOT PROJECTILE, COOL DOWN");
 	SetTimer(2, false, 'CooledDown');
 	bCoolDown = TRUE;
+	*/
 	return true;
 }
 

@@ -5,10 +5,10 @@ Represents a player's tower, which a player can only have one of. Tower's are es
 */
 class Tower extends Actor;
 
-// Unordered array of TowerBlocks.
-var array<TowerBlock> Blocks;
-var string TowerName;
-var TowerPlayerReplicationInfo OwnerPRI;
+var protectedwrite TowerTree NodeTree;
+
+var() string TowerName;
+var() TowerPlayerReplicationInfo OwnerPRI;
 
 replication
 {
@@ -16,8 +16,14 @@ replication
 		TowerName, OwnerPRI;
 }
 
-function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock, int YBlock, 
-	int ZBlock, optional bool bRootBlock = false)
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	NodeTree = new class'TowerTree';
+}
+
+function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector SpawnLocation, 
+	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
 	local Vector GridLocation;
@@ -26,15 +32,27 @@ function AddBlock(class<TowerBlock> BlockClass, Vector SpawnLocation, int XBlock
 	GridLocation.Z = ZBlock;
 	Block = Spawn(BlockClass, self,, SpawnLocation);
 	Block.Initialize(GridLocation, OwnerPRI, bRootBlock);
+	NodeTree.AddNode(Block, ParentBlock);
+	/**
 //	Block.Tower = self;
 	Blocks.AddItem(Block);
+	*/
 }
 
-function bool RemoveBlock(int BlockIndex)
+function bool RemoveBlock(TowerBlock Block)
 {
-	Blocks[BlockIndex].Destroy();
-	Blocks.Remove(BlockIndex, 1);
+	NodeTree.RemoveNode(Block);
 	return true;
+}
+
+function bool CheckForParent(TowerBlock Block)
+{
+	if(Block.PreviousNode != None)
+	{
+		// You already have a parent.
+		return true;
+	}
+	return NodeTree.FindNewParent(Block);
 }
 
 function CheckBlockSupport()
