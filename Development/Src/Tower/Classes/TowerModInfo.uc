@@ -6,20 +6,25 @@ making it easily accessible to the main game. The only required class for a mod.
 */
 class TowerModInfo extends Info
 	abstract;
-
+ 
 var const string AuthorName;
 var const string Contact;
 var const string Description;
 var const string Version;
 
-/** Add your custom TowerBlocks to this array in DefaultProperties */
-var const array<class<TowerBlock> > ModBlocks;
+/** Add your custom TowerBlocks to this array in DefaultProperties. */
+var protected const array<class<TowerBlock> > ModBlocks;
+
+var protected const array<class<TowerModule> > ModModules;
+
+/** Called by TowerGame after all mods are loaded. */
+event ModLoaded(const out array<String> ModList);
 
 DefaultProperties
 {
-	AuthorName="James Baltos"
-	Contact="james.baltos@towerthegame.com"
-	Description="A class that serves to describe a mod and provide an easy access point for the content it adds."
+	AuthorName="My Name"
+	Contact="My Email"
+	Description="My Description"
 	Version="1.0"
 	// Example of adding your own block. MyTowerBlock must derive from TowerBlock.
 //	ModBlocks.Add(class'MyTowerBlock')

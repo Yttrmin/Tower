@@ -8,6 +8,10 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 }
 
+exec function LeftClick();
+
+exec function RightClick();
+
 exec function SetHighlightColor(LinearColor NewColor)
 {
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
@@ -19,14 +23,14 @@ exec function ToggleHUDFocus()
 	
 }
 
-exec function AddBlock(int XBlock, int YBlock, int ZBlock)
+exec function AddBlock(TowerBlock ParentBlock, int XBlock, int YBlock, int ZBlock)
 {
-	ServerAddBlock(class'TowerBlockDebug', XBlock, YBlock, ZBlock);
+	ServerAddBlock(class'TowerBlockDebug', ParentBlock, XBlock, YBlock, ZBlock);
 }
 
-exec function RemoveBlock(int XBlock, int YBlock, int ZBlock)
+exec function RemoveBlock(TowerBlock Block)
 {
-	ServerRemoveBlock(XBlock, YBlock, ZBlock);
+	ServerRemoveBlock(Block);
 }
 
 exec function RemoveAllBlocks()
@@ -62,24 +66,21 @@ exec function RequestUpdateTime()
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
 }
 
-reliable server function ServerAddBlock(class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
+reliable server function ServerAddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock,
+	int XBlock, int YBlock, int ZBlock)
 {
-	ScriptTrace();
-	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, XBlock, YBlock, ZBlock);
+	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, ParentBlock, XBlock, YBlock, ZBlock);
 }
 
-reliable server function ServerRemoveBlock(int XBlock, int YBlock, int ZBlock)
+reliable server function ServerRemoveBlock(TowerBlock Block)
 {
-	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), XBlock, YBlock, ZBlock);
+	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
 }
 
 reliable server function ServerRemoveAllBlocks()
 {
-	local TowerBlock Block;
-	foreach GetTower().Blocks(Block)
-	{
-		Block.Destroy();
-	}
+	//@TODO - Make work.
+	GetTower().NodeTree.RemoveNode(GetTower().NodeTree.GetRootNode());
 }
 
 reliable server function ServerSetTowerName(string NewName)
