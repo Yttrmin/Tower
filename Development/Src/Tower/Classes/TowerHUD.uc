@@ -12,7 +12,7 @@ var TowerBlock LastHighlightedBlock;
 
 event PreBeginPlay()
 {
-	super.PreBeginPlay();
+	Super.PreBeginPlay();
 	HUDMovie = new class'TowerHUDMoviePlayer';
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
@@ -23,6 +23,22 @@ event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
+}
+
+event OnMouseClick(int Button)
+{
+	local Vector2D Mouse;
+	local TowerBlock Block;
+	local Vector HitNormal;
+	if(Button == 0)
+	{
+		HUDMovie.GetMouseCoordinates(Mouse, true);
+		TraceForBlock(Mouse, Block, HitNormal);
+		if(Block != None)
+		{
+			BlockClicked(Block, HitNormal);
+		}
+	}
 }
 
 /** Called by Flash side of HUD. ClickNormal can be used to determine which side of a block was clicked. */
@@ -55,10 +71,14 @@ event UnFocus()
 /** Only time where Canvas is valid. */
 event PostRender()
 {
+	local Vector HitNormal;
+	local Vector2D Mouse;
 	local TowerBlock Block;
 	Super.PostRender();
-	TraceForBlock(HudMovie.GetVariableNumber("_root.MouseCursor._x"),
-		HudMovie.GetVariableNumber("_root.MouseCursor._y"), Block);
+	HUDMovie.GetMouseCoordinates(Mouse, false);
+	TraceForBlock(Mouse, Block, HitNormal);
+	TowerPlayerController(PlayerOwner).GetTower().NodeTree.
+		DrawDebugRelationship(Canvas, TowerPlayerController(PlayerOwner).GetTower().NodeTree.Root);
 	if(LastHighlightedBlock != Block && LastHighlightedBlock != None)
 	{
 		LastHighlightedBlock.UnHighlight();
@@ -70,18 +90,22 @@ event PostRender()
 	}
 }
 
-/** Only call this from inside PostRender, or else Canvas won't be valid. */
-function TraceForBlock(float X, float Y, out TowerBlock Block)
+function TraceForBlock(out Vector2D Mouse, out TowerBlock Block, out Vector HitNormal)
 {
-	local Vector2D Mouse;
 	local Vector WorldOrigin, WorldDir;
-	local Vector HitLocation, HitNormal;
-	X *= RatioX;
-	Y *= RatioY;
-	Mouse.X = X;
-	Mouse.Y = Y;
-	Canvas.DeProject(Mouse, WorldOrigin, WorldDir);
-	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000, (WorldOrigin+WorldDir), TRUE));
+	local Vector HitLocation;
+	if(Canvas != None)
+	{
+//		HUDMovie.GetMouseCoordinates(Mouse, false);
+		Canvas.DeProject(Mouse, WorldOrigin, WorldDir);
+	}
+	else
+	{
+//		HUDMovie.GetMouseCoordinates(Mouse, true);
+		LocalPlayer(PlayerOwner.Player).DeProject(Mouse, WorldOrigin, WorldDir);
+	}
+	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
+		(WorldOrigin+WorldDir), TRUE));
 }
 
 DefaultProperties

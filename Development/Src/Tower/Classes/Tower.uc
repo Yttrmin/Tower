@@ -7,6 +7,10 @@ class Tower extends Actor;
 
 var protectedwrite TowerTree NodeTree;
 
+/** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
+non-debug in-game things ever!*/
+var() private array<TowerBlock> DebugBlocks;
+
 var() string TowerName;
 var() TowerPlayerReplicationInfo OwnerPRI;
 
@@ -33,6 +37,10 @@ function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector S
 	Block = Spawn(BlockClass, self,, SpawnLocation);
 	Block.Initialize(GridLocation, OwnerPRI, bRootBlock);
 	NodeTree.AddNode(Block, ParentBlock);
+	//@DEBUG
+	DebugBlocks.AddItem(Block);
+	DrawDebugString(Vect(-128,-128,0), Block.Name, Block);
+	//@DEBUG
 	/**
 //	Block.Tower = self;
 	Blocks.AddItem(Block);
@@ -41,7 +49,16 @@ function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector S
 
 function bool RemoveBlock(TowerBlock Block)
 {
+	local TowerBlock IterateBlock;
+	DebugBlocks.RemoveItem(Block);
 	NodeTree.RemoveNode(Block);
+	//@DEBUG
+	FlushDebugStrings();
+	foreach DebugBlocks(IterateBlock)
+	{
+		DrawDebugString(Vect(-128,-128,0), IterateBlock.Name, IterateBlock);
+	}
+	//@DEBUG
 	return true;
 }
 

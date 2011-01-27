@@ -2,23 +2,23 @@
 * TowerHUDMoviePlayer
 *
 * The UnrealScript side of the Flash HUD SWF.
-* This will not work in the iOS build for obvious reasons!
+* This will work in the iOS build starting with the March UDK version.
 */
 class TowerHUDMoviePlayer extends GFxMoviePlayer;
 
 var TowerHUD HUD;
 
-/** Called by ActionScript along with the X and Y coordinates of the mouse.
-Keep in mind this is the coordinates in the Flash movie, it won't match the game immediately unless it's at the same resolution!
-Really need to check out his this acts at different resolutions and aspect ratios! */
-event OnMouseClick(float X, float Y)
+/** Takes Vector2D and fills it with current mouse coordinates.
+If bRelativeToViewport is TRUE, the Mouse values are between 0 and 1. If FALSE, the Mouse values
+are the coordinates in pixels. */
+function GetMouseCoordinates(out Vector2D Mouse, bool bRelativeToViewport)
 {
-	local TowerBlock Block;
-	local Vector HitNormal;
-	TraceForBlock(X, Y, Block, HitNormal);
-	if(Block != None)
+	Mouse.X = GetVariableNumber("_root.MouseCursor._x") * HUD.RatioX;
+	Mouse.Y = GetVariableNumber("_root.MouseCursor._y") * HUD.RatioY;
+	if(bRelativeToViewport)
 	{
-		HUD.BlockClicked(Block, HitNormal);
+		Mouse.X /= HUD.SizeX;
+		Mouse.Y /= HUD.SizeY;
 	}
 }
 
@@ -49,21 +49,6 @@ function SetRoundNumber(coerce String Round)
 function SetRoundTime(float NewTime)
 {
 	ActionScriptVoid("SetRoundTime");
-}
-
-function TraceForBlock(out float X, out float Y, out TowerBlock Block, out Vector HitNormal)
-{
-	local Vector2D Mouse;
-	local Vector WorldOrigin, WorldDir;
-	local Vector HitLocation;
-	X *= HUD.RatioX;
-	Y *= HUD.RatioY;
-	Mouse.X = X/HUD.SizeX;
-	Mouse.Y = Y/HUD.SizeY;
-	// DeProjection is done through LocalPlayer, else we'd have to wait for PostRender and then it just gets
-	// messy to do it. This is allegedly slower than Canvas' deprojection, but hopefully not by much!
-	LocalPlayer(HUD.PlayerOwner.Player).DeProject(Mouse, WorldOrigin, WorldDir);
-	Block = TowerBlock(HUD.Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000, (WorldOrigin+WorldDir), TRUE));
 }
 
 DefaultProperties
