@@ -8,19 +8,19 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 }
 
-exec function LeftClick();
+exec function LeftClickDown()
+{
+	TowerHUD(myHUD).OnMouseClick(0);
+}
 
-exec function RightClick();
+exec function RightClickDown()
+{
+	`log("RIGHT CLICK DOWN");
+}
 
 exec function SetHighlightColor(LinearColor NewColor)
 {
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
-}
-
-/** Called on button press, toggles between locked movement with full HUD interaction, and full movement but no interaction. */
-exec function ToggleHUDFocus()
-{
-	
 }
 
 exec function AddBlock(TowerBlock ParentBlock, int XBlock, int YBlock, int ZBlock)
