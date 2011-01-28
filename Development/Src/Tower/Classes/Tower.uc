@@ -38,8 +38,11 @@ function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector S
 	Block.Initialize(GridLocation, OwnerPRI, bRootBlock);
 	NodeTree.AddNode(Block, ParentBlock);
 	//@DEBUG
-	DebugBlocks.AddItem(Block);
-	DrawDebugString(Vect(-128,-128,0), Block.Name, Block);
+	if(OwnerPRI.Tower.NodeTree.bDebugDrawHierarchy)
+	{
+		DebugBlocks.AddItem(Block);
+		DrawDebugString(Vect(-128,-128,0), Block.Name, Block);
+	}
 	//@DEBUG
 	/**
 //	Block.Tower = self;
