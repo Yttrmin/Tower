@@ -9,8 +9,17 @@ class TowerBlock extends DynamicSMActor_Spawnable
 	placeable
 	abstract;
 
+// Modders: Don't modify either of these variables. Messing up the hierarchy has a tendency to lead
+// to infinite loops or infinite recursion.
+/** Reference to this block/node's parent. In the root and orphans this is None. */
 var() editconst TowerBlock PreviousNode;
+/** Holds references to all of this block/node's children.  */
 var() editconst array<TowerBlock> NextNodes;
+
+//@TODO - Figure out how acceleration is calculated.
+var const float ZAcceleration;
+var Vector StartFallLocation;
+var int BlocksFallen, BlocksFalling;
 
 /** Block's position on the grid. */
 var() protectedwrite editconst Vector GridLocation;
@@ -28,6 +37,59 @@ replication
 	if(bNetInitial)
 		GridLocation, OwnerPRI;
 }
+
+auto state Stable
+{
+	function StopFall()
+	{
+		local Vector NewLocation;
+		NewLocation = StartFallLocation;
+		NewLocation.Z = StartFallLocation.Z - (256*BlocksFallen);
+//		`log("Old Z:"@StartFallLocation.Z@"New Z:"@NewLocation.Z@"Blocks Fallen:"@BlocksFallen);
+		SetPhysics(PHYS_None);
+		SetLocation(NewLocation);
+		SetCollision(true, true, true);
+		BlocksFallen = 0;
+		BlocksFalling = 0;
+		ClearTimer('DroppedSpace');
+	}
+
+	event BeginState(name PreviousStateName)
+	{
+		if(PreviousStateName == 'Unstable')
+		{
+			StopFall();
+		}
+	}
+}
+
+state Unstable
+{
+	/** Called after block should have dropped 256 units.  */
+	event DroppedSpace()
+	{
+		BlocksFallen++;
+		BlocksFalling++;
+		if(!OwnerPRI.Tower.NodeTree.FindNewParent(Self))
+		{
+			SetTimer(TimeToDrop(), false, 'DroppedSpace');
+		}
+	}
+	event BeginState(name PreviousStateName)
+	{
+//		`log("Beginning Unstable state.");
+		BlocksFalling = 1;
+		BlocksFallen = 0;
+		StartFallLocation = Location;
+		SetPhysics(PHYS_Falling);
+		SetCollision(true, false, true);
+		SetTimer(TimeToDrop(), false, 'DroppedSpace');
+	}
+	function bool CanDrop()
+	{
+		return true;
+	}
+};
 
 simulated event PostBeginPlay()
 {
@@ -63,49 +125,45 @@ final simulated function SetColor()
 
 }
 
+function float TimeToDrop()
+{
+	local float Time;
+	//ScriptTrace();
+	Time = sqrt(((512/(BlocksFalling+BlocksFallen))/ZAcceleration)/BlocksFalling);
+	`log("TimeToDrop:"@Time);
+	return Time;
+}
+
+//@TODO - Convert from recursion to iteration!
 /** Called when this Block loses its support and there are no other blocks available to support it. */
 event Orphaned()
 {
-
-}
-
-/** Called by support block when it no longer supports */
-event SupportRemoved(TowerBlock Support)
-{
-	/*
-	local TowerBlock Block;
-	SupportBlocks.RemoveItem(Support);
-	// If true, this block was our only support.
-	if(SupportBlocks.Length <= 0)
+	local TowerBlock Node;
+	GotoState('Unstable');
+	foreach NextNodes(Node)
 	{
-		foreach DependantBlocks(Block)
-		{
-			Block.SupportRemoved(self);
-		}
-		Drop();
+		Node.Orphaned();
 	}
-	*/
 }
 
-event Destroyed()
+//@TODO - Convert from recursion to iteration!
+event Adopted(optional int FallCount = -1)
 {
-	Super.Destroyed();
-	/*
-	local TowerBlock Block;
-	foreach DependantBlocks(Block)
+	local TowerBlock Node;
+	if(FallCount == -1)
 	{
-		Block.SupportRemoved(self);
+//		`log("I'm an orphan parent, tell my children to fall:"@BlocksFallen@"blocks.");
+		FallCount = BlocksFallen;
 	}
-	*/
-}
-
-
-function Drop()
-{
-	local Vector NewLocation;
-	NewLocation = Location;
-	NewLocation.Z -= 256;
-	SetLocation(NewLocation);
+//	`log("Fallcount:"@FallCount);
+	BlocksFallen = FallCount;
+	// State change is immediate since we're in a state, make sure this is after
+	// BlocksFallen's assignment.
+	GotoState('Stable');
+	foreach NextNodes(Node)
+	{
+		Node.Adopted(FallCount);
+	}
 }
 
 event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent,
@@ -116,6 +174,8 @@ event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent Ot
 
 DefaultProperties
 {
+	ZAcceleration=1039.829009434
+//	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
 	bCollideWorld=false
 	bAlwaysRelevant = true
 	bCollideActors=true

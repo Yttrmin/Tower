@@ -73,12 +73,20 @@ event PostRender()
 {
 	local Vector HitNormal;
 	local Vector2D Mouse;
-	local TowerBlock Block;
+	local TowerBlock Block, IterateBlock;
 	Super.PostRender();
 	HUDMovie.GetMouseCoordinates(Mouse, false);
 	TraceForBlock(Mouse, Block, HitNormal);
-	TowerPlayerController(PlayerOwner).GetTower().NodeTree.
+	if(TowerPlayerController(PlayerOwner).GetTower().NodeTree.bDebugDrawHierarchy)
+	{
+		TowerPlayerController(PlayerOwner).GetTower().NodeTree.
 		DrawDebugRelationship(Canvas, TowerPlayerController(PlayerOwner).GetTower().NodeTree.Root);
+		foreach TowerPlayerController(PlayerOwner).GetTower().NodeTree.OrphanNodeRoots(IterateBlock)
+		{
+			TowerPlayerController(PlayerOwner).GetTower().NodeTree.
+			DrawDebugRelationship(Canvas, IterateBlock);
+		}
+	}
 	if(LastHighlightedBlock != Block && LastHighlightedBlock != None)
 	{
 		LastHighlightedBlock.UnHighlight();

@@ -1,22 +1,51 @@
 class TowerTree extends Object
+	config(Tower)
 	dependson(TowerBlock);
 
-var protectedwrite TowerBlock Root;
-var private array<TowerBlock> OrphanNodeRoots;
+//@TODO - CONVERT ALLLLLL OF THIS RECURSION TO ITERATION!
 
+var protectedwrite TowerBlock Root;
+var array<TowerBlock> OrphanNodeRoots;
+
+var config const bool bDebugDrawHierarchy;
+var config const bool bDebugLogHierarchy;
+
+/** Adds a node into the tree. The only time it's valid to have a None ParentNode is if there's no 
+root node, in which case NewNode will become it. Returns TRUE if successfully added. */
+final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
+{
+	if(ParentNode == None)
+	{
+		if(Root == None)
+		{
+			Root = NewNode;
+			return true;
+		}
+		else
+		{
+			`Log("Tried to add a new node with no parent when there's already a root node!"@NewNode@"at grid location:"@NewNode.GridLocation);
+			return false;
+		}
+	}
+	ParentNode.NextNodes.AddItem(NewNode);
+	NewNode.PreviousNode = ParentNode;
+	return true;
+}
+
+/** Removes a node from the tree. if bDeleteChildren is TRUE, all of NodeToRemove's children
+will recursively get RemoveNode() called on them. */
+//@TODO - Make this return a bool for success/failure?
 final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren)
 {
-	// Try to find parent for children, if not, they fall onto another one.
 	local TowerBlock Node;
-	local array<TowerBlock> RemovedNodeChildren;
-	RemovedNodeChildren = NodeToRemove.NextNodes;
 	`log("Removing node:"@NodeToRemove$"...");
+	// NodeToRemove will be gone shortly, so let's delete our parent's reference to us.
 	NodeToRemove.PreviousNode.NextNodes.RemoveItem(NodeToRemove);
 	// If we don't destroy the node before finding parents for its children, they'll end up tracing
 	// into their to-be-destroyed parent, adding themselves back to their parent, getting told to
 	// find a new parent, and so forth, an infinite loop.
 	NodeToRemove.Destroy();
-	foreach RemovedNodeChildren(Node)
+	foreach NodeToRemove.NextNodes(Node)
 	{
 		Node.PreviousNode = None;
 		`log("Getting children new parents...");
@@ -27,14 +56,16 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 		else
 		{
 			`log("Finding new parent for"@Node$"...");
-			// This should iterate through the children's children as well perhaps? Is it possible
-			// for a child further down the chain to potentially have an available parent?
+			// Find a parent for each of our children and all their children down the tree.
 			FindNewParent(Node, true);
 		}
 	}
 	`log("Done. Destroying node:"@NodeToRemove);
 	`log("Logging hierarchy...");
-	DebugLogHierarchy(Root);
+	if(bDebugLogHierarchy)
+	{
+		DebugLogHierarchy(Root);
+	}
 }
 
 /** Called from TowerHUD, recursively draws lines and points, illustrating the hierarchy.
@@ -49,14 +80,14 @@ final function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentNode)
 		return;
 	}
 //	`log("I am"@CurrentNode@"and I'm drawing the lines and squares to my children");
-//	DrawDebugSquare(Canvas, CurrentNode.Location, MakeColor(0,0,255));
+//	DrawDebugPoint(Canvas, CurrentNode.Location, MakeColor(0,0,255));
 	foreach CurrentNode.NextNodes(Node)
 	{
 //		`log("Drawing relationship between"@CurrentNode@"and"@Node$"...");
 		BeginPoint = Canvas.Project(CurrentNode.Location);
 		EndPoint = Canvas.Project(Node.Location);
 		Canvas.Draw2DLine(BeginPoint.X, BeginPoint.Y, EndPoint.X, EndPoint.Y, MakeColor(255, 0, 0));
-		DrawDebugSquare(Canvas, Node.Location, MakeColor(255,0,0));
+		DrawDebugPoint(Canvas, Node.Location, MakeColor(255,0,0));
 		if(Node.NextNodes.Length > 0)
 		{
 		//	`log("Telling my children to draw their relationship too...");
@@ -67,7 +98,7 @@ final function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentNode)
 }
 
 /** Helper function for DrawDebugRelationship. Very slow and only for debugging!*/
-final function DrawDebugSquare(Canvas Canvas, Vector Center, Color DrawColor)
+final function DrawDebugPoint(Canvas Canvas, Vector Center, Color DrawColor)
 {
 	local Vector BeginPoint;
 	BeginPoint = Canvas.Project(Center);
@@ -91,26 +122,6 @@ final function DebugLogHierarchy(TowerBlock StartingNode)
 	{
 		DebugLogHierarchy(Node);
 	}
-}
-
-final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
-{
-	if(ParentNode == None)
-	{
-		if(Root == None)
-		{
-			Root = NewNode;
-			return true;
-		}
-		else
-		{
-			`Log("Tried to add a new node with no parent when there's already a root node!"@NewNode@"at grid location:"@NewNode.GridLocation);
-			return false;
-		}
-	}
-	ParentNode.NextNodes.AddItem(NewNode);
-	NewNode.PreviousNode = ParentNode;
-	return true;
 }
 
 final function ReParentNode(TowerBlock Node, TowerBlock NewParentNode, bool bParentChainToChildren)
@@ -161,8 +172,6 @@ final function TowerBlock GetRootNode()
 	return Root;
 }
 
-//HasSupport
-
 /** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
 have all this nodes' children (and their children and so forth) perform a FindNewParent as well.
 PreviousNodes is used internally by the function, do not pass a variable in! */
@@ -186,6 +195,7 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 		{
 			`log("Found path to root, parenting with node.");
 			ReParentNode(Node, Block, true);
+			Node.Adopted();
 			return true;
 		}
 		else
@@ -202,6 +212,8 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 		}
 	}
 	`log("No parents available,"@Node@"is an orphan. Handle this.");
+	OrphanNodeRoots.AddItem(Node);
+	Node.Orphaned();
 	return false;
 }
 
@@ -211,14 +223,14 @@ we can immediately say its not a path to root if its someone's parent down the l
 final function bool TraceNodeToRoot(TowerBlock Node, out TowerBlock OrphanParent)
 {
 	`log("Tracing to root. I'm"@Node$", my parent is"@Node.PreviousNode);
-	if(Node.PreviousNode == OrphanParent)
+	if(Node.PreviousNode.bRootBlock || Node.bRootBlock)
+	{
+		return true;
+	}
+	else if(Node.PreviousNode == OrphanParent)
 	{
 		`log("I know my parent is an orphan, no path to root.");
 		return false;
-	}
-	else if(Node.PreviousNode.bRootBlock || Node.bRootBlock)
-	{
-		return true;
 	}
 	// Not root and has no parent, won't get us to root.
 	else if(Node.PreviousNode == None)

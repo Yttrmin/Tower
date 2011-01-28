@@ -8,14 +8,16 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 }
 
-exec function LeftClickDown()
+exec function ClickDown(int ButtonID)
 {
-	TowerHUD(myHUD).OnMouseClick(0);
+	`log("ClickDown:"@ButtonID);
+	TowerHUD(myHUD).OnMouseClick(ButtonID);
 }
 
-exec function RightClickDown()
+/** Called when mouse button is released. */
+exec function ClickUp(int ButtonID)
 {
-	`log("RIGHT CLICK DOWN");
+
 }
 
 exec function SetHighlightColor(LinearColor NewColor)
@@ -64,6 +66,19 @@ exec function RequestUpdateTime()
 {
 	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
+}
+
+/** Creates a tower to remove the base blocks of and stress test recursion and iteration. */
+exec function DebugCreateStressTower()
+{
+	local int i;
+	local TowerBlock Parent;
+	// Create the column first.
+	AddBlock(GetTower().NodeTree.Root, 0, 0, 1);
+	for(i = 2; i < 10; i++)
+	{
+		AddBlock(GetTower().NodeTree.Root.NextNodes[0], 0, 0, i);
+	}
 }
 
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock,
