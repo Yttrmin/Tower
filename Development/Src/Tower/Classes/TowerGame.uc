@@ -203,8 +203,8 @@ function SetTowerName(Tower Tower, string NewTowerName)
 
 /** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn
 it. */
-function AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlock ParentBlock, int XBlock, 
-	int YBlock, int ZBlock, optional bool bRootBlock = false)
+function TowerBlock AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlock ParentBlock, 
+	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local vector SpawnLocation;
 	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
@@ -212,13 +212,15 @@ function AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlock ParentBl
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		Tower.AddBlock(BlockClass, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, bRootBlock);
+		return Tower.AddBlock(BlockClass, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, 
+			bRootBlock);
 		Broadcast(Tower, "Block added");
 	}
 	else
 	{
 		Broadcast(Tower, "Could not add block");
 	}
+	return None;
 }
 
 /** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/

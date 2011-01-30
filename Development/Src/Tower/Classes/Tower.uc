@@ -26,8 +26,8 @@ event PostBeginPlay()
 	NodeTree = new class'TowerTree';
 }
 
-function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector SpawnLocation, 
-	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
+function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, 
+	Vector SpawnLocation, int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
 	local Vector GridLocation;
@@ -43,6 +43,7 @@ function AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, Vector S
 		DebugBlocks.AddItem(Block);
 		DrawDebugString(Vect(-128,-128,0), Block.Name, Block);
 	}
+	return Block;
 	//@DEBUG
 	/**
 //	Block.Tower = self;

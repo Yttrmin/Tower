@@ -6,6 +6,7 @@ var TowerSaveSystem SaveSystem;
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	SaveSystem = new class'TowerSaveSystem';
 }
 
 exec function ClickDown(int ButtonID)
@@ -47,6 +48,8 @@ exec function SetTowerName(string NewName)
 
 exec function SaveGame(string FileName, bool bTowerOnly)
 {
+	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
+	// stuff publically.
 	if(FileName == "")
 	{
 		return;
@@ -56,29 +59,19 @@ exec function SaveGame(string FileName, bool bTowerOnly)
 
 exec function LoadGame(string FileName, bool bTowerOnly)
 {
+	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
+	// stuff publically.
 	if(FileName == "")
 	{
 		return;
 	}
+	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
 exec function RequestUpdateTime()
 {
 	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
-}
-
-/** Creates a tower to remove the base blocks of and stress test recursion and iteration. */
-exec function DebugCreateStressTower()
-{
-	local int i;
-	local TowerBlock Parent;
-	// Create the column first.
-	AddBlock(GetTower().NodeTree.Root, 0, 0, 1);
-	for(i = 2; i < 10; i++)
-	{
-		AddBlock(GetTower().NodeTree.Root.NextNodes[0], 0, 0, i);
-	}
 }
 
 reliable server function ServerAddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock,

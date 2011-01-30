@@ -12,7 +12,7 @@ function Launch(Vector Direction)
 	LaunchVector = Vect(0,0,0)-Location;
 	LaunchVector.Z = 1;
 	Initialize();
-	ApplyImpulse(LaunchVector, 50000, Vect(0,0,0));
+	ApplyImpulse(LaunchVector, 1000, Vect(0,0,0));
 }
 
 /** Called from RigidBodyCollision() on impact with a TowerBlock. */

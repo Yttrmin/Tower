@@ -10,6 +10,8 @@ var array<TowerBlock> OrphanNodeRoots;
 var config const bool bDebugDrawHierarchy;
 var config const bool bDebugLogHierarchy;
 
+var int NodeCount;
+
 /** Adds a node into the tree. The only time it's valid to have a None ParentNode is if there's no 
 root node, in which case NewNode will become it. Returns TRUE if successfully added. */
 final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
@@ -19,6 +21,7 @@ final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
 		if(Root == None)
 		{
 			Root = NewNode;
+			NodeCount++;
 			return true;
 		}
 		else
@@ -27,6 +30,7 @@ final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
 			return false;
 		}
 	}
+	NodeCount++;
 	ParentNode.NextNodes.AddItem(NewNode);
 	NewNode.PreviousNode = ParentNode;
 	return true;
@@ -45,6 +49,7 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 	// into their to-be-destroyed parent, adding themselves back to their parent, getting told to
 	// find a new parent, and so forth, an infinite loop.
 	NodeToRemove.Destroy();
+	NodeCount--;
 	foreach NodeToRemove.NextNodes(Node)
 	{
 		Node.PreviousNode = None;
@@ -66,6 +71,11 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 	{
 		DebugLogHierarchy(Root);
 	}
+}
+
+final function TowerBlock GetRandomNode()
+{
+	return Root;
 }
 
 /** Called from TowerHUD, recursively draws lines and points, illustrating the hierarchy.
@@ -219,7 +229,8 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 
 /** Recursive function that returns TRUE if there is a path to the root through parents, otherwise FALSE. 
 OrphanParent is the node telling this node to trace for root. Since we know OrphanParent is an
-we can immediately say its not a path to root if its someone's parent down the line.. */
+we can immediately say its not a path to root if its someone's parent down the line. */
+// This is surprisingly the most expensive function here!
 final function bool TraceNodeToRoot(TowerBlock Node, out TowerBlock OrphanParent)
 {
 	`log("Tracing to root. I'm"@Node$", my parent is"@Node.PreviousNode);

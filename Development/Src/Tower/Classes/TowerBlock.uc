@@ -21,6 +21,9 @@ var const float ZAcceleration;
 var Vector StartFallLocation;
 var int BlocksFallen, BlocksFalling;
 
+/** Unit vector pointing in direction of this block's parent.
+Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
+var() protectedwrite editconst Vector ParentDirection;
 /** Block's position on the grid. */
 var() protectedwrite editconst Vector GridLocation;
 var const editconst int XSize, YSize, ZSize;
@@ -65,6 +68,7 @@ auto state Stable
 
 state Unstable
 {
+	//@TODO - Experiment with Move() function.
 	/** Called after block should have dropped 256 units.  */
 	event DroppedSpace()
 	{
