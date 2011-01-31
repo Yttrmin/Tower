@@ -3,14 +3,17 @@ class TowerSaveSystem extends Object
 	DLLBind(SaveSystem);
 
 const SAVE_FILE_VERSION = 1; 
+const TOWER_NAME_MAX_LENGTH = 256;
 
 /** Always the first function to call when saving. Must be matched with an EndFile call.
 The file extension is automatically appended to the given FileName. */
 dllimport final function bool StartFile(string FileName, coerce byte bSaving);
 dllimport final function SetHeader(int Version, coerce byte bJustTower);
 dllimport final function SetTowerData(out string TowerName, int BlockCount);
-dllimport final function AddBlock(out int ID, out vector GridLocation, out vector ParentDirection);
-dllimport final function SetGameData(out int Round);
+dllimport final function AddBlock(coerce string BlockClass, coerce byte bRoot, 
+	out const vector GridLocation, out const vector ParentDirection);
+dllimport final function EndAddBlock();
+dllimport final function SetGameData(out int Round); 
 dllimport final function EndFile();
 
 dllimport final function SaveAllData(int Version, coerce byte bTowerOnly, string TowerName, 
@@ -18,6 +21,12 @@ dllimport final function SaveAllData(int Version, coerce byte bTowerOnly, string
 dllimport final function ReadAllFile();
 
 dllimport final function GetHeader(out int Version, out byte bJustTower);
+/** Allocates memory for an array of Blocks that can hold all block data, and reads it in. */
+dllimport final function StartGetBlock();
+dllimport final function GetBlock(out String BlockClass, out byte bRoot, out Vector GridLocation,
+	out Vector ParentDirection);
+/** Deletes the array of  */
+dllimport final function ClearAllReadBlockData();
 dllimport final function GetTowerData(out string TowerName, out int BlockCount);
 
 function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
@@ -38,8 +47,10 @@ function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player
 	SetTowerData(Player.GetTower().TowerName, Player.GetTower().NodeTree.NodeCount);
 	foreach Player.AllActors(class'TowerBlock', Block)
 	{
-
+		`log("Adding Block:"@Block.class@Block.bRootBlock@Block.GridLocation@Block.ParentDirection);
+		AddBlock(Block.class, Block.bRootBlock, Block.GridLocation, Block.ParentDirection);
 	}
+	EndAddBlock();
 	EndFile();
 	/**
 	SetTowerData();
@@ -49,9 +60,15 @@ function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player
 
 function LoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
+	local TowerBlock Block;
 	local int Version, BlockCount, i;
 	local byte bTowerOnly;
 	local String TowerName;
+	local String LoadClassName;
+	local byte bLoadRoot;
+	local Vector LoadGridLocation, LoadParentDirection;
+	local class<TowerBlock> LoadClass;
+//	local array<BlockID> BlockIDs;
 	if(StartFile(FileName, false))
 	{
 		`log("Successfully opened save file.");
@@ -65,12 +82,27 @@ function LoadGame(string FileName, bool bJustTower, TowerPlayerController Player
 	GetHeader(Version, bTowerOnly);
 	`log("File version:"@Version);
 	`log("bTowerOnly:"@bool(bTowerOnly));
-	for(i = 0; i < 256; i++)
+	for(i = 0; i < TOWER_NAME_MAX_LENGTH; i++)
 	{
 		TowerName $= "X";
 	}
+	i = 0;
 	GetTowerData(TowerName, BlockCount);
 	`log("Tower Name:"@TowerName);
 	`log("BlockCount:"@BlockCount);
+	StartGetBlock();
+	for(i = 0; i < BlockCount; i++)
+	{
+		LoadClassName = "";
+		for(i = 0; i < TOWER_NAME_MAX_LENGTH; i++)
+		{
+			LoadClassName $= "X";
+		}
+		GetBlock(LoadClassName, bLoadRoot, LoadGridLocation, LoadParentDirection);
+		`log("Loaded Block:"@LoadClassName@bLoadRoot@LoadGridLocation@LoadParentDirection);
+		LoadClass = class<TowerBlock>(DynamicLoadObject(LoadClassName , class'class', false));
+		Block = TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, None, 
+			LoadGridLocation.X, LoadGridLocation.Y, LoadGridLocation.Z);
+	}
 	EndFile();
 }
