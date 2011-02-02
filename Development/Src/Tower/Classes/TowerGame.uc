@@ -207,6 +207,7 @@ function TowerBlock AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlo
 	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local vector SpawnLocation;
+//	`log("Adding...:"@BlockClass@ParentBlock@XBlock@YBlock@ZBlock);
 	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
 	// Pivot point is in middle, bump it up so we're not in the ground.
 	SpawnLocation.Z += 128;
@@ -361,6 +362,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 event PostLogin(PlayerController NewPlayer)
 {
 	Super.PostLogin(NewPlayer);
+	//@TODO - Maybe not make this automatic?
 	AddTower(TowerPlayerController(NewPlayer));
 }
 
