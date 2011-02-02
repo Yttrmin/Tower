@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <math.h>
 #include "Shlobj.h"
 
 HANDLE SaveFile;
@@ -20,7 +21,12 @@ UInt8* BlockIDCount;
 std::vector<wchar_t*> BlockClasses;
 Block* LoadBlocks; 
 UInt16 BlockCount;
-int BlockIteration = 0;
+int BlockIteration;
+
+int round(float number)
+{
+    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
+}
 
 extern "C"
 {
@@ -45,8 +51,8 @@ extern "C"
 			CreationDisposition = OPEN_ALWAYS;
 			DesiredAccess = GENERIC_READ;
 		}
-		SaveFile = CreateFile(FullPath.str().c_str(), DesiredAccess, 0, nullptr, CreationDisposition,
-			FILE_ATTRIBUTE_NORMAL, nullptr);
+		SaveFile = CreateFile(FullPath.str().c_str(), DesiredAccess, FILE_SHARE_READ, 
+			nullptr, CreationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
 		if(SaveFile == INVALID_HANDLE_VALUE)
 		{
 			return 0;
@@ -94,8 +100,9 @@ extern "C"
 		}
 		if(!bFoundID)
 		{
-			wchar_t* NewClassName = new wchar_t[wcslen(ClassName)];
+			wchar_t* NewClassName = new wchar_t[wcslen(ClassName)+1];
 			wcscpy(NewClassName, ClassName);
+			NewClassName[wcslen(ClassName)] = '\0';
 			BlockClassNames.push_back(NewClassName);
 			NewBlock.ID = BlockClassNames.size()-1;
 			bFoundID = true;
@@ -104,14 +111,15 @@ extern "C"
 		NewBlock.GridLocation.X = (Int16)GridLocation->X;
 		NewBlock.GridLocation.Y = (Int16)GridLocation->Y;
 		NewBlock.GridLocation.Z = (Int16)GridLocation->Z;
-		NewBlock.ParentDirection.X = (Int8)ParentDirection->X;
-		NewBlock.ParentDirection.Y = (Int8)ParentDirection->Y;
-		NewBlock.ParentDirection.Z = (Int8)ParentDirection->Z;
+		NewBlock.ParentDirection.X = round(ParentDirection->X);
+		NewBlock.ParentDirection.Y = round(ParentDirection->Y);
+		NewBlock.ParentDirection.Z = round(ParentDirection->Z);
 		Blocks.push_back(NewBlock);
 	}
 	void EndAddBlock()
 	{
 		DWORD BytesWritten;
+
 		UInt8 IDCount = BlockClassNames.size();
 		// Write the number of different classes/IDs we're saving.
 		WriteFile(SaveFile, &IDCount, sizeof(UInt8), &BytesWritten, nullptr);
@@ -125,9 +133,18 @@ extern "C"
 		}
 		for(int i = 0; i < IDCount; i++)
 		{
+			for(int u = 0; u < wcslen(BlockClassNames[i]); u++)
+			{
+				WriteFile(SaveFile, &BlockClassNames[i][u], sizeof(wchar_t), &BytesWritten, nullptr);
+			}
+		}
+		/*
+		for(int i = 0; i < IDCount; i++)
+		{
 			WriteFile(SaveFile, &BlockClassNames[i], sizeof(wchar_t)*wcslen(BlockClassNames[i]),
 				&BytesWritten, nullptr);
 		}
+		*/
 		for(int i = 0; i < Blocks.size(); i++)
 		{
 			WriteFile(SaveFile, &Blocks[i], sizeof(Block), &BytesWritten, nullptr);
@@ -152,7 +169,7 @@ extern "C"
 	}
 	void GetHeader(Int32* Version, unsigned char* bTowerOnly)
 	{
-		SetFilePointer(SaveFile, 0, nullptr, FILE_BEGIN);
+//		SetFilePointer(SaveFile, 0, nullptr, FILE_BEGIN);
 		DWORD BytesRead;
 		FileHeader Header;
 		ReadFile(SaveFile, &Header, sizeof(Header), &BytesRead, nullptr);
@@ -161,6 +178,7 @@ extern "C"
 	}
 	void StartGetBlock()
 	{
+		BlockIteration = 0;
 		BlockClasses.clear();
 		Blocks.clear();
 		std::vector<UInt8> NameLengths;
@@ -173,22 +191,42 @@ extern "C"
 			ReadFile(SaveFile, &ClassNameLength, sizeof(UInt8), &BytesRead, nullptr);
 			NameLengths.push_back(ClassNameLength);
 		}
-		wchar_t* LastReadBlockClass;
+//		wchar_t* LastReadBlockClass;
 		for(int i = 0; i < BlockIDCount; i++)
 		{
-			LastReadBlockClass = new wchar_t[NameLengths[i]];
-			ReadFile(SaveFile, LastReadBlockClass, sizeof(wchar_t)*NameLengths[i], &BytesRead, nullptr);
-			BlockClasses.push_back(new wchar_t[NameLengths[i]]);
-			wcscpy(BlockClasses[i], LastReadBlockClass);
+			BlockClasses.push_back(new wchar_t[NameLengths[i]+1]);
+		//	LastReadBlockClass = new wchar_t[NameLengths[i]];
+			// Start getting garbage here. BlockIDCount is 1.
+		//	for(int u = 0; u < NameLengths[i]; u++)
+		//	{
+			ReadFile(SaveFile, &BlockClasses[i][0], sizeof(wchar_t)*NameLengths[i], &BytesRead, nullptr);
+			BlockClasses[i][NameLengths[i]] = '\0';
+		//	}
+			
+			
+		//	wcscpy(BlockClasses[i], LastReadBlockClass);
 		}
 		LoadBlocks = new Block[BlockCount];
-		ReadFile(SaveFile, &LoadBlocks, sizeof(Block)*BlockCount, &BytesRead, nullptr);
-		delete LastReadBlockClass;
+		ReadFile(SaveFile, &LoadBlocks[0], sizeof(Block)*BlockCount, &BytesRead, nullptr);
+		//delete LastReadBlockClass;
 	}
 	void GetBlock(wchar_t* ClassName, unsigned char* bRoot, FVector* GridLocation,
 		FVector* ParentDirection)
 	{
-		ClassName = wcscpy(ClassName, BlockClasses[LoadBlocks[BlockIteration].ID]); 
+		int i = 0;
+		for(i = 0; i < wcslen(BlockClasses[LoadBlocks[BlockIteration].ID]); i++)
+		{
+			ClassName[i] = BlockClasses[LoadBlocks[BlockIteration].ID][i];
+		}
+		ClassName[i] = '\0';
+		GridLocation->X = LoadBlocks[BlockIteration].GridLocation.X;
+		GridLocation->Y = LoadBlocks[BlockIteration].GridLocation.Y;
+		GridLocation->Z = LoadBlocks[BlockIteration].GridLocation.Z;
+		ParentDirection->X = LoadBlocks[BlockIteration].ParentDirection.X;
+		ParentDirection->Y = LoadBlocks[BlockIteration].ParentDirection.Y;
+		ParentDirection->Z = LoadBlocks[BlockIteration].ParentDirection.Z;
+//		ClassName = wmemcpy(ClassName, BlockClasses[LoadBlocks[BlockIteration].ID], 
+//			wcslen(BlockClasses[LoadBlocks[BlockIteration].ID])); 
 		BlockIteration++;
 	}
 	void SaveAllData(Int32 Version, unsigned char bTowerOnly, const wchar_t* TowerName, Int32 NodeCount)

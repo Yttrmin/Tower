@@ -68,6 +68,11 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
+exec function DebugLogHierarchy()
+{
+	GetTower().NodeTree.DebugLogHierarchy(GetTower().NodeTree.Root);
+}
+
 exec function RequestUpdateTime()
 {
 	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);

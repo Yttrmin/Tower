@@ -30,12 +30,17 @@ function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBloc
 	Vector SpawnLocation, int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
-	local Vector GridLocation;
+	local Vector GridLocation, ParentDirection;
 	GridLocation.X = XBlock;
 	GridLocation.Y = YBlock;
 	GridLocation.Z = ZBlock;
-	Block = Spawn(BlockClass, self,, SpawnLocation);
-	Block.Initialize(GridLocation, OwnerPRI, bRootBlock);
+	if(ParentBlock != None)
+	{
+		ParentDirection = Normal(ParentBlock.Location - SpawnLocation);
+		`log("ParentDirection:"@ParentDirection);
+	}
+	Block = Spawn(BlockClass, self,, SpawnLocation,,,TRUE);
+	Block.Initialize(GridLocation, ParentDirection, OwnerPRI, bRootBlock);
 	NodeTree.AddNode(Block, ParentBlock);
 	//@DEBUG
 	if(OwnerPRI.Tower.NodeTree.bDebugDrawHierarchy)
@@ -49,6 +54,26 @@ function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBloc
 //	Block.Tower = self;
 	Blocks.AddItem(Block);
 	*/
+}
+
+function TowerBlock GetBlockFromLocationDirection(out Vector GridLocation, out Vector ParentDirection)
+{
+	local Actor Block;
+	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
+	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(GridLocation.X, GridLocation.Y,
+		GridLocation.Z);
+	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
+	StartLocation.Z += 128;
+	EndLocation.X = StartLocation.X + (ParentDirection.X * 512);
+	EndLocation.Y = StartLocation.Y + (ParentDirection.Y * 512);
+	EndLocation.Z = StartLocation.Z + (ParentDirection.Z * 512);
+	//StartLocation.X += abs(ParentDirection.X * 128);
+	//StartLocation.Y += abs(ParentDirection.Y * 128);
+	//StartLocation.Z += abs(ParentDirection.Z * 128);
+	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
+	Block = NodeTree.Root.Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
+	`log(Block);
+	return TowerBlock(Block);
 }
 
 function bool RemoveBlock(TowerBlock Block)

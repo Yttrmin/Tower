@@ -47,8 +47,8 @@ function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player
 	SetTowerData(Player.GetTower().TowerName, Player.GetTower().NodeTree.NodeCount);
 	foreach Player.AllActors(class'TowerBlock', Block)
 	{
-		`log("Adding Block:"@Block.class@Block.bRootBlock@Block.GridLocation@Block.ParentDirection);
-		AddBlock(Block.class, Block.bRootBlock, Block.GridLocation, Block.ParentDirection);
+		`log("Adding Block:"@Block.class.outer$"."$Block.class@Block.bRootBlock@Block.GridLocation@Block.ParentDirection);
+		AddBlock(Block.class.outer$"."$Block.class, Block.bRootBlock, Block.GridLocation, Block.ParentDirection);
 	}
 	EndAddBlock();
 	EndFile();
@@ -60,8 +60,8 @@ function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player
 
 function LoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
-	local TowerBlock Block;
-	local int Version, BlockCount, i;
+//	local TowerBlock Block;
+	local int Version, BlockCount, i, u;
 	local byte bTowerOnly;
 	local String TowerName;
 	local String LoadClassName;
@@ -94,15 +94,30 @@ function LoadGame(string FileName, bool bJustTower, TowerPlayerController Player
 	for(i = 0; i < BlockCount; i++)
 	{
 		LoadClassName = "";
-		for(i = 0; i < TOWER_NAME_MAX_LENGTH; i++)
+		for(u = 0; u < TOWER_NAME_MAX_LENGTH; u++)
 		{
 			LoadClassName $= "X";
 		}
 		GetBlock(LoadClassName, bLoadRoot, LoadGridLocation, LoadParentDirection);
-		`log("Loaded Block:"@LoadClassName@bLoadRoot@LoadGridLocation@LoadParentDirection);
+		`log("Loaded Block:"@"Class:"@LoadClassName@"bRoot:"@bLoadRoot@"GridLoc:"@LoadGridLocation@"ParentDir:"@LoadParentDirection);
 		LoadClass = class<TowerBlock>(DynamicLoadObject(LoadClassName , class'class', false));
-		Block = TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, None, 
+		//@TODO - This really needs to be more elegant.
+		if(i == 0)
+		{
+
+		}
+		else if(i == 1)
+		{
+			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, 
+				Player.GetTower().NodeTree.Root, 
+				LoadGridLocation.X, LoadGridLocation.Y, LoadGridLocation.Z);
+		}
+		else
+		{
+			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, 
+			Player.GetTower().GetBlockFromLocationDirection(LoadGridLocation, LoadParentDirection), 
 			LoadGridLocation.X, LoadGridLocation.Y, LoadGridLocation.Z);
+		}
 	}
 	EndFile();
 }

@@ -113,6 +113,7 @@ struct Block
 	//@NOTE - If modding is enabled and if saving blocks is allowed, this'll have to be made
 	// a larger int in order to accomadate custom blocks.
 	UInt8 ID;
+	//@TODO - Remove me.
 	UInt8 bRoot;
 	// Unit vector specifying direction of this block's parent.
 	IVector8 ParentDirection;

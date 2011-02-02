@@ -106,9 +106,11 @@ simulated event PostBeginPlay()
 //	Obstacle.SetEnabled(TRUE);
 }
 
-function Initialize(Vector NewGridLocation, TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
+function Initialize(Vector NewGridLocation, Vector NewParentDirection,
+	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
 {
 	GridLocation = NewGridLocation;
+	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
 	bRootBlock = bNewRootBlock;
 }
