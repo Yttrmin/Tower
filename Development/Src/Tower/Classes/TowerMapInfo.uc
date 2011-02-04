@@ -1,5 +1,7 @@
 class TowerMapInfo extends MapInfo;
 
+var() const Volume RadarVolume;
+
 var() const int XBlocks;
 var() const int YBlocks;
 var() const int ZBlocks;

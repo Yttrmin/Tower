@@ -7,6 +7,13 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SaveSystem = new class'TowerSaveSystem';
+//	SaveSystem.TestInt = 123456;
+//	SaveSystem.TransTestInt = 345678;
+//	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
+//	class'Engine'.static.BasicLoadObject(SaveSystem, "SaveGame.bin", true, 1);
+//	`log(SaveSystem.TestInt);
+//	`log(SaveSystem.TransTestInt);
+	
 }
 
 exec function ClickDown(int ButtonID)
@@ -41,6 +48,7 @@ exec function RemoveAllBlocks()
 	ServerRemoveAllBlocks();
 }
 
+//@TODO - Can't this just directly call a reliable server function in its Tower?
 exec function SetTowerName(string NewName)
 {
 	ServerSetTowerName(NewName);
