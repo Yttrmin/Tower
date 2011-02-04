@@ -189,7 +189,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	TPRI.Tower.OwnerPRI = TPRI;
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
-	AddBlock(TPRI.Tower, class'TowerBlockDebug', None, 8*(NumPlayers-1), 0, 0, true);
+	AddBlock(TPRI.Tower, class'TowerBlockRoot', None, 8*(NumPlayers-1), 0, 0, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
