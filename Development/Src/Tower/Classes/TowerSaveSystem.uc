@@ -91,6 +91,7 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 	local int ClassIndex;
 	CleanupSaveLoadVariables();
 	SaveTowerName = Player.GetTower().TowerName;
+	//@TODO - Would traversing the tree be safer than this?
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
 		ClassIndex = ClassNames.Find(string(Block.class.outer)$"."$string(Block.class));

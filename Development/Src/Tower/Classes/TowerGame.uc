@@ -15,13 +15,10 @@ enum Factions
 	F_Player
 };
 
-/** Holds the PackageName.ClassName of TowerModInfos to load in the order given. */
-var protected globalconfig array<String> ModClasses;
 /** If TRUE, ModLoaded() in TowerModInfo contains an array of mod names, if FALSE, it contains an
 empty array.*/
 var protected globalconfig bool bShareModNamesWithMods;
 var protected globalconfig bool bDebugMods;
-var protected array<TowerModInfo> Mods;
 
 var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
@@ -33,25 +30,29 @@ event PostBeginPlay()
 	CheckForMods();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
+	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 //	StartNextRound();
 }
 
 function CheckForMods()
 {
+	local TowerPlayerReplicationInfo TPRI;
 	//@TODO - Convert package name to class name and such.
 	local class<TowerModInfo> ModInfo;
 	local String TMIClass;
 	local TowerModInfo TMI;
+	TPRI = Spawn(class'TowerPlayerReplicationInfo');
 	`log("LOADING MODS");
-	foreach ModClasses(TMIClass)
+	foreach TPRI.ModClasses(TMIClass)
 	{
 		`log("LOADING MOD:"@TMIClass);
 		ModInfo = class<TowerModInfo>(DynamicLoadObject(TMIClass,class'class',false));
 		`log("MOD CLASS:"@ModInfo);
 		TMI = Spawn(ModInfo);
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
-		Mods.AddItem(TMI);
+//		Mods.AddItem(TMI);
 	}
+	TPRI.Destroy();
 }
 
 function PopulateSpawnPointArrays()

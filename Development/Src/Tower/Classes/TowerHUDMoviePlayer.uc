@@ -24,7 +24,17 @@ function GetMouseCoordinates(out Vector2D Mouse, bool bRelativeToViewport)
 
 //@TODO: Move as much of these functions out of Flash and into UnrealScript as possible.
 // You can alter all the same things on the scene that Flash does from UnrealScript, so there's
-// no reason for this huge function chain. It's also much more convenient to 
+// no reason for this huge function chain. It's also much more convenient to edit UnrealScript.
+
+function ExpandBuildMenu()
+{
+	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
+}
+
+function CollapseBuildMenu()
+{
+	GetVariableObject("_root.BuildMenu").GotoAndStopI(1);
+}
 
 function LockMouseToCenter(bool bMakeInvisible)
 {

@@ -59,6 +59,7 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 
 DefaultProperties
 {
+	DisplayName="Root Block"
 	XSize = 256
 	YSize = 256
 	ZSize = 256

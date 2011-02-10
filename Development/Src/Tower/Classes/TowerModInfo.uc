@@ -12,10 +12,24 @@ var const string Contact;
 var const string Description;
 var const string Version;
 
-/** Add your custom TowerBlocks to this array in DefaultProperties. */
-var protected const array<class<TowerBlock> > ModBlocks;
+struct BlockInfo
+{
+	var string DisplayName;
+	var class<TowerBlock> BaseClass;
+	var StaticMesh BlockMesh;
+	var Material BlockMaterial;
+};
 
-var protected const array<class<TowerModule> > ModModules;
+// Don't expose material, instead expose a texture that can be set in parameters?
+// Material has more control, and the processes are pretty much identical...
+// But just texture means more consistency and less breaking.
+
+var protectedwrite const array<BlockInfo> ModBlockInfo;
+
+/** Add your custom TowerBlocks to this array in DefaultProperties. */
+var protectedwrite const array<class<TowerBlock> > ModBlocks;
+
+var protectedwrite const array<class<TowerModule> > ModModules;
 
 /** Called by TowerGame after all mods are loaded. */
 event ModLoaded(const out array<String> ModList);

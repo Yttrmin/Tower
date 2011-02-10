@@ -233,26 +233,19 @@ we can immediately say its not a path to root if its someone's parent down the l
 // This is surprisingly the most expensive function here!
 final function bool TraceNodeToRoot(TowerBlock Node, out TowerBlock OrphanParent)
 {
-	`log("Tracing to root. I'm"@Node$", my parent is"@Node.PreviousNode);
-	if(Node.PreviousNode.bRootBlock || Node.bRootBlock)
+	`log("Tracing"@Node@"to root...");
+	while(Node.PreviousNode != None && Node.PreviousNode != OrphanParent)
 	{
-		return true;
+		if(Node.PreviousNode.bRootBlock || Node.bRootBlock)
+		{
+			return true;
+		}
+		else
+		{
+			Node = Node.PreviousNode;
+		}
 	}
-	else if(Node.PreviousNode == OrphanParent)
-	{
-		`log("I know my parent is an orphan, no path to root.");
-		return false;
-	}
-	// Not root and has no parent, won't get us to root.
-	else if(Node.PreviousNode == None)
-	{
-		return false;
-	}
-	else
-	{
-		return TraceNodeToRoot(Node.PreviousNode, OrphanParent);
-	}
-	
+	return false;
 }
 
 /** Populates given array with all nodes that can possibly support it. */
