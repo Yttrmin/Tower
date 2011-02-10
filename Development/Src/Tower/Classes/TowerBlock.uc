@@ -35,6 +35,9 @@ var protected TowerPlayerReplicationInfo OwnerPRI;
 
 var protected NavMeshObstacle Obstacle;
 
+/** User-friendly name. Used for things like the build menu. */
+var String DisplayName;
+
 replication
 {
 	if(bNetInitial)
@@ -146,6 +149,7 @@ event Orphaned()
 {
 	local TowerBlock Node;
 	GotoState('Unstable');
+	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach NextNodes(Node)
 	{
 		Node.Orphaned();
@@ -180,6 +184,8 @@ event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent Ot
 
 DefaultProperties
 {
+	DisplayName="GIVE ME A NAME"
+
 	ZAcceleration=1039.829009434
 //	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
 	bCollideWorld=false

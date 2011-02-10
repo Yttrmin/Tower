@@ -7,8 +7,13 @@ enum HUDMode
 };
 
 var TowerHUDMoviePlayer HUDMovie;
-var HUDMode Mode;
+var deprecated HUDMode Mode;
 var TowerBlock LastHighlightedBlock;
+
+/** If not None, this class of block will be added when a block is clicked. */
+var class<TowerBlock> PlaceableBlock;
+/** If not None, this class of module will be added when a block is clicked. */
+var class<TowerModule> PlaceableModule;
 
 event PreBeginPlay()
 {
@@ -29,19 +34,38 @@ event OnMouseClick(int Button)
 {
 	local Vector2D Mouse;
 	local TowerBlock Block;
-	local Vector HitNormal;
+	local Vector HitNormal, FinalGridLocation;
+	// Left mouse button.
 	if(Button == 0)
 	{
 		HUDMovie.GetMouseCoordinates(Mouse, true);
 		TraceForBlock(Mouse, Block, HitNormal);
 		if(Block != None)
 		{
-			BlockClicked(Block, HitNormal);
+			FinalGridLocation = Block.GridLocation + HitNormal;
+			`assert((PlaceableBlock != None) ^^ (PlaceableModule != None));
+			if(PlaceableBlock != None)
+			{
+				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
+				Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
+			}
+			else if(PlaceableModule != None)
+			{
+
+			}
 		}
+	}
+	// Right mouse button.
+	else if(Button == 1)
+	{
+		HUDMovie.GetMouseCoordinates(Mouse, true);
+		TraceForBlock(Mouse, Block, HitNormal);
+		//@TODO - Ask to make sure they want to remove the block.
+		TowerPlayerController(PlayerOwner).RemoveBlock(Block);
 	}
 }
 
-/** Called by Flash side of HUD. ClickNormal can be used to determine which side of a block was clicked. */
+/** Called from OnMouseClick(). ClickNormal can be used to determine which side of a block was clicked. */
 event BlockClicked(TowerBlock Block, Vector ClickNormal)
 {
 	local Vector FinalGridLocation;
@@ -49,7 +73,7 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 	{
 	case HM_Add:
 		FinalGridLocation = Block.GridLocation + ClickNormal;
-		TowerPlayerController(PlayerOwner).AddBlock(Block, Round(FinalGridLocation.X), 
+		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
 			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 		break;
 	case HM_Remove:
@@ -66,6 +90,17 @@ event Focus()
 event UnFocus()
 {
 	HUDMovie.SetMovieCanReceiveInput(FALSE);
+}
+
+function ExpandBuildMenu()
+{
+	HUDMovie.ExpandBuildMenu();
+	HUDMovie.SetExternalTexture("HUDPreview", TextureRenderTarget2D'TowerMisc.HUDPreview');
+}
+
+function CollapseBuildMenu()
+{
+	HUDMovie.CollapseBuildMenu();
 }
 
 /** Only time where Canvas is valid. */
@@ -119,4 +154,6 @@ function TraceForBlock(out Vector2D Mouse, out TowerBlock Block, out Vector HitN
 DefaultProperties
 {
 	Mode=HM_Add
+	PlaceableBlock=class'TowerBlockDebug'
+	PlaceableModule=None
 }

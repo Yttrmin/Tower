@@ -7,6 +7,7 @@ class TowerBlockDebug extends TowerBlock;
 
 DefaultProperties
 {
+	DisplayName="Debug Block"
 	XSize = 256
 	YSize = 256
 	ZSize = 256

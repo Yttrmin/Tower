@@ -28,14 +28,27 @@ exec function ClickUp(int ButtonID)
 
 }
 
+exec function ToggleBuildMenu(bool Toggle)
+{
+	`log("TOGGLEBUILDMENU:"@Toggle);
+	if(Toggle)
+	{
+		TowerHUD(MyHUD).ExpandBuildMenu();
+	}
+	else
+	{
+		TowerHUD(MyHUD).CollapseBuildMenu();
+	}
+}
+
 exec function SetHighlightColor(LinearColor NewColor)
 {
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
-exec function AddBlock(TowerBlock ParentBlock, int XBlock, int YBlock, int ZBlock)
+exec function AddBlock(TowerBlock ParentBlock, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
 {
-	ServerAddBlock(class'TowerBlockDebug', ParentBlock, XBlock, YBlock, ZBlock);
+	ServerAddBlock(BlockClass, ParentBlock, XBlock, YBlock, ZBlock);
 }
 
 exec function RemoveBlock(TowerBlock Block)
@@ -123,6 +136,7 @@ state Master extends Spectating
 
 DefaultProperties
 {
+	InputClass=class'Tower.TowerPlayerInput'
 	CollisionType=COLLIDE_BlockAll
 	bCollideActors=true
 	bCollideWorld=true
