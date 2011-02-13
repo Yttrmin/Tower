@@ -9,14 +9,16 @@ var int EnemyCount;
 var int MaxEnemyCount;
 
 /** Placeable blocks available to the player. Retrieved from PlaceableList. */
-var array<class<TowerBlock> > PlaceableBlocks;
+//var array<class<TowerBlock> > PlaceableBlocks;
 /** Placeable modules available to the player. Retrieved from PlaceableList. */
-var array<class<TowerModule> > PlaceableModules;
+//var array<class<TowerModule> > PlaceableModules;
+
+var array<BlockInfo> PlaceableBlocks;
 
 var repnotify float ReplicatedTime;
 
 // Tower(TowerBlockDebug;TowerBlockRoot;)MyMod(TowerBlock_MyBlock;)
-var repnotify String PlaceableString;
+//var repnotify String PlaceableString;
 var repnotify String ServerMods;
 
 replication
@@ -24,13 +26,12 @@ replication
 	if(bNetDirty)
 		Phase, Round, EnemyCount, MaxEnemyCount, ReplicatedTime;
 	if(bNetInitial)
-		PlaceableString, ServerMods;
+		ServerMods;
 }
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	CreatePlaceableString();
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -44,9 +45,9 @@ simulated event ReplicatedEvent(name VarName)
 	{
 		SetGameTimer();
 	}
-	else if(VarName == 'PlaceableString')
+	else if(VarName == 'ServerMods')
 	{
-		ParsePlaceableString();
+//		TowerHUD(GetPlayerController().myHUD)
 	}
 }
 
@@ -85,33 +86,4 @@ event NextRound()
 event EndRound()
 {
 	bRoundInProgress = FALSE;
-}
-
-function CreatePlaceableString()
-{
-	local class<TowerBlock> BlockClass;
-	local class<TowerModule> ModuleClass;
-	local TowerModInfo ModInfo;
-	/*
-	foreach TowerGame(WorldInfo.Game).Mods(ModInfo)
-	{
-		// Block.class.outer$"."$Block.class
-		PlaceableString $= ModInfo.class.outer$"(";
-		foreach ModInfo.ModBlocks(BlockClass)
-		{
-			PlaceableString $= BlockClass$";";
-		}
-		foreach ModInfo.ModModules(ModuleClass)
-		{
-			PlaceableString $= ModuleClass$";";
-		}
-		PlaceableString $= ")";
-	}
-	*/
-	ParsePlaceableString();
-}
-
-simulated function ParsePlaceableString()
-{
-
 }

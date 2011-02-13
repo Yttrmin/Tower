@@ -13,7 +13,6 @@ simulated event PostBeginPlay()
 //	class'Engine'.static.BasicLoadObject(SaveSystem, "SaveGame.bin", true, 1);
 //	`log(SaveSystem.TestInt);
 //	`log(SaveSystem.TransTestInt);
-	
 }
 
 exec function ClickDown(int ButtonID)
