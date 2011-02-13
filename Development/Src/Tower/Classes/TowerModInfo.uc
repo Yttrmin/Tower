@@ -6,19 +6,12 @@ making it easily accessible to the main game. The only required class for a mod.
 */
 class TowerModInfo extends Info
 	abstract;
- 
+
+var const string ModName;
 var const string AuthorName;
 var const string Contact;
 var const string Description;
 var const string Version;
-
-struct BlockInfo
-{
-	var string DisplayName;
-	var class<TowerBlock> BaseClass;
-	var StaticMesh BlockMesh;
-	var Material BlockMaterial;
-};
 
 // Don't expose material, instead expose a texture that can be set in parameters?
 // Material has more control, and the processes are pretty much identical...
@@ -36,6 +29,7 @@ event ModLoaded(const out array<String> ModList);
 
 DefaultProperties
 {
+	ModName="My Mod Name"
 	AuthorName="My Name"
 	Contact="My Email"
 	Description="My Description"

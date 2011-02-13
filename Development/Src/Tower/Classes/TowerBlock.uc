@@ -9,6 +9,14 @@ class TowerBlock extends DynamicSMActor_Spawnable
 	placeable
 	abstract;
 
+struct BlockInfo
+{
+	var string DisplayName;
+	var class<TowerBlock> BaseClass;
+	var StaticMesh BlockMesh;
+	var Material BlockMaterial;
+};
+
 // Modders: Don't modify either of these variables. Messing up the hierarchy has a tendency to lead
 // to infinite loops or infinite recursion.
 /** Reference to this block/node's parent. In the root and orphans this is None. */

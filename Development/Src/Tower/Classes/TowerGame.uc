@@ -15,23 +15,65 @@ enum Factions
 	F_Player
 };
 
-/** If TRUE, ModLoaded() in TowerModInfo contains an array of mod names, if FALSE, it contains an
-empty array.*/
-var protected globalconfig bool bShareModNamesWithMods;
-var protected globalconfig bool bDebugMods;
-
 var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
 var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
+var array<TowerModInfo> GameMods;
+
+event PreBeginPlay()
+{
+	Super.PreBeginPlay();
+	CheckForMods();
+}
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	CheckForMods();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 //	StartNextRound();
+}
+
+event InitGame(string Options, out string ErrorMessage)
+{
+	Super.InitGame(Options, ErrorMessage);
+}
+
+event PreLogin(string Options, string Address, out string ErrorMessage)
+{
+	//@TODO - Check mod list in Options.
+	// Tower|0.1;MyMod|1.0
+	local int i;
+	local TowerModInfo Mod;
+	local String ModsList;
+	local array<String> ModNames;
+
+	local array<TowerModInfo> MissingMods;
+
+	ModsList = ParseOption(Options, "Mods");
+	ModNames = SplitString(ModsList);
+	foreach GameMods(Mod)
+	{
+		if(ModNames.Find(Mod.ModName$Mod.Version) == -1)
+		{
+			MissingMods.AddItem(Mod);
+		}
+	}
+	if(MissingMods.Length > 0)
+	{
+		ErrorMessage $= "Missing mods: ";
+		foreach MissingMods(Mod, i)
+		{
+			if(i > 0)
+			{
+				ErrorMessage $= ", ";
+			}
+			ErrorMessage $= Mod.ModName$"("$Mod.Version$")";
+		}
+		ErrorMessage $= ". Can't join server!";
+	}
+	Super.PreLogin(Options, Address, ErrorMessage);
 }
 
 function CheckForMods()
@@ -39,10 +81,16 @@ function CheckForMods()
 	local TowerPlayerReplicationInfo TPRI;
 	//@TODO - Convert package name to class name and such.
 	local class<TowerModInfo> ModInfo;
+
+	local int i;
+	local TowerModInfo Mod;
+	local String ReplicatedModList;
+
 	local String TMIClass;
 	local TowerModInfo TMI;
 	TPRI = Spawn(class'TowerPlayerReplicationInfo');
 	`log("LOADING MODS");
+	`log("GameMods:"@GameMods.Length);
 	foreach TPRI.ModClasses(TMIClass)
 	{
 		`log("LOADING MOD:"@TMIClass);
@@ -50,8 +98,19 @@ function CheckForMods()
 		`log("MOD CLASS:"@ModInfo);
 		TMI = Spawn(ModInfo);
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
-//		Mods.AddItem(TMI);
+		GameMods.AddItem(TMI);
 	}
+	`log("GameMods:"@GameMods.Length);
+	foreach GameMods(Mod, i)
+	{
+		if(i > 0)
+		{
+			ReplicatedModList $= ";";
+		}
+		ReplicatedModList $= Mod.ModName;
+	}
+	`log("ReplicatedModList:"@ReplicatedModList);
+	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
 	TPRI.Destroy();
 }
 

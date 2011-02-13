@@ -28,6 +28,7 @@ event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
+	SetPlaceablesList(TowerPlayerReplicationInfo(TowerPlayerController(PlayerOwner).PlayerReplicationInfo).PlaceableBlocks);
 }
 
 event OnMouseClick(int Button)
@@ -92,6 +93,18 @@ event UnFocus()
 	HUDMovie.SetMovieCanReceiveInput(FALSE);
 }
 
+simulated function SetPlaceablesList(array<BlockInfo> Blocks)
+{
+	local array<String> PlaceableNames;
+	local BlockInfo Block;
+	foreach Blocks(Block)
+	{
+		PlaceableNames.AddItem(Block.DisplayName);
+	}
+	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
+	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
+}
+
 function ExpandBuildMenu()
 {
 	HUDMovie.ExpandBuildMenu();
@@ -112,7 +125,9 @@ event PostRender()
 	Super.PostRender();
 	HUDMovie.GetMouseCoordinates(Mouse, false);
 	TraceForBlock(Mouse, Block, HitNormal);
-	if(TowerPlayerController(PlayerOwner).GetTower().NodeTree.bDebugDrawHierarchy)
+	if(TowerPlayerController(PlayerOwner).GetTower() != None &&
+		TowerPlayerController(PlayerOwner).GetTower().NodeTree != None &&
+		TowerPlayerController(PlayerOwner).GetTower().NodeTree.bDebugDrawHierarchy)
 	{
 		TowerPlayerController(PlayerOwner).GetTower().NodeTree.
 		DrawDebugRelationship(Canvas, TowerPlayerController(PlayerOwner).GetTower().NodeTree.Root);
