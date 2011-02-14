@@ -37,7 +37,6 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	DeterminePlaceableBlocks();
-//	TowerHUD(TowerPlayerController(Owner).myHUD).SetPlaceablesList(PlaceableBlocks);
 	SetHighlightColor(HighlightColor);
 	RequestUpdatedTime();
 }

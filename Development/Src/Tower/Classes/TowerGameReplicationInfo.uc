@@ -32,6 +32,7 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	`log("TGRI PBP");
 }
 
 simulated event ReplicatedEvent(name VarName)

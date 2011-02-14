@@ -12,7 +12,7 @@ non-debug in-game things ever!*/
 var() private array<TowerBlock> DebugBlocks;
 
 var() string TowerName;
-var() TowerPlayerReplicationInfo OwnerPRI;
+var() repnotify TowerPlayerReplicationInfo OwnerPRI;
 
 replication
 {
@@ -20,10 +20,24 @@ replication
 		TowerName, OwnerPRI;
 }
 
-event PostBeginPlay()
+simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	AddTree();
+}
+
+reliable server function AddTree()
+{
 	NodeTree = new class'TowerTree';
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	Super.ReplicatedEvent(VarName);
+	if(VarName == 'OwnerPRI' && OwnerPRI.Owner != None)
+	{
+		TowerHUD(TowerPlayerController(OwnerPRI.Owner).myHUD).SetPlaceablesList(OwnerPRI.PlaceableBlocks);
+	}
 }
 
 function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, 
