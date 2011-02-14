@@ -7,6 +7,7 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SaveSystem = new class'TowerSaveSystem';
+	`log("TPC PBP");
 //	SaveSystem.TestInt = 123456;
 //	SaveSystem.TransTestInt = 345678;
 //	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);

@@ -76,6 +76,21 @@ event PreLogin(string Options, string Address, out string ErrorMessage)
 	Super.PreLogin(Options, Address, ErrorMessage);
 }
 
+event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
+{
+	local PlayerController NewPlayer;
+	NewPlayer = super.Login(Portal, Options, UniqueID, ErrorMessage);
+	//TowerPlayerController(NewPlayer).GotoState('Master');
+	return NewPlayer;
+}
+
+event PostLogin(PlayerController NewPlayer)
+{
+	Super.PostLogin(NewPlayer);
+	//@TODO - Maybe not make this automatic?
+	AddTower(TowerPlayerController(NewPlayer));
+}
+
 function CheckForMods()
 {
 	local TowerPlayerReplicationInfo TPRI;
@@ -178,6 +193,35 @@ exec function StartGame()
 	StartCoolDown();
 }
 
+function StartMatch()
+{
+	local Actor A;
+
+	if ( MyAutoTestManager != None )
+	{
+		MyAutoTestManager.StartMatch();
+	}
+
+	// tell all actors the game is starting
+	ForEach AllActors(class'Actor', A)
+	{
+		A.MatchStarting();
+	}
+
+	// start human players first
+	StartHumans();
+
+	// start AI players
+	StartBots();
+
+	bWaitingToStartMatch = false;
+
+	StartOnlineGame();
+
+	// fire off any level startup events
+	WorldInfo.NotifyMatchStarted();
+}
+
 exec function SkipRound()
 {
 	ClearTimer('GameTimerExpired');
@@ -247,6 +291,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// I can't find it.
 	TPRI.Tower = Spawn(class'Tower');
 	TPRI.Tower.OwnerPRI = TPRI;
+//	TPRI.Tower.Initialize(TPRI);
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
 	AddBlock(TPRI.Tower, class'TowerBlockRoot', None, 8*(NumPlayers-1), 0, 0, true);
@@ -411,20 +456,7 @@ function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int
 	return None;
 }
 
-event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
-{
-	local PlayerController NewPlayer;
-	NewPlayer = super.Login(Portal, Options, UniqueID, ErrorMessage);
-	//TowerPlayerController(NewPlayer).GotoState('Master');
-	return NewPlayer;
-}
 
-event PostLogin(PlayerController NewPlayer)
-{
-	Super.PostLogin(NewPlayer);
-	//@TODO - Maybe not make this automatic?
-	AddTower(TowerPlayerController(NewPlayer));
-}
 
 function RestartPlayer(Controller aPlayer)
 {

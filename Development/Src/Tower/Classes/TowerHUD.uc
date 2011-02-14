@@ -27,8 +27,11 @@ event PreBeginPlay()
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
-	SetPlaceablesList(TowerPlayerReplicationInfo(TowerPlayerController(PlayerOwner).PlayerReplicationInfo).PlaceableBlocks);
+	if(Owner.Role == ROLE_Authority)
+	{
+		HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
+		SetPlaceablesList(TowerPlayerReplicationInfo(TowerPlayerController(PlayerOwner).PlayerReplicationInfo).PlaceableBlocks);
+	}
 }
 
 event OnMouseClick(int Button)
@@ -101,6 +104,7 @@ simulated function SetPlaceablesList(array<BlockInfo> Blocks)
 	{
 		PlaceableNames.AddItem(Block.DisplayName);
 	}
+	ScriptTrace();
 	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
 }
