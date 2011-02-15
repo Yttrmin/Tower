@@ -1,4 +1,5 @@
-class TowerHUD extends HUD;
+class TowerHUD extends HUD
+	dependson(TowerModule);
 
 enum HUDMode
 {
@@ -11,9 +12,9 @@ var deprecated HUDMode Mode;
 var TowerBlock LastHighlightedBlock;
 
 /** If not None, this class of block will be added when a block is clicked. */
-var class<TowerBlock> PlaceableBlock;
+var BlockInfo PlaceableBlock;
 /** If not None, this class of module will be added when a block is clicked. */
-var class<TowerModule> PlaceableModule;
+var ModuleInfo PlaceableModule;
 
 event PreBeginPlay()
 {
@@ -21,7 +22,7 @@ event PreBeginPlay()
 	HUDMovie = new class'TowerHUDMoviePlayer';
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
-	HudMovie.LockMouseToCenter(false);
+	HudMovie.LockMouseToCenter(true);
 }
 
 event PostBeginPlay()
@@ -47,13 +48,14 @@ event OnMouseClick(int Button)
 		if(Block != None)
 		{
 			FinalGridLocation = Block.GridLocation + HitNormal;
-			`assert((PlaceableBlock != None) ^^ (PlaceableModule != None));
-			if(PlaceableBlock != None)
+			`assert((PlaceableBlock.BaseClass != None) ^^ (PlaceableModule.BaseClass != None));
+			if(PlaceableBlock.BaseClass != None)
 			{
-				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
+				//@TODO - Make AddBlock use BlockInfo.
+				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock.BaseClass, Round(FinalGridLocation.X), 
 				Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 			}
-			else if(PlaceableModule != None)
+			else if(PlaceableModule.BaseClass != None)
 			{
 
 			}
@@ -77,7 +79,8 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 	{
 	case HM_Add:
 		FinalGridLocation = Block.GridLocation + ClickNormal;
-		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
+		//@TODO - Actually implement AddBlock using BlockInfo.
+		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock.BaseClass, Round(FinalGridLocation.X), 
 			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 		break;
 	case HM_Remove:
@@ -96,7 +99,12 @@ event UnFocus()
 	HUDMovie.SetMovieCanReceiveInput(FALSE);
 }
 
-simulated function SetPlaceablesList(array<BlockInfo> Blocks)
+function Place()
+{
+
+}
+
+function SetPlaceablesList(array<BlockInfo> Blocks)
 {
 	local array<String> PlaceableNames;
 	local BlockInfo Block;
@@ -107,6 +115,12 @@ simulated function SetPlaceablesList(array<BlockInfo> Blocks)
 	ScriptTrace();
 	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
+}
+
+function SetPlaceableBlock(BlockInfo Block)
+{
+	PlaceableBlock = Block;
+//	PlaceableModule = None;
 }
 
 function ExpandBuildMenu()
@@ -170,9 +184,14 @@ function TraceForBlock(out Vector2D Mouse, out TowerBlock Block, out Vector HitN
 		(WorldOrigin+WorldDir), TRUE));
 }
 
+function TowerPlayerReplicationInfo GetTPRI()
+{
+	return TowerPlayerReplicationInfo(TowerPlayerController(Owner).PlayerReplicationInfo);
+}
+
 DefaultProperties
 {
 	Mode=HM_Add
-	PlaceableBlock=class'TowerBlockDebug'
-	PlaceableModule=None
+//	PlaceableBlock=class'TowerBlockDebug'
+//	PlaceableModule=None
 }

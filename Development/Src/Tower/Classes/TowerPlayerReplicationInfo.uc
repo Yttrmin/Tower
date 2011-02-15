@@ -26,6 +26,7 @@ var protectedwrite globalconfig array<String> ModClasses;
 var protectedwrite array<TowerModInfo> Mods;
 var protectedwrite array<ModOption> ModOptions;
 var protectedwrite array<BlockInfo> PlaceableBlocks;
+var protectedwrite array<ModuleInfo> PlaceableModules;
 
 replication
 {
