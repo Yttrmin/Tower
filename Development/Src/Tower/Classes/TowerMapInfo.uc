@@ -36,6 +36,12 @@ function DeactivateHUDPreview()
 	}
 }
 
+simulated function SetPreviewBlock(out BlockInfo Block)
+{
+	PreviewBlock.StaticMeshComponent.SetStaticMesh(Block.BlockMesh);
+	PreviewBlock.StaticMeshComponent.SetMaterial(0, Block.BlockMaterial);
+}
+
 DefaultProperties
 {
 	// 256 probably best, could fit several people in.

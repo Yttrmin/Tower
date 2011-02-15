@@ -28,11 +28,13 @@ function GetMouseCoordinates(out Vector2D Mouse, bool bRelativeToViewport)
 
 function ExpandBuildMenu()
 {
+	UnlockMouse(true);
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
 }
 
 function CollapseBuildMenu()
 {
+	LockMouseToCenter(true);
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(1);
 }
 
@@ -59,6 +61,31 @@ function SetRoundNumber(coerce String Round)
 function SetRoundTime(float NewTime)
 {
 	ActionScriptVoid("SetRoundTime");
+}
+
+/** Called by ActionScript when the user clicks a new item in the BuildMenu's PlaceablesList. */
+event OnBuildListChange(int Index)
+{
+	local BlockInfo Block;
+	local TowerPlayerReplicationInfo TPRI;
+	TPRI = HUD.GetTPRI();
+	`log("New Index:"@Index);
+	if(Index > TPRI.PlaceableBlocks.Length)
+	{
+		// Might be a module.
+		if(Index < TPRI.PlaceableModules.Length)
+		{
+			
+		}
+		else
+		{
+			// Blank slot.
+		}
+	}
+	Block = TPRI.PlaceableBlocks[Index];
+	`log(Block.DisplayName);
+	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreviewBlock(Block);
+	HUD.SetPlaceableBlock(Block);
 }
 
 DefaultProperties
