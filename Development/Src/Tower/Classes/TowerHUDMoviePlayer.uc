@@ -7,6 +7,7 @@
 class TowerHUDMoviePlayer extends GFxMoviePlayer;
 
 var TowerHUD HUD;
+var float MouseX, MouseY;
 
 /** Takes Vector2D and fills it with current mouse coordinates.
 If bRelativeToViewport is TRUE, the Mouse values are between 0 and 1. If FALSE, the Mouse values
@@ -29,12 +30,13 @@ function GetMouseCoordinates(out Vector2D Mouse, bool bRelativeToViewport)
 function ExpandBuildMenu()
 {
 	UnlockMouse(true);
+	MoveCursor();
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
 }
 
 function CollapseBuildMenu()
 {
-	LockMouseToCenter(true);
+	LockMouseToCenter(false);
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(1);
 }
 
@@ -88,8 +90,26 @@ event OnBuildListChange(int Index)
 	HUD.SetPlaceableBlock(Block);
 }
 
+event OnMouseMove(float DeltaX, float DeltaY)
+{
+	DeltaX *= HUD.RatioX;
+	DeltaY *= -HUD.RatioY;
+	MouseX = FMin(MouseX + DeltaX, 1024);
+	MouseY = FMin(MouseY + DeltaY, 768);
+	MoveCursor();
+	`log(DeltaX@DeltaY);
+}
+
+function MoveCursor()
+{
+	SetVariableNumber("_root.MouseCursor._x", MouseX); 
+	SetVariableNumber("_root.MouseCursor._y", MouseY); 
+}
+
 DefaultProperties
 {
+	MouseX = 512
+	MouseY = 384
 	MovieInfo=SwfMovie'TowerHUD.HUD'
 	bAutoPlay=TRUE
 	bPauseGameWhileActive=FALSE

@@ -18,7 +18,6 @@ simulated event PostBeginPlay()
 
 exec function ClickDown(int ButtonID)
 {
-	`log("ClickDown:"@ButtonID);
 	TowerHUD(myHUD).OnMouseClick(ButtonID);
 }
 
@@ -46,9 +45,9 @@ exec function SetHighlightColor(LinearColor NewColor)
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
-exec function AddBlock(TowerBlock ParentBlock, class<TowerBlock> BlockClass, int XBlock, int YBlock, int ZBlock)
+function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, int XBlock, int YBlock, int ZBlock)
 {
-	ServerAddBlock(BlockClass, ParentBlock, XBlock, YBlock, ZBlock);
+	ServerAddBlock(Info, ParentBlock, XBlock, YBlock, ZBlock);
 }
 
 exec function RemoveBlock(TowerBlock Block)
@@ -100,10 +99,10 @@ exec function RequestUpdateTime()
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
 }
 
-reliable server function ServerAddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock,
+reliable server function ServerAddBlock(BlockInfo Info, TowerBlock ParentBlock,
 	int XBlock, int YBlock, int ZBlock)
 {
-	TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockClass, ParentBlock, XBlock, YBlock, ZBlock);
+	TowerGame(WorldInfo.Game).AddBlock(GetTower(), Info, ParentBlock, XBlock, YBlock, ZBlock);
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
@@ -125,6 +124,11 @@ reliable server function ServerSetTowerName(string NewName)
 function Tower GetTower()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower;
+}
+
+function TowerPlayerReplicationInfo GetTPRI()
+{
+	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
 }
 
 //@FIXME

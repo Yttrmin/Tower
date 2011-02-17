@@ -15,19 +15,23 @@ struct BlockInfo
 	var class<TowerBlock> BaseClass;
 	var StaticMesh BlockMesh;
 	var Material BlockMaterial;
+	// Used for saving/loading.
+	var int ModIndex, ModBlockInfoIndex;
 };
 
 // Modders: Don't modify either of these variables. Messing up the hierarchy has a tendency to lead
 // to infinite loops or infinite recursion.
 /** Reference to this block/node's parent. In the root and orphans this is None. */
-var() editconst TowerBlock PreviousNode;
+// Replace with Base.
+//var() editconst deprecated TowerBlock PreviousNode;
 /** Holds references to all of this block/node's children.  */
 var() editconst array<TowerBlock> NextNodes;
 
 //@TODO - Figure out how acceleration is calculated.
 var const float ZAcceleration;
-var Vector StartFallLocation;
-var int BlocksFallen, BlocksFalling;
+var const int DropRate;
+var int BlocksFallen;
+var int StartZ;
 
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
@@ -43,6 +47,8 @@ var protected TowerPlayerReplicationInfo OwnerPRI;
 
 var protected NavMeshObstacle Obstacle;
 
+var int ModIndex, ModBlockInfoIndex;
+
 /** User-friendly name. Used for things like the build menu. */
 var String DisplayName;
 
@@ -57,48 +63,68 @@ auto state Stable
 	function StopFall()
 	{
 		local Vector NewLocation;
-		NewLocation = StartFallLocation;
-		NewLocation.Z = StartFallLocation.Z - (256*BlocksFallen);
-//		`log("Old Z:"@StartFallLocation.Z@"New Z:"@NewLocation.Z@"Blocks Fallen:"@BlocksFallen);
-		SetPhysics(PHYS_None);
-		SetLocation(NewLocation);
-		SetCollision(true, true, true);
-		BlocksFallen = 0;
-		BlocksFalling = 0;
+		`log("CHECK parent BEGIN StopFall:"@Base);
+		// Can't use SetLocation without breaking base.
+		NewLocation = Location;
+		NewLocation.X -= Base.Location.X;
+		NewLocation.Y -= Base.Location.Y;
+		NewLocation.Z = (StartZ - (256*BlocksFallen)) - Base.Location.Z ;
+		SetRelativeLocation(NewLocation);
+		SetGridLocation();
 		ClearTimer('DroppedSpace');
+		`log("CHECK parent StopFall:"@Base);
 	}
 
 	event BeginState(name PreviousStateName)
 	{
 		if(PreviousStateName == 'Unstable')
 		{
+			`log("CHECK parent BeginState Stable:"@Base);
 			StopFall();
+			`log("CHECK parent PRE StopFall:"@Base);
 		}
 	}
 }
 
+/** State for root blocks of orphan branches. Block falls with all its attachments. */
 state Unstable
 {
 	//@TODO - Experiment with Move() function.
 	/** Called after block should have dropped 256 units.  */
 	event DroppedSpace()
 	{
+		`log("Dropped space");
 		BlocksFallen++;
-		BlocksFalling++;
+		// SetRelativeLocation here to be sure?
+		//SetFullLocation(Location, false);
+		SetGridLocation();
 		if(!OwnerPRI.Tower.NodeTree.FindNewParent(Self))
 		{
 			SetTimer(TimeToDrop(), false, 'DroppedSpace');
 		}
+		else
+		{
+			`log("Found parent:"@Base);
+			GotoState('Stable');
+		}
+		// NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
+		
 	}
 	event BeginState(name PreviousStateName)
 	{
-//		`log("Beginning Unstable state.");
-		BlocksFalling = 1;
+		`log(Self@"I AM NOW UNSTABLE!!!!!!");
 		BlocksFallen = 0;
-		StartFallLocation = Location;
-		SetPhysics(PHYS_Falling);
-		SetCollision(true, false, true);
+		StartZ = Location.Z;
 		SetTimer(TimeToDrop(), false, 'DroppedSpace');
+	}
+	event Tick(float DeltaTime)
+	{
+		local Vector NewLocation;
+		Super.Tick(DeltaTime);
+		NewLocation.X = Location.X;
+		NewLocation.Y = Location.Y;
+		NewLocation.Z = Location.Z - (DropRate * DeltaTime);
+		SetLocation(NewLocation);
 	}
 	function bool CanDrop()
 	{
@@ -117,13 +143,61 @@ simulated event PostBeginPlay()
 //	Obstacle.SetEnabled(TRUE);
 }
 
-function Initialize(Vector NewGridLocation, Vector NewParentDirection,
+function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParentDirection,
 	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
 {
+	if(Info.BlockMesh != None)
+	{
+		StaticMeshComponent.SetStaticMesh(Info.BlockMesh);
+	}
+	//@TODO - Can't have highlighting if we replace the material like this.
+	if(Info.BlockMaterial != None)
+	{
+		StaticMeshComponent.SetMaterial(0, Info.BlockMaterial);
+	}
+	if(Info.DisplayName != "")
+	{
+		DisplayName = Info.DisplayName;
+	}
+	ModIndex = Info.ModIndex;
+	ModBlockInfoIndex = Info.ModBlockInfoIndex;
+	`log("added"@ModIndex@ModBlockInfoIndex);
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
 	bRootBlock = bNewRootBlock;
+}
+
+final function TowerBlock GetParent()
+{
+	return TowerBlock(Base);
+}
+
+function SetFullLocation(Vector NewLocation, bool bRelative, 
+	optional Vector BaseLocation)
+{
+	local Vector NewRelativeLocation;
+	if(bRelative)
+	{
+		NewRelativeLocation.X = NewLocation.X - BaseLocation.X;
+		NewRelativeLocation.Y = NewLocation.Y - BaseLocation.Y;
+		NewRelativeLocation.Z = NewLocation.Z - BaseLocation.Z;
+		SetRelativeLocation(NewRelativeLocation);
+	}
+	else
+	{
+		SetLocation(NewLocation);
+		GridLocation.X = NewLocation.X / 256;
+		GridLocation.Y = NewLocation.Y / 256;
+		GridLocation.Z = NewLocation.Z / 256;
+	}
+}
+
+final function SetGridLocation()
+{
+	GridLocation.X = int(Location.X) / 256;
+	GridLocation.Y = int(Location.Y) / 256;
+	GridLocation.Z = int(Location.Z) / 256;
 }
 
 final simulated function Highlight()
@@ -146,41 +220,40 @@ function float TimeToDrop()
 {
 	local float Time;
 	//ScriptTrace();
-	Time = sqrt(((512/(BlocksFalling+BlocksFallen))/ZAcceleration)/BlocksFalling);
+//	Time = sqrt(((512/(BlocksFalling+BlocksFallen))/ZAcceleration)/BlocksFalling);
+	Time = 256 / DropRate;	
 	`log("TimeToDrop:"@Time);
 	return Time;
 }
 
 //@TODO - Convert from recursion to iteration!
-/** Called when this Block loses its support and there are no other blocks available to support it. */
-event Orphaned()
+/** Called on TowerBlocks that are the root node of an orphan branch. */
+event OrphanedParent()
 {
 	local TowerBlock Node;
 	GotoState('Unstable');
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach NextNodes(Node)
 	{
-		Node.Orphaned();
+		Node.OrphanedChild();
 	}
 }
 
+/** Called on TowerBlocks that are orphans but not the root node. */
+event OrphanedChild()
+{
+
+}
+
 //@TODO - Convert from recursion to iteration!
-event Adopted(optional int FallCount = -1)
+event Adopted()
 {
 	local TowerBlock Node;
-	if(FallCount == -1)
-	{
-//		`log("I'm an orphan parent, tell my children to fall:"@BlocksFallen@"blocks.");
-		FallCount = BlocksFallen;
-	}
-//	`log("Fallcount:"@FallCount);
-	BlocksFallen = FallCount;
-	// State change is immediate since we're in a state, make sure this is after
-	// BlocksFallen's assignment.
-	GotoState('Stable');
+	`log("ADOPTED:"@Self);
+	SetGridLocation();
 	foreach NextNodes(Node)
 	{
-		Node.Adopted(FallCount);
+		Node.Adopted();
 	}
 }
 
@@ -195,6 +268,7 @@ DefaultProperties
 	DisplayName="GIVE ME A NAME"
 
 	ZAcceleration=1039.829009434
+	DropRate=128
 //	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
 	bCollideWorld=false
 	bAlwaysRelevant = true

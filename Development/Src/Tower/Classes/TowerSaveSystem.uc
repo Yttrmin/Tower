@@ -1,20 +1,23 @@
-/** Class used to save and load games on the PC. */
+/** 
+TowerSaveSystem
+
+Class used to save and load games on the PC and iOS. */
 class TowerSaveSystem extends Object
 	config(Tower);
 
-struct BlockInfo
+struct BlockSaveInfo
 {
-	// ClassName.
-	var int I;
+	// ModIndex, BlockInfoIndex
+	var int M, I;
 	// GridLocation, ParentDirection.
 	var Vector G, P;
 };
 
-const SAVE_FILE_VERSION = 1; 
+const SAVE_FILE_VERSION = 2; 
 
 var string SaveTowerName;
-var array<String> ClassNames;
-var array<BlockInfo> Blocks;
+var array<String> ModNames;
+var array<BlockSaveInfo> Blocks;
 
 /** Dumps what is pretty close of the current gamestate to disk. Anticipated to produce a very
 sizable file compared to normal saving. */
@@ -44,23 +47,16 @@ final function LoadGame(string FileName, bool bJustTower, TowerPlayerController 
 final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local TowerBlock Block;
-	local BlockInfo Info;
-	local int ClassIndex;
+	local BlockSaveInfo Info;
 	CleanupSaveLoadVariables();
 	SaveTowerName = Player.GetTower().TowerName;
+	PopulateModList(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
 	//@TODO - Would traversing the tree be safer than this?
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
-		ClassIndex = ClassNames.Find(string(Block.class.outer)$"."$string(Block.class));
-		if(ClassIndex == -1)
-		{
-			ClassNames.AddItem(string(Block.class.outer)$"."$string(Block.class));
-			Info.I = ClassNames.Length - 1;
-		}
-		else
-		{
-			Info.I = ClassIndex;
-		}
+		`log("Saving:"@Block.ModIndex@Block.ModBlockInfoIndex);
+		Info.M = Block.ModIndex;
+		Info.I = Block.ModBlockInfoIndex;
 		Info.G = Block.GridLocation;
 		Info.P = Block.ParentDirection;
 		Blocks.AddItem(Info);
@@ -72,16 +68,16 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local int i;
-	local BlockInfo LoadBlockInfo;
-	local class<TowerBlock> LoadClass;
+	local BlockSaveInfo LoadBlockInfo;
 	CleanupSaveLoadVariables();
 	class'Engine'.static.BasicLoadObject(Self, FileName$".bin", true, SAVE_FILE_VERSION);
 	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
 	foreach Blocks(LoadBlockInfo, i)
 	{
-		`log("Loaded Block:"@"Class:"@ClassNames[LoadBlockInfo.I]@"GridLoc:"@LoadBlockInfo.G@"ParentDir:"@LoadBlockInfo.P);
-		LoadClass = class<TowerBlock>(DynamicLoadObject(ClassNames[LoadBlockInfo.I], class'class'
-			, false));
+		`log("Load:"@LoadBlockInfo.M@LoadBlockInfo.I@LoadBlockInfo.G@LoadBlockInfo.P);
+//		`log("Loaded Block:"@"Mod:"@ModNames[LoadBlockInfo.I]@"GridLoc:"@LoadBlockInfo.G@"ParentDir:"@LoadBlockInfo.P);
+//		LoadClass = class<TowerBlock>(DynamicLoadObject(ClassNames[LoadBlockInfo.I], class'class'
+//			, false));
 		//@FIXME - Seriously.
 		if(i == 0)
 		{
@@ -89,22 +85,36 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		}
 		else if(i == 1)
 		{
-			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, 
+			
+			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
+				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
 				Player.GetTower().NodeTree.Root, 
 				LoadBlockInfo.G.X, LoadBlockInfo.G.Y, LoadBlockInfo.G.Z);
 		}
 		else
 		{
-		TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), LoadClass, 
+			
+			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
+				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
 				Player.GetTower().GetBlockFromLocationDirection(LoadBlockInfo.G, LoadBlockInfo.P), 
 				LoadBlockInfo.G.X, LoadBlockInfo.G.Y, LoadBlockInfo.G.Z);
+				
 		}
+	}
+}
+
+final function PopulateModList(TowerPlayerReplicationInfo TPRI)
+{
+	local TowerModInfo TMI;
+	foreach TPRI.Mods(TMI)
+	{
+		ModNames.AddItem(TMI.ModName);
 	}
 }
 
 final function CleanupSaveLoadVariables()
 {
 	Blocks.Remove(0, Blocks.Length);
-	ClassNames.Remove(0, ClassNames.Length);
+	ModNames.Remove(0, ModNames.Length);
 	SaveTowerName = "MAKE_SURE_I_GET_SET";
 }
