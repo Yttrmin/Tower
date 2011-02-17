@@ -2,6 +2,11 @@ class TowerTree extends Object
 	config(Tower)
 	dependson(TowerBlock);
 
+struct Chunk
+{
+	var TwoVectors Corners;
+};
+
 //@TODO - CONVERT ALLLLLL OF THIS RECURSION TO ITERATION!
 
 var protectedwrite TowerBlock Root;
@@ -11,6 +16,8 @@ var config const bool bDebugDrawHierarchy;
 var config const bool bDebugLogHierarchy;
 
 var int NodeCount;
+
+var private array<Chunk> Chunks;
 
 /** Adds a node into the tree. The only time it's valid to have a None ParentNode is if there's no 
 root node, in which case NewNode will become it. Returns TRUE if successfully added. */
@@ -32,7 +39,8 @@ final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
 	}
 	NodeCount++;
 	ParentNode.NextNodes.AddItem(NewNode);
-	NewNode.PreviousNode = ParentNode;
+//	NewNode.PreviousNode = ParentNode;
+	NewNode.SetBase(ParentNode);
 	return true;
 }
 
@@ -44,7 +52,7 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 	local TowerBlock Node;
 	`log("Removing node:"@NodeToRemove$"...");
 	// NodeToRemove will be gone shortly, so let's delete our parent's reference to us.
-	NodeToRemove.PreviousNode.NextNodes.RemoveItem(NodeToRemove);
+	NodeToRemove.GetParent().NextNodes.RemoveItem(NodeToRemove);
 	// If we don't destroy the node before finding parents for its children, they'll end up tracing
 	// into their to-be-destroyed parent, adding themselves back to their parent, getting told to
 	// find a new parent, and so forth, an infinite loop.
@@ -52,23 +60,23 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 	NodeCount--;
 	foreach NodeToRemove.NextNodes(Node)
 	{
-		Node.PreviousNode = None;
+		Node.SetBase(None);
 		`log("Getting children new parents...");
+		/*
 		if(bDeleteChildren)
 		{
 			RemoveNode(Node);
 		}
-		else
-		{
-			`log("Finding new parent for"@Node$"...");
-			// Find a parent for each of our children and all their children down the tree.
-			FindNewParent(Node, true);
-		}
+		*/
+		`log("Finding new parent for"@Node$"...");
+		// Find a parent for each of our children and all their children down the tree.
+		FindNewParent(Node, true);
 	}
+
 	`log("Done. Destroying node:"@NodeToRemove);
-	`log("Logging hierarchy...");
 	if(bDebugLogHierarchy)
 	{
+		`log("Logging hierarchy...");
 		DebugLogHierarchy(Root);
 	}
 }
@@ -144,10 +152,10 @@ final function ReParentNode(TowerBlock Node, TowerBlock NewParentNode, bool bPar
 		Block = Node;
 		// Fill the array with all parent nodes.
 		ParentChain.AddItem(Node);
-		while(Block.PreviousNode != None)
+		while(Block.GetParent() != None)
 		{
-			ParentChain.AddItem(Block.PreviousNode);
-			Block = Block.PreviousNode;
+			ParentChain.AddItem(Block.GetParent());
+			Block = Block.GetParent();
 		}
 		for(i = 1; i < ParentChain.length; i++)
 		{
@@ -166,7 +174,7 @@ final function ReParentNode(TowerBlock Node, TowerBlock NewParentNode, bool bPar
 			{
 				ParentChain[i].NextNodes.Remove(0, ParentChain[i].NextNodes.Length);
 			}
-			ParentChain[i].PreviousNode = ParentChain[i-1];
+			ParentChain[i].SetBase(ParentChain[i-1]);
 		}
 		for(i = 0; i < ParentChain.length-1; i++)
 		{
@@ -174,7 +182,8 @@ final function ReParentNode(TowerBlock Node, TowerBlock NewParentNode, bool bPar
 		}
 	}
 	NewParentNode.NextNodes.AddItem(Node);
-	Node.PreviousNode = NewParentNode;
+	Node.SetBase(NewParentNode);
+	`log(Node@"My new base:"@Node.Base);
 }
 
 final function TowerBlock GetRootNode()
@@ -189,8 +198,22 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 	optional out array<TowerBlock> PreviousNodes)
 {
 	local TowerBlock Block;
-	local array<TowerBlock> SupportNodes;
-	`log(Node@"Finding parent for node.");
+	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
+//	Node.FindBase();
+//	`log("FindBase says:"@Node.Base);
+	foreach Node.CollidingActors(class'TowerBlock', Block, 256, , true)
+	{
+		`log("Found Potential Parent:"@Block);
+		if(Node.GetParent() != Block && TraceNodeToRoot(Block))
+		{
+			ReparentNode(Node, Block, false);
+			Node.Adopted();
+			`log("And it's good!");
+			return TRUE;
+		}
+	}
+	
+	/*
 	GetFullSupport(Node, SupportNodes);
 	`log("Node has"@SupportNodes.length@"potential blocks for support:");
 	//@DELETEME
@@ -201,10 +224,11 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 	foreach SupportNodes(Block)
 	{
 		// Our previous parent can still exist which we know must be an orphan, so skip it.
-		if(Node.PreviousNode != Block && TraceNodeToRoot(Block, Node))
+		if(Node.GetParent() != Block && TraceNodeToRoot(Block, Node))
 		{
 			`log("Found path to root, parenting with node.");
 			ReParentNode(Node, Block, true);
+			`log("Reparented"@Node@"new base:"@Node.Base);
 			Node.Adopted();
 			return true;
 		}
@@ -213,6 +237,7 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 			`log("Could not find path to root.");
 		}
 	}
+	*/
 	if(bChildrenFindParent)
 	{
 		`log("Having children look for supported parents...");
@@ -222,8 +247,12 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 		}
 	}
 	`log("No parents available,"@Node@"is an orphan. Handle this.");
-	OrphanNodeRoots.AddItem(Node);
-	Node.Orphaned();
+	if(Node.GetParent() == None)
+	{
+		// True orphan.
+		OrphanNodeRoots.AddItem(Node);
+		Node.OrphanedParent();
+	}
 	return false;
 }
 
@@ -231,21 +260,10 @@ final function bool FindNewParent(TowerBlock Node, optional bool bChildrenFindPa
 OrphanParent is the node telling this node to trace for root. Since we know OrphanParent is an
 we can immediately say its not a path to root if its someone's parent down the line. */
 // This is surprisingly the most expensive function here!
-final function bool TraceNodeToRoot(TowerBlock Node, out TowerBlock OrphanParent)
+private final function bool TraceNodeToRoot(TowerBlock Node)
 {
-	`log("Tracing"@Node@"to root...");
-	while(Node.PreviousNode != None && Node.PreviousNode != OrphanParent)
-	{
-		if(Node.PreviousNode.bRootBlock || Node.bRootBlock)
-		{
-			return true;
-		}
-		else
-		{
-			Node = Node.PreviousNode;
-		}
-	}
-	return false;
+	// IBO and GBM both clocked out at 0.0250 ms. Virtually identical.
+	return Node.IsBasedOn(Root);
 }
 
 /** Populates given array with all nodes that can possibly support it. */

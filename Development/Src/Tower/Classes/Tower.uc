@@ -3,7 +3,8 @@ Tower
 
 Represents a player's tower, which a player can only have one of. Tower's are essentially containers for TowerBlocks.
 */
-class Tower extends Actor;
+class Tower extends Actor
+	dependson(TowerBlock);
 
 var protectedwrite TowerTree NodeTree;
 
@@ -40,7 +41,7 @@ simulated event ReplicatedEvent(name VarName)
 	}
 }
 
-function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBlock, 
+function TowerBlock AddBlock(BlockInfo Info, TowerBlock ParentBlock, 
 	Vector SpawnLocation, int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
@@ -51,10 +52,9 @@ function TowerBlock AddBlock(class<TowerBlock> BlockClass, TowerBlock ParentBloc
 	if(ParentBlock != None)
 	{
 		ParentDirection = Normal(ParentBlock.Location - SpawnLocation);
-		`log("ParentDirection:"@ParentDirection);
 	}
-	Block = Spawn(BlockClass, self,, SpawnLocation,,,TRUE);
-	Block.Initialize(GridLocation, ParentDirection, OwnerPRI, bRootBlock);
+	Block = Spawn(Info.BaseClass, self,, SpawnLocation,,,TRUE);
+	Block.Initialize(Info, GridLocation, ParentDirection, OwnerPRI, bRootBlock);
 	NodeTree.AddNode(Block, ParentBlock);
 	//@DEBUG
 	if(OwnerPRI.Tower.NodeTree.bDebugDrawHierarchy)
@@ -107,7 +107,7 @@ function bool RemoveBlock(TowerBlock Block)
 
 function bool CheckForParent(TowerBlock Block)
 {
-	if(Block.PreviousNode != None)
+	if(Block.GetParent() != None)
 	{
 		// You already have a parent.
 		return true;

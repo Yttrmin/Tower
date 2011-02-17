@@ -44,15 +44,17 @@ simulated event PostBeginPlay()
 
 simulated function DeterminePlaceableBlocks()
 {
+	local int i;
 	local String Mod;
 	local array<String> ModsToLoad;
 	local TowerModInfo ModInfo;
 	local BlockInfo Block;
 	ModsToLoad = SplitString(TowerGameReplicationInfo(WorldInfo.GRI).ServerMods, ";");
 	`log("ServerMods:"@TowerGameReplicationInfo(WorldInfo.GRI).ServerMods);
-	foreach ModsToLoad(Mod)
+	foreach ModsToLoad(Mod, i)
 	{
 		LoadMod(Mod);
+		Mods[i].PreInitialize(i);
 	}
 	foreach Mods(ModInfo)
 		{

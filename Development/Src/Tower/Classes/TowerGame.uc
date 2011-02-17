@@ -106,12 +106,13 @@ function CheckForMods()
 	TPRI = Spawn(class'TowerPlayerReplicationInfo');
 	`log("LOADING MODS");
 	`log("GameMods:"@GameMods.Length);
-	foreach TPRI.ModClasses(TMIClass)
+	foreach TPRI.ModClasses(TMIClass, i)
 	{
 		`log("LOADING MOD:"@TMIClass);
 		ModInfo = class<TowerModInfo>(DynamicLoadObject(TMIClass,class'class',false));
 		`log("MOD CLASS:"@ModInfo);
 		TMI = Spawn(ModInfo);
+		TMI.PreInitialize(i);
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
 		GameMods.AddItem(TMI);
 	}
@@ -294,7 +295,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 //	TPRI.Tower.Initialize(TPRI);
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely.
-	AddBlock(TPRI.Tower, class'TowerBlockRoot', None, 8*(NumPlayers-1), 0, 0, true);
+	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, 8*(NumPlayers-1), 0, 0, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
@@ -308,17 +309,17 @@ function SetTowerName(Tower Tower, string NewTowerName)
 
 /** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn
 it. */
-function TowerBlock AddBlock(Tower Tower, class<TowerBlock> BlockClass, TowerBlock ParentBlock, 
+function TowerBlock AddBlock(Tower Tower, BlockInfo Info, TowerBlock ParentBlock, 
 	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
 {
 	local vector SpawnLocation;
 //	`log("Adding...:"@BlockClass@ParentBlock@XBlock@YBlock@ZBlock);
-	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, BlockClass);
+	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, Info.BaseClass);
 	// Pivot point is in middle, bump it up so we're not in the ground.
 	SpawnLocation.Z += 128;
 	if(CanAddBlock(XBlock, YBlock, ZBlock))
 	{
-		return Tower.AddBlock(BlockClass, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, 
+		return Tower.AddBlock(Info, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, 
 			bRootBlock);
 		Broadcast(Tower, "Block added");
 	}
@@ -455,8 +456,6 @@ function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int
 	*/
 	return None;
 }
-
-
 
 function RestartPlayer(Controller aPlayer)
 {

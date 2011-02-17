@@ -22,7 +22,8 @@ event PreBeginPlay()
 	HUDMovie = new class'TowerHUDMoviePlayer';
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
-	HudMovie.LockMouseToCenter(true);
+	HUDMovie.MoveCursor();
+	HUDMovie.LockMouseToCenter(true);
 }
 
 event PostBeginPlay()
@@ -52,7 +53,7 @@ event OnMouseClick(int Button)
 			if(PlaceableBlock.BaseClass != None)
 			{
 				//@TODO - Make AddBlock use BlockInfo.
-				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock.BaseClass, Round(FinalGridLocation.X), 
+				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
 				Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 			}
 			else if(PlaceableModule.BaseClass != None)
@@ -79,8 +80,7 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 	{
 	case HM_Add:
 		FinalGridLocation = Block.GridLocation + ClickNormal;
-		//@TODO - Actually implement AddBlock using BlockInfo.
-		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock.BaseClass, Round(FinalGridLocation.X), 
+		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
 			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
 		break;
 	case HM_Remove:
@@ -91,11 +91,18 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 
 event Focus()
 {
+//	HUDMovie.SetMovieCanReceiveFocus(TRUE);
+	//@TODO - This should really just ignore Q instead.
+	TowerPlayerController(Owner).bIgnoreLookInput = 1;
+//	HUDMovie.AddCaptureKey('MouseX');
+//	HUDMovie.AddCaptureKey('MouseY');
 	HUDMovie.SetMovieCanReceiveInput(TRUE);
 }
 
 event UnFocus()
 {
+//	HUDMovie.ClearCaptureKeys();
+	TowerPlayerController(Owner).bIgnoreLookInput = 0;
 	HUDMovie.SetMovieCanReceiveInput(FALSE);
 }
 
@@ -125,13 +132,27 @@ function SetPlaceableBlock(BlockInfo Block)
 
 function ExpandBuildMenu()
 {
+	Focus();
+	ProcessMouseMovement();
 	HUDMovie.ExpandBuildMenu();
 	HUDMovie.SetExternalTexture("HUDPreview", TextureRenderTarget2D'TowerMisc.HUDPreview');
 }
 
 function CollapseBuildMenu()
 {
+	UnFocus();
+	IgnoreMouseMovement();
 	HUDMovie.CollapseBuildMenu();
+}
+
+function ProcessMouseMovement()
+{
+	TowerPlayerInput(TowerPlayerController(Owner).PlayerInput).OnMouseMove = HUDMovie.OnMouseMove;
+}
+
+function IgnoreMouseMovement()
+{
+	TowerPlayerInput(TowerPlayerController(Owner).PlayerInput).OnMouseMove = None;
 }
 
 /** Only time where Canvas is valid. */

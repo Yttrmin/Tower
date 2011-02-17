@@ -1,5 +1,7 @@
 class TowerPlayerInput extends PlayerInput;
 
+delegate OnMouseMove(float DeltaX, float DeltaY);
+
 /** I predict this'll be painfully slow. If you use it definitely store the result! */
 function name GetKeyFromCommand(string Command)
 {
@@ -12,6 +14,17 @@ function name GetKeyFromCommand(string Command)
 		}
 	}
 	return '';
+}
+
+// Postprocess the player's input.
+event PlayerInput( float DeltaTime )
+{
+	// Process mouse input before this, please.
+	if(aMouseX != 0 || aMouseY != 0)
+	{
+		OnMouseMove(aMouseX, aMouseY);
+	}
+	Super.PlayerInput(DeltaTime);
 }
 
 /** Opens the specified map, and sends along the current mod list so you can properly

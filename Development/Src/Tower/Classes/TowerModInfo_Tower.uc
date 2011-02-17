@@ -16,7 +16,8 @@ DefaultProperties
 	Version="0.1"
 	ModBlocks.Add(class'TowerBlockRoot')
 	ModBlocks.Add(class'TowerBlockDebug')
-	ModBlockInfo.Add((DisplayName="Debug Block",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'TowerBlocks.DebugBlockMaterial'))
+	ModBlockInfo.Add((BaseClass=class'TowerBlockRoot'));
+	ModBlockInfo.Add((DisplayName="Debug Block",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock'))
 //	ModBlockInfo.Add((DisplayName="Debug Block (Default Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'EngineMaterials.DefaultMaterial'))
 	ModBlockInfo.Add((DisplayName="Debug Block (Floor Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'ASC_Floor.BSP.Materials.M_ASC_Floor_BSP_Tile01'))
 	ModBlockInfo.Add((DisplayName="Debug Block (Other Floor Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'UN_Floors.BSP.Materials.M_Floors_BlendModulation_Master_02'))
