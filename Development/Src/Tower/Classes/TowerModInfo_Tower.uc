@@ -14,9 +14,10 @@ DefaultProperties
 	Contact="none :("
 	Description="Primary ModInfo for Tower!"
 	Version="0.1"
-	ModBlocks.Add(class'TowerBlockRoot')
-	ModBlocks.Add(class'TowerBlockDebug')
-	ModBlockInfo.Add((BaseClass=class'TowerBlockRoot'));
+	ModBlocks.Add(TowerBlock'DebugBlocks.DebugBlock')
+//	ModBlocks.Add(class'TowerBlockRoot')
+//	ModBlocks.Add(class'TowerBlockDebug')
+	ModBlockInfo.Add((DisplayName="Root Block",BaseClass=class'TowerBlockRoot'))
 	ModBlockInfo.Add((DisplayName="Debug Block",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock'))
 //	ModBlockInfo.Add((DisplayName="Debug Block (Default Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'EngineMaterials.DefaultMaterial'))
 	ModBlockInfo.Add((DisplayName="Debug Block (Floor Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'ASC_Floor.BSP.Materials.M_ASC_Floor_BSP_Tile01'))

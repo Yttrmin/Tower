@@ -19,14 +19,6 @@ struct BlockInfo
 	var int ModIndex, ModBlockInfoIndex;
 };
 
-// Modders: Don't modify either of these variables. Messing up the hierarchy has a tendency to lead
-// to infinite loops or infinite recursion.
-/** Reference to this block/node's parent. In the root and orphans this is None. */
-// Replace with Base.
-//var() editconst deprecated TowerBlock PreviousNode;
-/** Holds references to all of this block/node's children.  */
-var() editconst array<TowerBlock> NextNodes;
-
 //@TODO - Figure out how acceleration is calculated.
 var const float ZAcceleration;
 var const int DropRate;
@@ -63,7 +55,6 @@ auto state Stable
 	function StopFall()
 	{
 		local Vector NewLocation;
-		`log("CHECK parent BEGIN StopFall:"@Base);
 		// Can't use SetLocation without breaking base.
 		NewLocation = Location;
 		NewLocation.X -= Base.Location.X;
@@ -72,16 +63,13 @@ auto state Stable
 		SetRelativeLocation(NewLocation);
 		SetGridLocation();
 		ClearTimer('DroppedSpace');
-		`log("CHECK parent StopFall:"@Base);
 	}
 
 	event BeginState(name PreviousStateName)
 	{
 		if(PreviousStateName == 'Unstable')
 		{
-			`log("CHECK parent BeginState Stable:"@Base);
 			StopFall();
-			`log("CHECK parent PRE StopFall:"@Base);
 		}
 	}
 }
@@ -233,7 +221,7 @@ event OrphanedParent()
 	local TowerBlock Node;
 	GotoState('Unstable');
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
-	foreach NextNodes(Node)
+	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.OrphanedChild();
 	}
@@ -251,7 +239,7 @@ event Adopted()
 	local TowerBlock Node;
 	`log("ADOPTED:"@Self);
 	SetGridLocation();
-	foreach NextNodes(Node)
+	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.Adopted();
 	}

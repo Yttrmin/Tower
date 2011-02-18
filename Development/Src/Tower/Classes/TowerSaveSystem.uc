@@ -88,16 +88,15 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 			
 			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
 				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
-				Player.GetTower().NodeTree.Root, 
-				LoadBlockInfo.G.X, LoadBlockInfo.G.Y, LoadBlockInfo.G.Z);
+				Player.GetTower().NodeTree.Root, LoadBlockInfo.G);
 		}
 		else
 		{
 			
 			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
 				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
-				Player.GetTower().GetBlockFromLocationDirection(LoadBlockInfo.G, LoadBlockInfo.P), 
-				LoadBlockInfo.G.X, LoadBlockInfo.G.Y, LoadBlockInfo.G.Z);
+				Player.GetTower().GetBlockFromLocationAndDirection(LoadBlockInfo.G, LoadBlockInfo.P), 
+				LoadBlockInfo.G);
 				
 		}
 	}
