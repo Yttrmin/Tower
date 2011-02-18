@@ -285,6 +285,7 @@ event GameTimerExpired()
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
+	local Vector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	//@BUG
 	// For whatever reason PlayerController won't collide with children, so we're breaking
@@ -294,8 +295,9 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	TPRI.Tower.OwnerPRI = TPRI;
 //	TPRI.Tower.Initialize(TPRI);
 	// Need to make this dependent on player count in future.
-	//@FIXME - This can be done a bit more cleanly and safely.
-	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, 8*(NumPlayers-1), 0, 0, true);
+	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
+	GridLocation.X = 8*(NumPlayers-1);
+	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
@@ -310,16 +312,16 @@ function SetTowerName(Tower Tower, string NewTowerName)
 /** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn
 it. */
 function TowerBlock AddBlock(Tower Tower, BlockInfo Info, TowerBlock ParentBlock, 
-	int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
+	out Vector GridLocation, optional bool bRootBlock = false)
 {
+	local TowerBlock Block;
 	local vector SpawnLocation;
-//	`log("Adding...:"@BlockClass@ParentBlock@XBlock@YBlock@ZBlock);
-	SpawnLocation =  GridLocationToVector(XBlock, YBlock, ZBlock, Info.BaseClass);
+	SpawnLocation =  GridLocationToVector(GridLocation, Info.BaseClass);
 	// Pivot point is in middle, bump it up so we're not in the ground.
 	SpawnLocation.Z += 128;
-	if(CanAddBlock(XBlock, YBlock, ZBlock))
+	if(CanAddBlock(GridLocation))
 	{
-		return Tower.AddBlock(Info, ParentBlock, SpawnLocation, XBlock, YBlock, ZBlock, 
+		Block = Tower.AddBlock(Info, ParentBlock, SpawnLocation, GridLocation, 
 			bRootBlock);
 		Broadcast(Tower, "Block added");
 	}
@@ -327,7 +329,7 @@ function TowerBlock AddBlock(Tower Tower, BlockInfo Info, TowerBlock ParentBlock
 	{
 		Broadcast(Tower, "Could not add block");
 	}
-	return None;
+	return Block;
 }
 
 /** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/
@@ -386,26 +388,26 @@ function bool RemoveBlock(Tower CallingTower, TowerBlock Block)
 	*/
 }
 
-function bool CanAddBlock(int XBlock, int YBlock, int ZBlock)
+function bool CanAddBlock(out Vector GridLocation)
 {
-	return (IsGridLocationFree(XBlock, YBlock, ZBlock) && IsGridLocationOnGrid(XBlock, YBlock, ZBlock));
+	return (IsGridLocationFree(GridLocation) && IsGridLocationOnGrid(GridLocation));
 }
 
-function Vector GridLocationToVector(int XBlock, int YBlock, int ZBlock, optional class<TowerBlock> BlockClass)
+function Vector GridLocationToVector(out Vector GridLocation, optional class<TowerBlock> BlockClass)
 {
 	local int MapBlockWidth, MapBlockHeight;
 	local Vector NewBlockLocation;
 	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
 	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (XBlock * MapBlockWidth);
-	NewBlockLocation.Y = (YBlock * MapBlockWidth);
+	NewBlockLocation.X = (GridLocation.X * MapBlockWidth);
+	NewBlockLocation.Y = (GridLocation.Y * MapBlockWidth);
 	// Z is the very bottom of the block.
-	NewBlockLocation.Z = (ZBlock * MapBlockHeight);
+	NewBlockLocation.Z = (GridLocation.Z * MapBlockHeight);
 	return NewBlockLocation;
 }
 
-function bool IsGridLocationOnGrid(int XBlock, int YBlock, int ZBlock)
+function bool IsGridLocationOnGrid(out Vector GridLocation)
 {
 	local int MapXBlocks; 
 	local int MapYBlocks; 
@@ -413,9 +415,9 @@ function bool IsGridLocationOnGrid(int XBlock, int YBlock, int ZBlock)
 	MapXBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).XBlocks;
 	MapYBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).YBlocks;
 	MapZBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).ZBlocks;
-	if((XBlock <= MapXBlocks/2 && XBlock >= -MapXBlocks/2) && 
-		(YBlock <= MapYBlocks/2 && YBlock >= -MapYBlocks/2) &&
-		(ZBlock <= MapZBlocks/2 && ZBlock >= -MapZBlocks/2))
+	if((GridLocation.X <= MapXBlocks/2 && GridLocation.X >= -MapXBlocks/2) && 
+		(GridLocation.Y <= MapYBlocks/2 && GridLocation.Y >= -MapYBlocks/2) &&
+		(GridLocation.Z <= MapZBlocks/2 && GridLocation.Z >= -MapZBlocks/2))
 	{
 		return true;
 	}
@@ -425,7 +427,7 @@ function bool IsGridLocationOnGrid(int XBlock, int YBlock, int ZBlock)
 	}
 }
 
-function bool IsGridLocationFree(int XBlock, int YBlock, int ZBlock)
+function bool IsGridLocationFree(out Vector GridLocation)
 {
 	return true;
 }

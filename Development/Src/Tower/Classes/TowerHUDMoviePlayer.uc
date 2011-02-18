@@ -9,6 +9,19 @@ class TowerHUDMoviePlayer extends GFxMoviePlayer;
 var TowerHUD HUD;
 var float MouseX, MouseY;
 
+var GFxScrollingList PlaceablesList;
+
+event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
+{
+	if(WidgetName == 'PlaceablesList')
+	{
+		PlaceablesList = GFxScrollingList(Widget);
+		PlaceablesList.HUDMovie = Self;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /** Takes Vector2D and fills it with current mouse coordinates.
 If bRelativeToViewport is TRUE, the Mouse values are between 0 and 1. If FALSE, the Mouse values
 are the coordinates in pixels. */
@@ -94,16 +107,39 @@ event OnMouseMove(float DeltaX, float DeltaY)
 {
 	DeltaX *= HUD.RatioX;
 	DeltaY *= -HUD.RatioY;
-	MouseX = FMin(MouseX + DeltaX, 1024);
-	MouseY = FMin(MouseY + DeltaY, 768);
+	MouseX = FMax(FMin(MouseX + DeltaX, 1024), 0);
+	MouseY = FMax(FMin(MouseY + DeltaY, 768), 0);
 	MoveCursor();
-	`log(DeltaX@DeltaY);
+//	`log(DeltaX@DeltaY);
 }
 
 function MoveCursor()
 {
 	SetVariableNumber("_root.MouseCursor._x", MouseX); 
-	SetVariableNumber("_root.MouseCursor._y", MouseY); 
+	SetVariableNumber("_root.MouseCursor._y", MouseY);
+	if(PlaceablesList.HitTest(MouseX, MouseY))
+	{
+		PlaceablesList.MousedOn();
+		`log("TOUCHING PLACEABLES LIST");
+	}
+	else if(PlaceablesList.bMousedOnPreviousFrame)
+	{
+		PlaceablesList.MousedOff();
+	}
+}
+
+function bool HitTest(GFxObject Object, int X, int Y)
+{
+	local array<ASValue> Arguments;
+	local ASValue Arg, ReturnBool;
+	Arg.Type = AS_Number;
+	Arg.n = X;
+	Arguments.AddItem(Arg);
+	Arg.n = Y;
+	Arguments.AddItem(Arg);
+
+	ReturnBool = Object.Invoke("hitTest", Arguments);
+	return ReturnBool.b;
 }
 
 DefaultProperties
@@ -116,5 +152,8 @@ DefaultProperties
 	//bCaptureInput=TRUE
 	bAllowFocus=TRUE
 	bIgnoreMouseInput=FALSE
+
+	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
+
 }
 

@@ -24,7 +24,7 @@ exec function ClickDown(int ButtonID)
 /** Called when mouse button is released. */
 exec function ClickUp(int ButtonID)
 {
-
+	TowerHUD(myHUD).OnMouseRelease(ButtonID);
 }
 
 exec function ToggleBuildMenu(bool Toggle)
@@ -45,9 +45,9 @@ exec function SetHighlightColor(LinearColor NewColor)
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
-function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, int XBlock, int YBlock, int ZBlock)
+function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, out Vector GridLocation)
 {
-	ServerAddBlock(Info, ParentBlock, XBlock, YBlock, ZBlock);
+	ServerAddBlock(Info, ParentBlock, GridLocation);
 }
 
 exec function RemoveBlock(TowerBlock Block)
@@ -88,11 +88,6 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
-exec function DebugLogHierarchy()
-{
-	GetTower().NodeTree.DebugLogHierarchy(GetTower().NodeTree.Root);
-}
-
 exec function RequestUpdateTime()
 {
 	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
@@ -100,9 +95,9 @@ exec function RequestUpdateTime()
 }
 
 reliable server function ServerAddBlock(BlockInfo Info, TowerBlock ParentBlock,
-	int XBlock, int YBlock, int ZBlock)
+	Vector GridLocation)
 {
-	TowerGame(WorldInfo.Game).AddBlock(GetTower(), Info, ParentBlock, XBlock, YBlock, ZBlock);
+	TowerGame(WorldInfo.Game).AddBlock(GetTower(), Info, ParentBlock, GridLocation);
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
@@ -136,7 +131,6 @@ state Master extends Spectating
 {
 	ignores StartFire, StopFire;
 }
-
 
 DefaultProperties
 {

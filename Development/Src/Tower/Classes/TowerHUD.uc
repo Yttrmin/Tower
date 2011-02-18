@@ -44,6 +44,7 @@ event OnMouseClick(int Button)
 	// Left mouse button.
 	if(Button == 0)
 	{
+		HUDMovie.PlaceablesList.onMousePress();
 		HUDMovie.GetMouseCoordinates(Mouse, true);
 		TraceForBlock(Mouse, Block, HitNormal);
 		if(Block != None)
@@ -53,8 +54,7 @@ event OnMouseClick(int Button)
 			if(PlaceableBlock.BaseClass != None)
 			{
 				//@TODO - Make AddBlock use BlockInfo.
-				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
-				Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
+				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, FinalGridLocation);
 			}
 			else if(PlaceableModule.BaseClass != None)
 			{
@@ -72,6 +72,14 @@ event OnMouseClick(int Button)
 	}
 }
 
+event OnMouseRelease(int Button)
+{
+	if(Button == 0)
+	{
+		HUDMovie.PlaceablesList.onMouseRelease();
+	}
+}
+
 /** Called from OnMouseClick(). ClickNormal can be used to determine which side of a block was clicked. */
 event BlockClicked(TowerBlock Block, Vector ClickNormal)
 {
@@ -80,8 +88,7 @@ event BlockClicked(TowerBlock Block, Vector ClickNormal)
 	{
 	case HM_Add:
 		FinalGridLocation = Block.GridLocation + ClickNormal;
-		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, Round(FinalGridLocation.X), 
-			Round(FinalGridLocation.Y), Round(FinalGridLocation.Z));
+		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, FinalGridLocation);
 		break;
 	case HM_Remove:
 		TowerPlayerController(PlayerOwner).RemoveBlock(Block);
@@ -122,6 +129,7 @@ function SetPlaceablesList(array<BlockInfo> Blocks)
 	ScriptTrace();
 	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
+	HUDMovie.OnBuildListChange(1);
 }
 
 function SetPlaceableBlock(BlockInfo Block)

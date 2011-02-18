@@ -17,10 +17,10 @@ var const string Version;
 // Material has more control, and the processes are pretty much identical...
 // But just texture means more consistency and less breaking.
 
-var protectedwrite array<BlockInfo> ModBlockInfo;
+var protectedwrite /*deprecated*/ array<BlockInfo> ModBlockInfo;
 
-/** Add your custom TowerBlocks to this array in DefaultProperties. */
-var deprecated protectedwrite const array<class<TowerBlock> > ModBlocks;
+/** Store Archetypes in here? Should ModInfos be archetypes as well? ARGH! */
+var /*deprecated*/ protectedwrite const array<TowerBlock> ModBlocks;
 
 var protectedwrite const array<class<TowerModule> > ModModules;
 

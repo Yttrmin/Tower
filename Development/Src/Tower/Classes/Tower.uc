@@ -42,13 +42,10 @@ simulated event ReplicatedEvent(name VarName)
 }
 
 function TowerBlock AddBlock(BlockInfo Info, TowerBlock ParentBlock, 
-	Vector SpawnLocation, int XBlock, int YBlock, int ZBlock, optional bool bRootBlock = false)
+	Vector SpawnLocation, out Vector GridLocation, optional bool bRootBlock = false)
 {
 	local TowerBlock Block;
-	local Vector GridLocation, ParentDirection;
-	GridLocation.X = XBlock;
-	GridLocation.Y = YBlock;
-	GridLocation.Z = ZBlock;
+	local Vector ParentDirection;
 	if(ParentBlock != None)
 	{
 		ParentDirection = Normal(ParentBlock.Location - SpawnLocation);
@@ -70,12 +67,11 @@ function TowerBlock AddBlock(BlockInfo Info, TowerBlock ParentBlock,
 	*/
 }
 
-function TowerBlock GetBlockFromLocationDirection(out Vector GridLocation, out Vector ParentDirection)
+function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, out Vector ParentDirection)
 {
 	local Actor Block;
 	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
-	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(GridLocation.X, GridLocation.Y,
-		GridLocation.Z);
+	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(GridLocation);
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
 	StartLocation.Z += 128;
 	EndLocation.X = StartLocation.X + (ParentDirection.X * 512);
