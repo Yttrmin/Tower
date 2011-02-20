@@ -1,20 +1,15 @@
 class TowerHUD extends HUD
 	dependson(TowerModule);
 
-enum HUDMode
-{
-	HM_Add,
-	HM_Remove
-};
-
 var TowerHUDMoviePlayer HUDMovie;
-var deprecated HUDMode Mode;
 var TowerBlock LastHighlightedBlock;
 
 /** If not None, this class of block will be added when a block is clicked. */
-var BlockInfo PlaceableBlock;
+var deprecated BlockInfo PlaceableBlock;
 /** If not None, this class of module will be added when a block is clicked. */
-var ModuleInfo PlaceableModule;
+var deprecated ModuleInfo PlaceableModule;
+
+var TowerPlaceable Placeable;
 
 event PreBeginPlay()
 {
@@ -50,16 +45,21 @@ event OnMouseClick(int Button)
 		if(Block != None)
 		{
 			FinalGridLocation = Block.GridLocation + HitNormal;
+			FinalGridLocation.X = Round(FinalGridLocation.X);
+			FinalGridLocation.Y = Round(FinalGridLocation.Y);
+			FinalGridLocation.Z = Round(FinalGridLocation.Z);
 			`assert((PlaceableBlock.BaseClass != None) ^^ (PlaceableModule.BaseClass != None));
+		//	TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, Block, FinalGridLocation);
+			
 			if(PlaceableBlock.BaseClass != None)
 			{
-				//@TODO - Make AddBlock use BlockInfo.
 				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, FinalGridLocation);
 			}
 			else if(PlaceableModule.BaseClass != None)
 			{
-
+//				TowerPlayerController(PlayerOwner).AddModule(
 			}
+			
 		}
 	}
 	// Right mouse button.
@@ -72,27 +72,20 @@ event OnMouseClick(int Button)
 	}
 }
 
+
+function TestTowerPlaceable(TowerBlock Block)
+{
+	local TowerPlaceable P;
+	P = TowerPlaceable(Block);
+	// This correctly identifies the class! And you can cast blocks and such to TowerPlaceable just fine!
+	`log("TTP"@P@P.class);
+}
+
 event OnMouseRelease(int Button)
 {
 	if(Button == 0)
 	{
 		HUDMovie.PlaceablesList.onMouseRelease();
-	}
-}
-
-/** Called from OnMouseClick(). ClickNormal can be used to determine which side of a block was clicked. */
-event BlockClicked(TowerBlock Block, Vector ClickNormal)
-{
-	local Vector FinalGridLocation;
-	switch(Mode)
-	{
-	case HM_Add:
-		FinalGridLocation = Block.GridLocation + ClickNormal;
-		TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, FinalGridLocation);
-		break;
-	case HM_Remove:
-		TowerPlayerController(PlayerOwner).RemoveBlock(Block);
-		break;
 	}
 }
 
@@ -135,7 +128,13 @@ function SetPlaceablesList(array<BlockInfo> Blocks)
 function SetPlaceableBlock(BlockInfo Block)
 {
 	PlaceableBlock = Block;
-//	PlaceableModule = None;
+	PlaceableModule.BaseClass = None;
+}
+
+function SetPlaceableModule(ModuleInfo Info)
+{
+	PlaceableBlock.BaseClass = None;
+	PlaceableModule = Info;
 }
 
 function ExpandBuildMenu()
@@ -220,7 +219,6 @@ function TowerPlayerReplicationInfo GetTPRI()
 
 DefaultProperties
 {
-	Mode=HM_Add
 //	PlaceableBlock=class'TowerBlockDebug'
 //	PlaceableModule=None
 }

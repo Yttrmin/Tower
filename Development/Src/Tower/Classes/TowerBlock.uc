@@ -6,6 +6,9 @@ Base class of all the blocks that make up a Tower.
 Keep in mind this class and its children will likely be opened up to modding!
 */
 class TowerBlock extends DynamicSMActor_Spawnable
+	dependson(TowerModule)
+	ClassGroup(Tower)
+	implements(TowerPlaceable)
 	placeable
 	abstract;
 
@@ -27,14 +30,14 @@ var int StartZ;
 
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
-var() protectedwrite editconst Vector ParentDirection;
+var protectedwrite editconst Vector ParentDirection;
 /** Block's position on the grid. */
-var() protectedwrite editconst Vector GridLocation;
+var protectedwrite editconst Vector GridLocation;
 var const editconst int XSize, YSize, ZSize;
 var protectedwrite bool bRootBlock;
 
 var protected MaterialInstanceConstant MaterialInstance;
-var const editconst LinearColor Black;
+var const LinearColor Black;
 var protected TowerPlayerReplicationInfo OwnerPRI;
 
 var protected NavMeshObstacle Obstacle;
@@ -42,12 +45,116 @@ var protected NavMeshObstacle Obstacle;
 var int ModIndex, ModBlockInfoIndex;
 
 /** User-friendly name. Used for things like the build menu. */
-var String DisplayName;
+var() String DisplayName;
+var() const bool bAddToPlaceablesList;
 
 replication
 {
 	if(bNetInitial)
 		GridLocation, OwnerPRI;
+}
+
+simulated event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	MaterialInstance = new(None) class'MaterialInstanceConstant';
+	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
+	StaticMeshComponent.SetMaterial(0, MaterialInstance);
+	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
+//	Obstacle = Spawn(class'NavMeshObstacle');
+//	Obstacle.SetEnabled(TRUE);
+}
+
+final function AddModule(out ModuleInfo Info, out Vector GridLocation)
+{
+	local TowerModule NewModule;
+	NewModule = new Info.BaseClass;
+	AttachComponent(NewModule);
+	//NewModule = new ModuleArchetype.Class (ModuleArchetype);
+	//Attach and stuff here.
+}
+/*
+function Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+	TowerPlayerReplicationInfo NewOwnerPRI)
+{
+	GridLocation = NewGridLocation;
+	ParentDirection = NewParentDirection;
+	OwnerPRI = NewOwnerPRI;
+}
+*/
+
+function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParentDirection,
+	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
+{
+	if(Info.BlockMesh != None)
+	{
+		StaticMeshComponent.SetStaticMesh(Info.BlockMesh);
+	}
+	//@TODO - Can't have highlighting if we replace the material like this.
+	if(Info.BlockMaterial != None)
+	{
+		StaticMeshComponent.SetMaterial(0, Info.BlockMaterial);
+	}
+	if(Info.DisplayName != "")
+	{
+		DisplayName = Info.DisplayName;
+	}
+	ModIndex = Info.ModIndex;
+	ModBlockInfoIndex = Info.ModBlockInfoIndex;
+	`log("added"@ModIndex@ModBlockInfoIndex);
+	GridLocation = NewGridLocation;
+	ParentDirection = NewParentDirection;
+	OwnerPRI = NewOwnerPRI;
+	bRootBlock = bNewRootBlock;
+}
+
+
+final function TowerBlock GetParent()
+{
+	return TowerBlock(Base);
+}
+
+function SetFullLocation(Vector NewLocation, bool bRelative, 
+	optional Vector BaseLocation)
+{
+	local Vector NewRelativeLocation;
+	if(bRelative)
+	{
+		NewRelativeLocation.X = NewLocation.X - BaseLocation.X;
+		NewRelativeLocation.Y = NewLocation.Y - BaseLocation.Y;
+		NewRelativeLocation.Z = NewLocation.Z - BaseLocation.Z;
+		SetRelativeLocation(NewRelativeLocation);
+	}
+	else
+	{
+		SetLocation(NewLocation);
+		GridLocation.X = NewLocation.X / 256;
+		GridLocation.Y = NewLocation.Y / 256;
+		GridLocation.Z = NewLocation.Z / 256;
+	}
+}
+
+final function SetGridLocation()
+{
+	GridLocation.X = int(Location.X) / 256;
+	GridLocation.Y = int(Location.Y) / 256;
+	GridLocation.Z = int(Location.Z) / 256;
+}
+
+final simulated function Highlight()
+{
+	MaterialInstance.SetVectorParameterValue('HighlightColor', 
+		OwnerPRI.HighlightColor);
+}
+
+final simulated function UnHighlight()
+{
+	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
+}
+
+final simulated function SetColor()
+{
+
 }
 
 auto state Stable
@@ -120,89 +227,7 @@ state Unstable
 	}
 };
 
-simulated event PostBeginPlay()
-{
-	Super.PostBeginPlay();
-	MaterialInstance = new(None) class'MaterialInstanceConstant';
-	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
-	StaticMeshComponent.SetMaterial(0, MaterialInstance);
-	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
-//	Obstacle = Spawn(class'NavMeshObstacle');
-//	Obstacle.SetEnabled(TRUE);
-}
 
-function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParentDirection,
-	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
-{
-	if(Info.BlockMesh != None)
-	{
-		StaticMeshComponent.SetStaticMesh(Info.BlockMesh);
-	}
-	//@TODO - Can't have highlighting if we replace the material like this.
-	if(Info.BlockMaterial != None)
-	{
-		StaticMeshComponent.SetMaterial(0, Info.BlockMaterial);
-	}
-	if(Info.DisplayName != "")
-	{
-		DisplayName = Info.DisplayName;
-	}
-	ModIndex = Info.ModIndex;
-	ModBlockInfoIndex = Info.ModBlockInfoIndex;
-	`log("added"@ModIndex@ModBlockInfoIndex);
-	GridLocation = NewGridLocation;
-	ParentDirection = NewParentDirection;
-	OwnerPRI = NewOwnerPRI;
-	bRootBlock = bNewRootBlock;
-}
-
-final function TowerBlock GetParent()
-{
-	return TowerBlock(Base);
-}
-
-function SetFullLocation(Vector NewLocation, bool bRelative, 
-	optional Vector BaseLocation)
-{
-	local Vector NewRelativeLocation;
-	if(bRelative)
-	{
-		NewRelativeLocation.X = NewLocation.X - BaseLocation.X;
-		NewRelativeLocation.Y = NewLocation.Y - BaseLocation.Y;
-		NewRelativeLocation.Z = NewLocation.Z - BaseLocation.Z;
-		SetRelativeLocation(NewRelativeLocation);
-	}
-	else
-	{
-		SetLocation(NewLocation);
-		GridLocation.X = NewLocation.X / 256;
-		GridLocation.Y = NewLocation.Y / 256;
-		GridLocation.Z = NewLocation.Z / 256;
-	}
-}
-
-final function SetGridLocation()
-{
-	GridLocation.X = int(Location.X) / 256;
-	GridLocation.Y = int(Location.Y) / 256;
-	GridLocation.Z = int(Location.Z) / 256;
-}
-
-final simulated function Highlight()
-{
-	MaterialInstance.SetVectorParameterValue('HighlightColor', 
-		OwnerPRI.HighlightColor);
-}
-
-final simulated function UnHighlight()
-{
-	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
-}
-
-final simulated function SetColor()
-{
-
-}
 
 function float TimeToDrop()
 {

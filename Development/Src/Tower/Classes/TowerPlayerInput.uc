@@ -30,7 +30,7 @@ event PlayerInput( float DeltaTime )
 /** Opens the specified map, and sends along the current mod list so you can properly
 connect to Tower servers! */
 exec function OpenEx(string MapName)
-{
+{/*
 	local String Mods;
 	local int i;
 	local TowerModInfo Mod;
@@ -44,5 +44,5 @@ exec function OpenEx(string MapName)
 		Mods $= Mod.ModName$"|"$Mod.Version;
 	}
 	MapName $= Mods;
-	ConsoleCommand(MapName);
+	ConsoleCommand(MapName);*/
 }

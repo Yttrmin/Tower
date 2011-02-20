@@ -1,0 +1,1 @@
+class TowerBlockStructural extends TowerBlock;

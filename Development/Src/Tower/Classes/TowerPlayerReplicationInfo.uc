@@ -23,10 +23,14 @@ var protected globalconfig bool bDebugMods;
 var protectedwrite globalconfig array<String> ModClasses;
 
 // Maybe this should go to TowerPlayerController (WHO KNOWS)
+
 var protectedwrite array<TowerModInfo> Mods;
+
 var protectedwrite array<ModOption> ModOptions;
 var protectedwrite array<BlockInfo> PlaceableBlocks;
 var protectedwrite array<ModuleInfo> PlaceableModules;
+
+var protectedwrite array<TowerPlaceable> Placeables;
 
 replication
 {

@@ -41,6 +41,29 @@ simulated event ReplicatedEvent(name VarName)
 	}
 }
 
+
+function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
+	out Vector SpawnLocation, out Vector GridLocation)
+{
+	local Vector ParentDirection;
+	local TowerBlock Block;
+	local TowerModule Module;
+	if(Parent != None)
+	{
+		ParentDirection = Normal(Parent.Location - SpawnLocation);
+	}
+	if(TowerBlock(Placeable) != None)
+	{
+		Block = Spawn(TowerBlock(Placeable).class, self,, SpawnLocation,,Placeable,TRUE);
+//		Block.Initialize(GridLocation, ParentDirection, OwnerPRI);
+		NodeTree.AddNode(Block, Parent);
+	}
+}
+
+function RemovePlaceable(TowerPlaceable Placeable);
+
+
+
 function TowerBlock AddBlock(BlockInfo Info, TowerBlock ParentBlock, 
 	Vector SpawnLocation, out Vector GridLocation, optional bool bRootBlock = false)
 {
