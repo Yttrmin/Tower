@@ -6,6 +6,7 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
 class TowerGame extends FrameworkGame
+	dependson(TowerModule)
 	config(Tower);
 
 enum Factions
@@ -19,6 +20,9 @@ var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
 var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;
+
+var array<TowerModInfo> Mods;
+var config array<String> ModPackages;
 
 event PreBeginPlay()
 {
@@ -297,6 +301,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
+//	AddPlaceable(TPRI.Tower, Mods[0].ModBlocks[0], None, GridLocation);
 	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
@@ -307,6 +312,41 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 function SetTowerName(Tower Tower, string NewTowerName)
 {
 	Tower.TowerName = NewTowerName;
+}
+
+
+function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, TowerBlock Parent, 
+	out Vector GridLocation)
+{
+	local Vector SpawnLocation;
+	SpawnLocation = GridLocationToVector(GridLocation);
+	// Pivot point in middle, bump up.
+	SpawnLocation.Z += 128;
+	if(CanAddBlock(GridLocation))
+	{
+		return Tower.AddPlaceable(Placeable, Parent, SpawnLocation, GridLocation);
+	}
+	else
+	{
+		return None;
+	}
+}
+
+function RemovePlaceable(Tower Tower, TowerPlaceable Placeable)
+{
+
+}
+
+
+function TowerModule AddModule(Tower Tower, ModuleInfo Info, TowerBlock Parent,
+	out Vector GridLocation)
+{
+	local Vector SpawnLocation;
+	SpawnLocation = GridLocationToVector(GridLocation);
+	if(CanAddBlock(GridLocation))
+	{
+		Parent.AddModule(Info, GridLocation);
+	}
 }
 
 /** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn

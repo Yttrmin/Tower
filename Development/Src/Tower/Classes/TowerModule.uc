@@ -1,4 +1,5 @@
 class TowerModule extends ActorComponent
+	ClassGroup(Tower)
 	abstract;
 
 struct ModuleInfo

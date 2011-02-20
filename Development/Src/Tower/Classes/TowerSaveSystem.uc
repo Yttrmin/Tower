@@ -85,18 +85,20 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		}
 		else if(i == 1)
 		{
-			
+			/*
 			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
 				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
 				Player.GetTower().NodeTree.Root, LoadBlockInfo.G);
+				*/
 		}
 		else
 		{
-			
+			/*
 			TowerGame(Player.WorldInfo.Game).AddBlock(Player.GetTower(), 
 				Player.GetTPRI().Mods[LoadBlockInfo.M].ModBlockInfo[LoadBlockInfo.I], 
 				Player.GetTower().GetBlockFromLocationAndDirection(LoadBlockInfo.G, LoadBlockInfo.P), 
 				LoadBlockInfo.G);
+				*/
 				
 		}
 	}
@@ -104,11 +106,13 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 
 final function PopulateModList(TowerPlayerReplicationInfo TPRI)
 {
+	/*
 	local TowerModInfo TMI;
 	foreach TPRI.Mods(TMI)
 	{
 		ModNames.AddItem(TMI.ModName);
 	}
+	*/
 }
 
 final function CleanupSaveLoadVariables()

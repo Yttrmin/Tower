@@ -45,16 +45,6 @@ exec function SetHighlightColor(LinearColor NewColor)
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
-function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, out Vector GridLocation)
-{
-	ServerAddBlock(Info, ParentBlock, GridLocation);
-}
-
-exec function RemoveBlock(TowerBlock Block)
-{
-	ServerRemoveBlock(Block);
-}
-
 exec function RemoveAllBlocks()
 {
 	ServerRemoveAllBlocks();
@@ -94,10 +84,42 @@ exec function RequestUpdateTime()
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
 }
 
+
+function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+{
+	ServerAddPlaceable(Placeable, Parent, GridLocation);
+}
+
+reliable server function ServerAddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
+	Vector GridLocation)
+{
+	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
+}
+
+function RemovePlaceable(TowerPlaceable Placeable);
+
+reliable server function ServerRemovePlaceable(TowerPlaceable Placeable)
+{
+
+}
+
+
+function AddModule();
+
+function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, out Vector GridLocation)
+{
+	ServerAddBlock(Info, ParentBlock, GridLocation);
+}
+
 reliable server function ServerAddBlock(BlockInfo Info, TowerBlock ParentBlock,
 	Vector GridLocation)
 {
 	TowerGame(WorldInfo.Game).AddBlock(GetTower(), Info, ParentBlock, GridLocation);
+}
+
+exec function RemoveBlock(TowerBlock Block)
+{
+	ServerRemoveBlock(Block);
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)

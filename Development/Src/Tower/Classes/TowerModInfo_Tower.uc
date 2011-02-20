@@ -1,4 +1,5 @@
-class TowerModInfo_Tower extends TowerModInfo;
+class TowerModInfo_Tower extends TowerModInfo
+	placeable; // Make placeable so you can create an archetype.
 
 /*
 Material'ASC_Floor.BSP.Materials.M_ASC_Floor_BSP_Tile01'
@@ -14,7 +15,7 @@ DefaultProperties
 	Contact="none :("
 	Description="Primary ModInfo for Tower!"
 	Version="0.1"
-	ModBlocks.Add(TowerBlock'DebugBlocks.DebugBlock')
+	ModBlocks.Add(TowerBlock'TowerMod.TestBlock')
 //	ModBlocks.Add(class'TowerBlockRoot')
 //	ModBlocks.Add(class'TowerBlockDebug')
 	ModBlockInfo.Add((DisplayName="Root Block",BaseClass=class'TowerBlockRoot'))

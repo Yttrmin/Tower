@@ -17,8 +17,7 @@ var array<BlockInfo> PlaceableBlocks;
 
 var repnotify float ReplicatedTime;
 
-// Tower(TowerBlockDebug;TowerBlockRoot;)MyMod(TowerBlock_MyBlock;)
-//var repnotify String PlaceableString;
+
 var repnotify String ServerMods;
 
 replication
