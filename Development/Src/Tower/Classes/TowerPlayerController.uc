@@ -148,6 +148,11 @@ function TowerPlayerReplicationInfo GetTPRI()
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
 }
 
+reliable client function SetModCount(int Count)
+{
+	`log("HELLO MODCOUNT:"@Count);
+}
+
 //@FIXME
 state Master extends Spectating
 {

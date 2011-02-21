@@ -84,6 +84,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 {
 	local PlayerController NewPlayer;
 	NewPlayer = super.Login(Portal, Options, UniqueID, ErrorMessage);
+//	TowerPlayerController(NewPlayer).SetModCount(24);
 	//TowerPlayerController(NewPlayer).GotoState('Master');
 	return NewPlayer;
 }
@@ -93,7 +94,10 @@ event PostLogin(PlayerController NewPlayer)
 	Super.PostLogin(NewPlayer);
 	//@TODO - Maybe not make this automatic?
 	AddTower(TowerPlayerController(NewPlayer));
+	TowerPlayerController(NewPlayer).SetModCount(24);
 }
+
+//Mods.AddItem(TowerModInfo(DynamicLoadObject("TowerMod.ModInfo", class'TowerModInfo', false)));
 
 function CheckForMods()
 {
@@ -106,19 +110,30 @@ function CheckForMods()
 	local String ReplicatedModList;
 
 	local String TMIClass;
+	local String ModInfoPath;
 	local TowerModInfo TMI;
-	TPRI = Spawn(class'TowerPlayerReplicationInfo');
 	`log("LOADING MODS");
 	`log("GameMods:"@GameMods.Length);
-	foreach TPRI.ModClasses(TMIClass, i)
+	foreach ModPackages(TMIClass, i)
 	{
 		`log("LOADING MOD:"@TMIClass);
-		ModInfo = class<TowerModInfo>(DynamicLoadObject(TMIClass,class'class',false));
-		`log("MOD CLASS:"@ModInfo);
-		TMI = Spawn(ModInfo);
+		ModInfoPath = TMIClass$".ModInfo";
+		TMI = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject(ModInfoPath,class'TowerModInfo',false)));
+//		Spawn(class'TowerBlockDebug',,,,,TowerBlockDebug(DynamicLoadObject("TowerMod.TestBlock",class'TowerBlockDebug',false)));
+		`log("SPANWED"@TMI);
+//		`log("MOD CLASS:"@ModInfo);
+//		TMI = Spawn(ModInfo);
 		TMI.PreInitialize(i);
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
 		GameMods.AddItem(TMI);
+		if(i == 0)
+		{
+			TowerGameReplicationInfo(GameReplicationInfo).RootMod = GameMods[0];
+		}
+		else
+		{
+			TowerGameReplicationInfo(GameReplicationInfo).RootMod.AddMod(GameMods[GameMods.Length-1]);
+		}
 	}
 	`log("GameMods:"@GameMods.Length);
 	foreach GameMods(Mod, i)
@@ -130,8 +145,9 @@ function CheckForMods()
 		ReplicatedModList $= Mod.ModName;
 	}
 	`log("ReplicatedModList:"@ReplicatedModList);
-	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
-	TPRI.Destroy();
+//	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
+	TowerGameReplicationInfo(GameReplicationInfo).ModCount = GameMods.Length;
+	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
 }
 
 function PopulateSpawnPointArrays()

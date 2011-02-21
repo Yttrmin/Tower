@@ -8,30 +8,26 @@ var protectedwrite bool bRoundInProgress;
 var int EnemyCount;
 var int MaxEnemyCount;
 
-/** Placeable blocks available to the player. Retrieved from PlaceableList. */
-//var array<class<TowerBlock> > PlaceableBlocks;
-/** Placeable modules available to the player. Retrieved from PlaceableList. */
-//var array<class<TowerModule> > PlaceableModules;
-
-var array<BlockInfo> PlaceableBlocks;
+var array<TowerPlaceable> Placeables;
 
 var repnotify float ReplicatedTime;
 
-
-var repnotify String ServerMods;
+var bool bModsLoaded;
+var repnotify int ModCount;
+var repnotify TowerModInfo RootMod;
 
 replication
 {
 	if(bNetDirty)
 		Phase, Round, EnemyCount, MaxEnemyCount, ReplicatedTime;
 	if(bNetInitial)
-		ServerMods;
+		ModCount, RootMod;
 }
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	`log("TGRI PBP");
+	AreModsLoaded();
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -45,9 +41,71 @@ simulated event ReplicatedEvent(name VarName)
 	{
 		SetGameTimer();
 	}
-	else if(VarName == 'ServerMods')
+	else if(VarName == 'ModCount')
 	{
-//		TowerHUD(GetPlayerController().myHUD)
+		`log("MOD COUNT REPLICATED:"@ModCount);
+	}
+	else if(VarName == 'RootMod')
+	{
+		AreModsLoaded();
+	}
+}
+
+simulated function bool AreModsLoaded()
+{
+	local int Count;
+	local TowerModInfo Mod;
+	if(ModCount != 0)
+	{
+		for(Mod = RootMod; Mod != None; Mod = Mod.NextMod)
+		{
+			if(!Mod.bLoaded)
+			{
+				LoadMod(Mod);
+			}
+			Count++;
+		}
+		`assert(Count <= ModCount);
+		if(Count == ModCount)
+		{
+			// All mods received!
+			bModsLoaded = TRUE;
+			`log("ALL MODS REPLICATED!");
+			ConstructPlaceablesList();
+			return TRUE;
+		}
+		else
+		{
+			// Haven't received all the mods yet.
+			`log("NOT ALL MODS REPLICATED!");
+			return FALSE;
+		}
+	}
+	else
+	{
+		// ModCount hasn't been replicated yet.
+		`log("MODCOUNT NOT REPLICATED!");
+		return FALSE;
+	}
+}
+
+simulated function LoadMod(TowerModInfo Mod)
+{
+	local TowerPlaceable Placeable;
+	foreach Mod.ModPlaceables(Placeable)
+	{
+		Placeables.AddItem(Placeable);
+	}
+	Mod.bLoaded = TRUE;
+}
+
+simulated function ConstructPlaceablesList()
+{
+	local TowerPlayerController PC;
+	foreach LocalPlayerControllers(class'TowerPlayerController', PC)
+	{
+		`log("FOUND A PLAYER TRING THING");
+		TowerHUD(PC.myHUD).SetupPlaceablesList();
 	}
 }
 

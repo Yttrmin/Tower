@@ -10,6 +10,8 @@ var TowerHUD HUD;
 var float MouseX, MouseY;
 
 var GFxScrollingList PlaceablesList;
+var array<int> PlaceableIndex;
+var array<string> PlaceableStrings;
 
 event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 {
@@ -81,26 +83,11 @@ function SetRoundTime(float NewTime)
 /** Called by ActionScript when the user clicks a new item in the BuildMenu's PlaceablesList. */
 event OnBuildListChange(int Index)
 {
-	local BlockInfo Block;
-	local TowerPlayerReplicationInfo TPRI;
-	TPRI = HUD.GetTPRI();
 	`log("New Index:"@Index);
-	if(Index > TPRI.PlaceableBlocks.Length)
-	{
-		// Might be a module.
-		if(Index < TPRI.PlaceableModules.Length)
-		{
-			
-		}
-		else
-		{
-			// Blank slot.
-		}
-	}
-	Block = TPRI.PlaceableBlocks[Index];
-	`log(Block.DisplayName);
-	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreviewBlock(Block);
-	HUD.SetPlaceableBlock(Block);
+	//@TODO - DO THIS
+	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(
+		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
+	HUD.SetPlaceable(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
 }
 
 event OnMouseMove(float DeltaX, float DeltaY)

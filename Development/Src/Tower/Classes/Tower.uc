@@ -24,6 +24,7 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	TowerGameReplicationInfo(WorldInfo.GRI).AreModsLoaded();
 	AddTree();
 }
 
@@ -31,16 +32,6 @@ reliable server function AddTree()
 {
 	NodeTree = new class'TowerTree';
 }
-
-simulated event ReplicatedEvent(name VarName)
-{
-	Super.ReplicatedEvent(VarName);
-	if(VarName == 'OwnerPRI' && OwnerPRI.Owner != None)
-	{
-		TowerHUD(TowerPlayerController(OwnerPRI.Owner).myHUD).SetPlaceablesList(OwnerPRI.PlaceableBlocks);
-	}
-}
-
 
 function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
 	out Vector SpawnLocation, out Vector GridLocation)
