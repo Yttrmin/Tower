@@ -27,7 +27,7 @@ event PostBeginPlay()
 	if(Owner.Role == ROLE_Authority)
 	{
 		HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
-		SetPlaceablesList(TowerPlayerReplicationInfo(TowerPlayerController(PlayerOwner).PlayerReplicationInfo).PlaceableBlocks);
+		// Set List
 	}
 }
 
@@ -72,6 +72,25 @@ event OnMouseClick(int Button)
 	}
 }
 
+function SetupPlaceablesList()
+{
+	//@TODO - Order list.
+	local TowerModInfo Mod;
+	local TowerPlaceable Placeable;
+	local int i, TotalIndex;
+	`log("SETUPPLACEADLVEOLLIST");
+	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(Placeable, i)
+	{
+		if(TowerBlock(Placeable) != None)
+			HUDMovie.PlaceableStrings.AddItem(TowerBlock(Placeable).DisplayName);
+		else if(TowerModule(Placeable) != None)
+			HUDMovie.PlaceableStrings.AddItem(TowerModule(Placeable).DisplayName);
+		HUDMovie.PlaceableIndex.AddItem(i);
+	}
+	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.PlaceableStrings);
+	HUDMovie.OnBuildListChange(1);
+	`log("SETUP THINGY");
+}
 
 function TestTowerPlaceable(TowerBlock Block)
 {
@@ -119,10 +138,14 @@ function SetPlaceablesList(array<BlockInfo> Blocks)
 	{
 		PlaceableNames.AddItem(Block.DisplayName);
 	}
-	ScriptTrace();
 	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
 	HUDMovie.OnBuildListChange(1);
+}
+
+function SetPlaceable(TowerPlaceable Placeable)
+{
+	Self.Placeable = Placeable;
 }
 
 function SetPlaceableBlock(BlockInfo Block)

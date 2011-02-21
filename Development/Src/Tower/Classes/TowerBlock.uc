@@ -6,6 +6,7 @@ Base class of all the blocks that make up a Tower.
 Keep in mind this class and its children will likely be opened up to modding!
 */
 class TowerBlock extends DynamicSMActor_Spawnable
+	HideCategories(Movement,Attachment,Collision,Physics,Advanced,Object)
 	dependson(TowerModule)
 	ClassGroup(Tower)
 	implements(TowerPlaceable)
@@ -45,7 +46,7 @@ var protected NavMeshObstacle Obstacle;
 var int ModIndex, ModBlockInfoIndex;
 
 /** User-friendly name. Used for things like the build menu. */
-var() String DisplayName;
+var() const String DisplayName;
 var() const bool bAddToPlaceablesList;
 
 replication
@@ -60,6 +61,7 @@ simulated event PostBeginPlay()
 	MaterialInstance = new(None) class'MaterialInstanceConstant';
 	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
 	StaticMeshComponent.SetMaterial(0, MaterialInstance);
+	`log("HELLO I AM ALIVE"@SELF);
 	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
 //	Obstacle = Spawn(class'NavMeshObstacle');
 //	Obstacle.SetEnabled(TRUE);
@@ -86,6 +88,7 @@ function Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParentDirection,
 	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
 {
+	/*
 	if(Info.BlockMesh != None)
 	{
 		StaticMeshComponent.SetStaticMesh(Info.BlockMesh);
@@ -106,8 +109,8 @@ function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParent
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
 	bRootBlock = bNewRootBlock;
+	*/
 }
-
 
 final function TowerBlock GetParent()
 {
@@ -279,6 +282,7 @@ event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent Ot
 DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
+	bAddToPlaceablesList=TRUE
 
 	ZAcceleration=1039.829009434
 	DropRate=128

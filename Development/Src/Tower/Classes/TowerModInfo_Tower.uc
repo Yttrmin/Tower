@@ -1,4 +1,5 @@
 class TowerModInfo_Tower extends TowerModInfo
+	deprecated
 	placeable; // Make placeable so you can create an archetype.
 
 /*

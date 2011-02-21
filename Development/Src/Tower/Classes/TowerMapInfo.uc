@@ -36,10 +36,19 @@ function DeactivateHUDPreview()
 	}
 }
 
-simulated function SetPreviewBlock(out BlockInfo Block)
+simulated function SetPreview(TowerPlaceable Placeable)
 {
-	PreviewBlock.StaticMeshComponent.SetStaticMesh(Block.BlockMesh);
-	PreviewBlock.StaticMeshComponent.SetMaterial(0, Block.BlockMaterial);
+	if(TowerBlock(Placeable) != None)
+	{
+		PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerBlock(Placeable).StaticMeshComponent.StaticMesh);
+		PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerBlock(Placeable).StaticMeshComponent.GetMaterial(0));
+	}
+	else if(TowerModule(Placeable) != None)
+	{
+		//@TODO - Set this up for module previewing!
+		PreviewBlock.StaticMeshComponent.SetStaticMesh(None);
+		PreviewBlock.StaticMeshComponent.SetMaterial(0, None);
+	}
 }
 
 DefaultProperties

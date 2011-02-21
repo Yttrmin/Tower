@@ -19,18 +19,6 @@ var config byte HighlightFactor;
 empty array.*/
 var protected globalconfig bool bShareModNamesWithMods;
 var protected globalconfig bool bDebugMods;
-/** Holds the PackageName.ClassName of TowerModInfos to load in the order given. */
-var protectedwrite globalconfig array<String> ModClasses;
-
-// Maybe this should go to TowerPlayerController (WHO KNOWS)
-
-var protectedwrite array<TowerModInfo> Mods;
-
-var protectedwrite array<ModOption> ModOptions;
-var protectedwrite array<BlockInfo> PlaceableBlocks;
-var protectedwrite array<ModuleInfo> PlaceableModules;
-
-var protectedwrite array<TowerPlaceable> Placeables;
 
 replication
 {
@@ -41,46 +29,8 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	DeterminePlaceableBlocks();
 	SetHighlightColor(HighlightColor);
 	RequestUpdatedTime();
-}
-
-simulated function DeterminePlaceableBlocks()
-{
-	local int i;
-	local String Mod;
-	local array<String> ModsToLoad;
-	local TowerModInfo ModInfo;
-	local BlockInfo Block;
-	ModsToLoad = SplitString(TowerGameReplicationInfo(WorldInfo.GRI).ServerMods, ";");
-	`log("ServerMods:"@TowerGameReplicationInfo(WorldInfo.GRI).ServerMods);
-	foreach ModsToLoad(Mod, i)
-	{
-		LoadMod(Mod);
-		Mods[i].PreInitialize(i);
-	}
-	foreach Mods(ModInfo)
-		{
-			`log("Checking if"@ModInfo.ModName@"equals"@Mod);
-			if(ModInfo.ModName == Mod)
-			{
-				foreach ModInfo.ModBlockInfo(Block)
-				{
-					`log("Adding placeable block:"@Block.DisplayName);
-					PlaceableBlocks.AddItem(Block);
-				}
-				break;
-			}
-		}
-}
-
-simulated function LoadMod(String ModName)
-{
-	local class<TowerModInfo> ModInfo;
-	ModName $= ".TowerModInfo_"$ModName;
-	ModInfo = class<TowerModInfo>(DynamicLoadObject(ModName,class'class',false));
-	Mods.AddItem(Spawn(ModInfo));
 }
 
 reliable server function SetHighlightColor(LinearColor NewColor)
