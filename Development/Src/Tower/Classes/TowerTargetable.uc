@@ -1,4 +1,4 @@
-interface TowerEnemy;
+interface TowerTargetable;
 
 function bool IsProjectile();
 

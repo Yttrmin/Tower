@@ -19,6 +19,7 @@ var() const editconst int BlockHeight;
 function ActivateHUDPreview()
 {
 	local PointLightToggleable Light;
+	PreviewBlock.SetHidden(FALSE);
 	BuildPreviewSceneCaptureActor.SceneCapture.SetEnabled(TRUE);
 	foreach PreviewLights(Light)
 	{
@@ -30,6 +31,7 @@ function DeactivateHUDPreview()
 {
 	local PointLightToggleable Light;
 	BuildPreviewSceneCaptureActor.SceneCapture.SetEnabled(FALSE);
+	PreviewBlock.SetHidden(TRUE);
 	foreach PreviewLights(Light)
 	{
 		Light.LightComponent.SetEnabled(FALSE);
@@ -38,17 +40,24 @@ function DeactivateHUDPreview()
 
 simulated function SetPreview(TowerPlaceable Placeable)
 {
-	if(TowerBlock(Placeable) != None)
+//	PreviewBlock.StaticMeshComponent.SetStaticMesh(Placeable.GetPlaceableStaticMesh());
+//	PreviewBlock.StaticMeshComponent.SetMaterial(0, Placeable.GetPlaceableMaterial(0));
+//	Placeable.AttachPlaceable(None);
+	
+	if(Placeable.IsA('TowerBlock'))
 	{
+		PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,0));
 		PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerBlock(Placeable).StaticMeshComponent.StaticMesh);
 		PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerBlock(Placeable).StaticMeshComponent.GetMaterial(0));
 	}
-	else if(TowerModule(Placeable) != None)
+	else if(Placeable.IsA('TowerModule'))
 	{
 		//@TODO - Set this up for module previewing!
-		PreviewBlock.StaticMeshComponent.SetStaticMesh(None);
-		PreviewBlock.StaticMeshComponent.SetMaterial(0, None);
+		PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,-128));
+		PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerModule(Placeable).StaticMesh);
+		PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerModule(Placeable).GetMaterial(0));
 	}
+	
 }
 
 DefaultProperties

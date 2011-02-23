@@ -13,6 +13,8 @@ var GFxScrollingList PlaceablesList;
 var array<int> PlaceableIndex;
 var array<string> PlaceableStrings;
 
+var protectedwrite bool bInMenu;
+
 event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 {
 	if(WidgetName == 'PlaceablesList')
@@ -44,6 +46,7 @@ function GetMouseCoordinates(out Vector2D Mouse, bool bRelativeToViewport)
 
 function ExpandBuildMenu()
 {
+	bInMenu = TRUE;
 	UnlockMouse(true);
 	MoveCursor();
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
@@ -51,6 +54,7 @@ function ExpandBuildMenu()
 
 function CollapseBuildMenu()
 {
+	bInMenu = FALSE;
 	LockMouseToCenter(false);
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(1);
 }
@@ -107,7 +111,6 @@ function MoveCursor()
 	if(PlaceablesList.HitTest(MouseX, MouseY))
 	{
 		PlaceablesList.MousedOn();
-		`log("TOUCHING PLACEABLES LIST");
 	}
 	else if(PlaceablesList.bMousedOnPreviousFrame)
 	{
