@@ -36,49 +36,12 @@ reliable server function AddTree()
 function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
 	out Vector SpawnLocation, out Vector GridLocation)
 {
-	local Vector ParentDirection;
-	local TowerBlock Block;
-	local TowerModule Module;
-	if(Parent != None)
-	{
-		ParentDirection = Normal(Parent.Location - SpawnLocation);
-	}
-	if(TowerBlock(Placeable) != None)
-	{
-		Block = Spawn(TowerBlock(Placeable).class, self,, SpawnLocation,,Placeable,TRUE);
-//		Block.Initialize(GridLocation, ParentDirection, OwnerPRI);
-		NodeTree.AddNode(Block, Parent);
-	}
+	return Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
 }
 
-function RemovePlaceable(TowerPlaceable Placeable);
-
-
-
-function TowerBlock AddBlock(BlockInfo Info, TowerBlock ParentBlock, 
-	Vector SpawnLocation, out Vector GridLocation, optional bool bRootBlock = false)
+function RemovePlaceable(TowerPlaceable Placeable)
 {
-	local TowerBlock Block;
-	local Vector ParentDirection;
-	if(ParentBlock != None)
-	{
-		ParentDirection = Normal(ParentBlock.Location - SpawnLocation);
-	}
-	Block = Spawn(Info.BaseClass, self,, SpawnLocation,,,TRUE);
-	Block.Initialize(Info, GridLocation, ParentDirection, OwnerPRI, bRootBlock);
-	NodeTree.AddNode(Block, ParentBlock);
-	//@DEBUG
-	if(OwnerPRI.Tower.NodeTree.bDebugDrawHierarchy)
-	{
-		DebugBlocks.AddItem(Block);
-		DrawDebugString(Vect(-128,-128,0), Block.Name, Block);
-	}
-	return Block;
-	//@DEBUG
-	/**
-//	Block.Tower = self;
-	Blocks.AddItem(Block);
-	*/
+
 }
 
 function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, out Vector ParentDirection)

@@ -94,17 +94,13 @@ event PostLogin(PlayerController NewPlayer)
 	Super.PostLogin(NewPlayer);
 	//@TODO - Maybe not make this automatic?
 	AddTower(TowerPlayerController(NewPlayer));
-	TowerPlayerController(NewPlayer).SetModCount(24);
 }
 
 //Mods.AddItem(TowerModInfo(DynamicLoadObject("TowerMod.ModInfo", class'TowerModInfo', false)));
 
 function CheckForMods()
 {
-	local TowerPlayerReplicationInfo TPRI;
 	//@TODO - Convert package name to class name and such.
-	local class<TowerModInfo> ModInfo;
-
 	local int i;
 	local TowerModInfo Mod;
 	local String ReplicatedModList;
@@ -317,8 +313,8 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
-//	AddPlaceable(TPRI.Tower, Mods[0].ModBlocks[0], None, GridLocation);
-	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
+	AddPlaceable(TPRI.Tower, GameMods[0].ModPlaceables[0], None, GridLocation);
+//	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
 		SetTowerName(TPRI.Tower, TowerName);
@@ -351,41 +347,6 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 function RemovePlaceable(Tower Tower, TowerPlaceable Placeable)
 {
 
-}
-
-
-function TowerModule AddModule(Tower Tower, ModuleInfo Info, TowerBlock Parent,
-	out Vector GridLocation)
-{
-	local Vector SpawnLocation;
-	SpawnLocation = GridLocationToVector(GridLocation);
-	if(CanAddBlock(GridLocation))
-	{
-		Parent.AddModule(Info, GridLocation);
-	}
-}
-
-/** Ensures adding a block is allowed by the game rules, and then passes it along to Tower to spawn
-it. */
-function TowerBlock AddBlock(Tower Tower, BlockInfo Info, TowerBlock ParentBlock, 
-	out Vector GridLocation, optional bool bRootBlock = false)
-{
-	local TowerBlock Block;
-	local vector SpawnLocation;
-	SpawnLocation =  GridLocationToVector(GridLocation, Info.BaseClass);
-	// Pivot point is in middle, bump it up so we're not in the ground.
-	SpawnLocation.Z += 128;
-	if(CanAddBlock(GridLocation))
-	{
-		Block = Tower.AddBlock(Info, ParentBlock, SpawnLocation, GridLocation, 
-			bRootBlock);
-		Broadcast(Tower, "Block added");
-	}
-	else
-	{
-		Broadcast(Tower, "Could not add block");
-	}
-	return Block;
 }
 
 /** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/

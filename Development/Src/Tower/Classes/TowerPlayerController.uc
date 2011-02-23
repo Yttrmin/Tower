@@ -84,7 +84,6 @@ exec function RequestUpdateTime()
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
 }
 
-
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
 {
 	ServerAddPlaceable(Placeable, Parent, GridLocation);
@@ -103,29 +102,6 @@ reliable server function ServerRemovePlaceable(TowerPlaceable Placeable)
 
 }
 
-
-function AddModule();
-
-function AddBlock(TowerBlock ParentBlock, out BlockInfo Info, out Vector GridLocation)
-{
-	ServerAddBlock(Info, ParentBlock, GridLocation);
-}
-
-reliable server function ServerAddBlock(BlockInfo Info, TowerBlock ParentBlock,
-	Vector GridLocation)
-{
-	TowerGame(WorldInfo.Game).AddBlock(GetTower(), Info, ParentBlock, GridLocation);
-}
-
-exec function RemoveBlock(TowerBlock Block)
-{
-	ServerRemoveBlock(Block);
-}
-
-reliable server function ServerRemoveBlock(TowerBlock Block)
-{
-	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
-}
 
 reliable server function ServerRemoveAllBlocks()
 {
@@ -146,11 +122,6 @@ function Tower GetTower()
 function TowerPlayerReplicationInfo GetTPRI()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
-}
-
-reliable client function SetModCount(int Count)
-{
-	`log("HELLO MODCOUNT:"@Count);
 }
 
 //@FIXME

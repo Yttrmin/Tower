@@ -57,8 +57,8 @@ event ModLoaded(const out array<String> ModList);
 
 final function PreInitialize(int ModIndex)
 {
-	local int i;
 	/*
+	local int i;
 	for(i = 0; i < ModBlockInfo.Length; i++)
 	{
 		ModBlockInfo[i].ModIndex = ModIndex;

@@ -39,7 +39,7 @@ var protectedwrite bool bRootBlock;
 
 var protected MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
-var protected TowerPlayerReplicationInfo OwnerPRI;
+var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var protected NavMeshObstacle Obstacle;
 
@@ -58,58 +58,52 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	MaterialInstance = new(None) class'MaterialInstanceConstant';
-	MaterialInstance.SetParent(StaticMeshComponent.GetMaterial(0));
-	StaticMeshComponent.SetMaterial(0, MaterialInstance);
-	`log("HELLO I AM ALIVE"@SELF);
+	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
 	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
 //	Obstacle = Spawn(class'NavMeshObstacle');
 //	Obstacle.SetEnabled(TRUE);
 }
 
-final function AddModule(out ModuleInfo Info, out Vector GridLocation)
+static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
+	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
+	out Vector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
-	local TowerModule NewModule;
-	NewModule = new Info.BaseClass;
-	AttachComponent(NewModule);
-	//NewModule = new ModuleArchetype.Class (ModuleArchetype);
-	//Attach and stuff here.
+	local TowerPlaceable Block;
+	local Vector ParentDir;
+	if(Parent != None)
+	{
+		// Get PRI somewhere else since it might be none.
+		Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
+		ParentDir = Normal(Parent.Location - SpawnLocation);
+		Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
+	}
+	else
+	{
+		`assert(OwnerTPRI != None);
+		Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
+		ParentDir = Vect(0,0,0);
+		Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
+	}
+	NodeTree.AddNode(Block, Parent);
+	return Block;
 }
-/*
-function Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+
+function StaticMesh GetPlaceableStaticMesh()
+{
+	return StaticMeshComponent.StaticMesh;
+}
+
+function MaterialInterface GetPlaceableMaterial(int Index)
+{
+	return StaticMeshComponent.GetMaterial(Index);
+}
+
+event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
-}
-*/
-
-function Initialize(out BlockInfo Info, Vector NewGridLocation, Vector NewParentDirection,
-	TowerPlayerReplicationInfo NewOwnerPRI, bool bNewRootBlock)
-{
-	/*
-	if(Info.BlockMesh != None)
-	{
-		StaticMeshComponent.SetStaticMesh(Info.BlockMesh);
-	}
-	//@TODO - Can't have highlighting if we replace the material like this.
-	if(Info.BlockMaterial != None)
-	{
-		StaticMeshComponent.SetMaterial(0, Info.BlockMaterial);
-	}
-	if(Info.DisplayName != "")
-	{
-		DisplayName = Info.DisplayName;
-	}
-	ModIndex = Info.ModIndex;
-	ModBlockInfoIndex = Info.ModBlockInfoIndex;
-	`log("added"@ModIndex@ModBlockInfoIndex);
-	GridLocation = NewGridLocation;
-	ParentDirection = NewParentDirection;
-	OwnerPRI = NewOwnerPRI;
-	bRootBlock = bNewRootBlock;
-	*/
 }
 
 final function TowerBlock GetParent()

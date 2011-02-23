@@ -9,16 +9,17 @@ var deprecated BlockInfo PlaceableBlock;
 /** If not None, this class of module will be added when a block is clicked. */
 var deprecated ModuleInfo PlaceableModule;
 
-var TowerPlaceable Placeable;
+var private TowerPlaceable Placeable;
 
 event PreBeginPlay()
 {
 	Super.PreBeginPlay();
+	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview();
 	HUDMovie = new class'TowerHUDMoviePlayer';
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
 	HUDMovie.MoveCursor();
-	HUDMovie.LockMouseToCenter(true);
+	HUDMovie.LockMouseToCenter(FALSE);
 }
 
 event PostBeginPlay()
@@ -37,6 +38,10 @@ event OnMouseClick(int Button)
 	local TowerBlock Block;
 	local Vector HitNormal, FinalGridLocation;
 	// Left mouse button.
+	if(HUDMovie.bInMenu)
+	{
+		return;
+	}
 	if(Button == 0)
 	{
 		HUDMovie.PlaceablesList.onMousePress();
@@ -48,18 +53,7 @@ event OnMouseClick(int Button)
 			FinalGridLocation.X = Round(FinalGridLocation.X);
 			FinalGridLocation.Y = Round(FinalGridLocation.Y);
 			FinalGridLocation.Z = Round(FinalGridLocation.Z);
-			`assert((PlaceableBlock.BaseClass != None) ^^ (PlaceableModule.BaseClass != None));
-		//	TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, Block, FinalGridLocation);
-			
-			if(PlaceableBlock.BaseClass != None)
-			{
-				TowerPlayerController(PlayerOwner).AddBlock(Block, PlaceableBlock, FinalGridLocation);
-			}
-			else if(PlaceableModule.BaseClass != None)
-			{
-//				TowerPlayerController(PlayerOwner).AddModule(
-			}
-			
+			TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, Block, FinalGridLocation);
 		}
 	}
 	// Right mouse button.
@@ -68,36 +62,25 @@ event OnMouseClick(int Button)
 		HUDMovie.GetMouseCoordinates(Mouse, true);
 		TraceForBlock(Mouse, Block, HitNormal);
 		//@TODO - Ask to make sure they want to remove the block.
-		TowerPlayerController(PlayerOwner).RemoveBlock(Block);
+		TowerPlayerController(PlayerOwner).RemovePlaceable(Block);
 	}
 }
 
 function SetupPlaceablesList()
 {
 	//@TODO - Order list.
-	local TowerModInfo Mod;
-	local TowerPlaceable Placeable;
-	local int i, TotalIndex;
-	`log("SETUPPLACEADLVEOLLIST");
-	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(Placeable, i)
+	local TowerPlaceable IteratedPlaceable;
+	local int i;
+	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(IteratedPlaceable, i)
 	{
-		if(TowerBlock(Placeable) != None)
-			HUDMovie.PlaceableStrings.AddItem(TowerBlock(Placeable).DisplayName);
-		else if(TowerModule(Placeable) != None)
-			HUDMovie.PlaceableStrings.AddItem(TowerModule(Placeable).DisplayName);
+		if(TowerBlock(IteratedPlaceable) != None)
+			HUDMovie.PlaceableStrings.AddItem(TowerBlock(IteratedPlaceable).DisplayName);
+		else if(TowerModule(IteratedPlaceable) != None)
+			HUDMovie.PlaceableStrings.AddItem(TowerModule(IteratedPlaceable).DisplayName);
 		HUDMovie.PlaceableIndex.AddItem(i);
 	}
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.PlaceableStrings);
 	HUDMovie.OnBuildListChange(1);
-	`log("SETUP THINGY");
-}
-
-function TestTowerPlaceable(TowerBlock Block)
-{
-	local TowerPlaceable P;
-	P = TowerPlaceable(Block);
-	// This correctly identifies the class! And you can cast blocks and such to TowerPlaceable just fine!
-	`log("TTP"@P@P.class);
 }
 
 event OnMouseRelease(int Button)
@@ -130,38 +113,14 @@ function Place()
 
 }
 
-function SetPlaceablesList(array<BlockInfo> Blocks)
+function SetPlaceable(TowerPlaceable NewPlaceable)
 {
-	local array<String> PlaceableNames;
-	local BlockInfo Block;
-	foreach Blocks(Block)
-	{
-		PlaceableNames.AddItem(Block.DisplayName);
-	}
-	`log("Adding PlaceablesList!"@PlaceableNames.Length@Blocks.Length);
-	HUDMovie.SetVariableStringArray("_root.Placeables", 0, PlaceableNames);
-	HUDMovie.OnBuildListChange(1);
-}
-
-function SetPlaceable(TowerPlaceable Placeable)
-{
-	Self.Placeable = Placeable;
-}
-
-function SetPlaceableBlock(BlockInfo Block)
-{
-	PlaceableBlock = Block;
-	PlaceableModule.BaseClass = None;
-}
-
-function SetPlaceableModule(ModuleInfo Info)
-{
-	PlaceableBlock.BaseClass = None;
-	PlaceableModule = Info;
+	Self.Placeable = NewPlaceable;
 }
 
 function ExpandBuildMenu()
 {
+	TowerMapInfo(WorldInfo.GetMapInfo()).ActivateHUDPreview();
 	Focus();
 	ProcessMouseMovement();
 	HUDMovie.ExpandBuildMenu();
@@ -170,6 +129,7 @@ function ExpandBuildMenu()
 
 function CollapseBuildMenu()
 {
+	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview();
 	UnFocus();
 	IgnoreMouseMovement();
 	HUDMovie.CollapseBuildMenu();
@@ -206,17 +166,18 @@ event PostRender()
 			DrawDebugRelationship(Canvas, IterateBlock);
 		}
 	}
-	if(LastHighlightedBlock != Block && LastHighlightedBlock != None)
+	if((LastHighlightedBlock != Block && LastHighlightedBlock != None) || HUDMovie.bInMenu)
 	{
 		LastHighlightedBlock.UnHighlight();
 	}
-	if(Block != None)
+	if(Block != None && !HUDMovie.bInMenu)
 	{
 		Block.Highlight();
 		LastHighlightedBlock = Block;
 	}
 }
 
+/** TraceForPlaceable? */
 function TraceForBlock(out Vector2D Mouse, out TowerBlock Block, out Vector HitNormal)
 {
 	local Vector WorldOrigin, WorldDir;

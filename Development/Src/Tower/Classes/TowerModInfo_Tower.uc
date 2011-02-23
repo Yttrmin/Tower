@@ -16,6 +16,7 @@ DefaultProperties
 	Contact="none :("
 	Description="Primary ModInfo for Tower!"
 	Version="0.1"
+	/*
 	ModBlocks.Add(TowerBlock'TowerMod.TestBlock')
 //	ModBlocks.Add(class'TowerBlockRoot')
 //	ModBlocks.Add(class'TowerBlockDebug')
@@ -26,4 +27,5 @@ DefaultProperties
 	ModBlockInfo.Add((DisplayName="Debug Block (Other Floor Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'UN_Floors.BSP.Materials.M_Floors_BlendModulation_Master_02'))
 	ModBlockInfo.Add((DisplayName="Debug Block (Glass Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'HU_Deck.SM.Materials.M_HU_Deck_SM_Fwindow_Glassbroken_Mat'))
 	ModBlockInfo.Add((DisplayName="Debug Block (Liquid Material)",BaseClass=class'TowerBlockDebug',BlockMesh=StaticMesh'TowerBlocks.DebugBlock',BlockMaterial=Material'UN_Liquid.SM.Materials.M_UN_Liquid_SM_NanoBlack_03_Master'))
+	*/
 }
