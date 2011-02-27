@@ -48,6 +48,10 @@ will recursively get RemoveNode() called on them. */
 final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren)
 {
 	local TowerBlock Node;
+	if(NodeToRemove == Root)
+	{
+		return;
+	}
 	`log("Removing node:"@NodeToRemove$"...");
 	foreach NodeToRemove.BasedActors(class'TowerBlock', Node)
 	{

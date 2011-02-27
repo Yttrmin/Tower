@@ -326,7 +326,6 @@ function SetTowerName(Tower Tower, string NewTowerName)
 	Tower.TowerName = NewTowerName;
 }
 
-
 function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, TowerBlock Parent, 
 	out Vector GridLocation)
 {
@@ -346,63 +345,7 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 
 function RemovePlaceable(Tower Tower, TowerPlaceable Placeable)
 {
-
-}
-
-/** Removes block from a given grid location. Can't be removed if bRootBlock. Returns TRUE if removed.*/
-function bool RemoveBlock(Tower CallingTower, TowerBlock Block)
-{
-	//@TODO - Check some conditions before arbitrarily removing blocks!
-	if(Block != None)
-	{
-		if(!Block.bRootBlock)
-		{
-			return CallingTower.RemoveBlock(Block);
-		}
-		else
-		{
-			return false;
-		}
-	}
-	else
-	{
-		return false;
-	}
-	/*
-	//@TODO - Now that tracing works fine, do traces instead.
-	//@DELETEME - All these broadcasts.
-	local TowerBlock Block;
-	local int OutBlockIndex;
-	Block = GetBlockFromGrid(XBlock, YBlock, ZBlock, OutBlockIndex);
-	if(Block == None)
-	{
-		Broadcast(None, "No block at given location");
-		return false;
-	}
-	if(Block.bRootBlock)
-	{
-		Broadcast(None, "Block is bRootBlock, can't be destroyed.");
-		return false;
-	}
-	else if(CallingTower != Block.Owner)
-	{
-		Broadcast(None, "A Tower asked to remove a block it didn't own, not allowed!");
-		return false;
-	}
-	else
-	{
-		if(Tower(Block.Owner).RemoveBlock(OutBlockIndex))
-		{
-			Broadcast(None, "Block destroyed.");
-			return true;
-		}
-		else
-		{
-			Broadcast(None, "Block can't be destroyed for unknown reason.");
-			return false;
-		}
-	}
-	*/
+	Tower.RemovePlaceable(Placeable);
 }
 
 function bool CanAddBlock(out Vector GridLocation)

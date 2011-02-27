@@ -4,11 +4,6 @@ class TowerHUD extends HUD
 var TowerHUDMoviePlayer HUDMovie;
 var TowerBlock LastHighlightedBlock;
 
-/** If not None, this class of block will be added when a block is clicked. */
-var deprecated BlockInfo PlaceableBlock;
-/** If not None, this class of module will be added when a block is clicked. */
-var deprecated ModuleInfo PlaceableModule;
-
 var private TowerPlaceable Placeable;
 
 event PreBeginPlay()

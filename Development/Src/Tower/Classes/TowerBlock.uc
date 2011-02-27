@@ -13,16 +13,6 @@ class TowerBlock extends DynamicSMActor_Spawnable
 	placeable
 	abstract;
 
-struct BlockInfo
-{
-	var string DisplayName;
-	var class<TowerBlock> BaseClass;
-	var StaticMesh BlockMesh;
-	var Material BlockMaterial;
-	// Used for saving/loading.
-	var int ModIndex, ModBlockInfoIndex;
-};
-
 //@TODO - Figure out how acceleration is calculated.
 var const float ZAcceleration;
 var const int DropRate;
