@@ -4,21 +4,24 @@ class TowerModule extends StaticMeshComponent // This will be SkeletalMeshCompon
 	ClassGroup(Tower)
 	abstract;
 
-struct ModuleInfo
+struct PriorityTarget
 {
-	var String DisplayName;
-	var class<TowerModule> BaseClass;
+	var() const editconst name TargetType;
+	var() byte Priority;
 };
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
 var() const bool bAddToPlaceablesList;
 
+var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
+
 var Vector GridLocation, ParentDirection;
 
 event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
+	`log("MODULE INITIALIZE");
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 }
@@ -71,4 +74,7 @@ DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
 	bAddToPlaceablesList=TRUE
+	PrioritizedTargets(0)=(TargetType=Infantry,Priority=0)
+	PrioritizedTargets(1)=(TargetType=Vehicle,Priority=0)
+	PrioritizedTargets(2)=(TargetType=Projectile,Priority=0)
 }

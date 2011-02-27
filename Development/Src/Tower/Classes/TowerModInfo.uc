@@ -14,12 +14,6 @@ var() const string Contact;
 var() const string Description;
 var() const string Version;
 
-// Don't expose material, instead expose a texture that can be set in parameters?
-// Material has more control, and the processes are pretty much identical...
-// But just texture means more consistency and less breaking.
-
-var() protectedwrite deprecated array<BlockInfo> ModBlockInfo;
-
 /** Store Archetypes in here? Should ModInfos be archetypes as well? ARGH! */
 var() protectedwrite const array<TowerBlock> ModBlocks;
 

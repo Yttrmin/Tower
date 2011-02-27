@@ -39,9 +39,9 @@ function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent
 	return Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
 }
 
-function RemovePlaceable(TowerPlaceable Placeable)
+function bool RemovePlaceable(TowerPlaceable Placeable)
 {
-
+	NodeTree.RemoveNode(Placeable);
 }
 
 function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, out Vector ParentDirection)

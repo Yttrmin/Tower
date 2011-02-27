@@ -95,13 +95,15 @@ reliable server function ServerAddPlaceable(TowerPlaceable Placeable, TowerBlock
 	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 }
 
-function RemovePlaceable(TowerPlaceable Placeable);
+function RemovePlaceable(TowerPlaceable Placeable)
+{
+	ServerRemovePlaceable(Placeable);
+}
 
 reliable server function ServerRemovePlaceable(TowerPlaceable Placeable)
 {
-
+	TowerGame(WorldInfo.Game).RemovePlaceable(GetTower(), Placeable);
 }
-
 
 reliable server function ServerRemoveAllBlocks()
 {

@@ -13,7 +13,7 @@ struct BlockSaveInfo
 	var Vector G, P;
 };
 
-const SAVE_FILE_VERSION = 2; 
+const SAVE_FILE_VERSION = 2;
 
 var string SaveTowerName;
 var array<String> ModNames;
