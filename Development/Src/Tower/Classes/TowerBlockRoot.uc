@@ -1,10 +1,17 @@
 class TowerBlockRoot extends TowerBlock;
 
+enum TargetType
+{
+	TT_Infantry,
+	TT_Vehicle,
+	TT_Projectile
+};
+
 var Volume RadarVolume;
 var array<delegate<OnEnterRange> > InfantryRangeNotify, ProjectileRangeNotify, VehicleRangeNotify,
 	AllRangeNotify;
 
-delegate OnEnterRange(Actor Attacker);
+delegate OnEnterRange(TowerTargetable Targetable);
 
 simulated event PostBeginPlay()
 {
@@ -25,7 +32,24 @@ reliable server function ServerInitialize()
 event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation,
 	vector HitNormal)
 {
-
+	local TowerTargetable Targetable;
+	Targetable = TowerTargetable(Other);
+	if(Targetable == None)
+	{
+		return;
+	}
+	if(Targetable.IsInfantry())
+	{
+		ExecuteCallbacks(TT_Infantry, Targetable);
+	}
+	else if(Targetable.IsProjectile())
+	{
+		ExecuteCallbacks(TT_Projectile, Targetable);
+	}
+	else if(Targetable.IsVehicle())
+	{
+		ExecuteCallbacks(TT_Vehicle, Targetable);
+	}
 }
 
 /** RadarVolume's UnTouch. */
@@ -55,6 +79,32 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 		VehicleRangeNotify.AddItem(Callback);
 	}
 	return;
+}
+
+function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)
+{
+	local delegate<OnEnterRange> Callback;
+	switch(Type)
+	{
+	case TT_Infantry:
+		foreach InfantryRangeNotify(Callback)
+		{
+			Callback(Targetable);
+		}
+		break;
+	case TT_Vehicle:
+		foreach VehicleRangeNotify(Callback)
+		{
+			Callback(Targetable);
+		}
+		break;
+	case TT_Projectile:
+		foreach ProjectileRangeNotify(Callback)
+		{
+			Callback(Targetable);
+		}
+		break;
+	}
 }
 
 DefaultProperties

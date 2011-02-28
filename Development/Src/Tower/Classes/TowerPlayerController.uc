@@ -86,13 +86,49 @@ exec function RequestUpdateTime()
 
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
 {
-	ServerAddPlaceable(Placeable, Parent, GridLocation);
+	local int ModIndex, ModPlaceableIndex;
+	if(Role != Role_Authority)
+	{
+		ConvertPlaceableToIndexes(Placeable, ModIndex, ModPlaceableIndex);
+		ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
+	}
+	else
+	{
+		TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
+	}
 }
 
-reliable server function ServerAddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
+reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent,
 	Vector GridLocation)
 {
-	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
+	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(ModIndex, ModPlaceableIndex), Parent, GridLocation);
+}
+
+simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int ModIndex, out int ModPlaceableIndex)
+{
+	local TowerModInfo Mod;
+	for(Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod; Mod != None; Mod = Mod.NextMod)
+	{
+		ModPlaceableIndex = Mod.ModPlaceables.find(Placeable);
+		if(ModPlaceableIndex != -1)
+		{
+			`log("FOUND PLACEABLE:"@ModIndex@ModPlaceableIndex);
+			return;
+		}
+		ModIndex++;
+	}
+}
+
+function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)
+{
+	local TowerModInfo Mod;
+	Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod;
+	while(ModIndex > 0)
+	{
+		Mod = Mod.NextMod;
+		ModIndex--;
+	}
+	return Mod.ModPlaceables[ModPlaceableIndex];
 }
 
 function RemovePlaceable(TowerPlaceable Placeable)

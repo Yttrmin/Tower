@@ -333,6 +333,7 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 	SpawnLocation = GridLocationToVector(GridLocation);
 	// Pivot point in middle, bump up.
 	SpawnLocation.Z += 128;
+	`assert(Placeable != None);
 	if(CanAddBlock(GridLocation))
 	{
 		return Tower.AddPlaceable(Placeable, Parent, SpawnLocation, GridLocation);

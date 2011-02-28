@@ -54,9 +54,9 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 	//@TODO - Would traversing the tree be safer than this?
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
-		`log("Saving:"@Block.ModIndex@Block.ModBlockInfoIndex);
-		Info.M = Block.ModIndex;
-		Info.I = Block.ModBlockInfoIndex;
+//		`log("Saving:"@Block.ModIndex@Block.ModBlockInfoIndex);
+//		Info.M = Block.ModIndex;
+//		Info.I = Block.ModBlockInfoIndex;
 		Info.G = Block.GridLocation;
 		Info.P = Block.ParentDirection;
 		Blocks.AddItem(Info);
