@@ -161,7 +161,7 @@ event PostRender()
 			DrawDebugRelationship(Canvas, IterateBlock);
 		}
 	}
-	if((LastHighlightedBlock != Block && LastHighlightedBlock != None) || HUDMovie.bInMenu)
+	if(LastHighlightedBlock != None && (LastHighlightedBlock != Block || HUDMovie.bInMenu))
 	{
 		LastHighlightedBlock.UnHighlight();
 	}

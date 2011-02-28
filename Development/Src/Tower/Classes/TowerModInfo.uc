@@ -14,9 +14,6 @@ var() const string Contact;
 var() const string Description;
 var() const string Version;
 
-/** Store Archetypes in here? Should ModInfos be archetypes as well? ARGH! */
-var() protectedwrite const array<TowerBlock> ModBlocks;
-
 var() protectedwrite const array<class<TowerModule> > ModModules;
 
 var() protectedwrite const array<TowerPlaceable> ModPlaceables;

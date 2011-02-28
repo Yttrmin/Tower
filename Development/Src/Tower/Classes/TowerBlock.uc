@@ -33,7 +33,7 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var protected NavMeshObstacle Obstacle;
 
-var int ModIndex, ModBlockInfoIndex;
+var int ModIndex, ModPlaceablesIndex;
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
