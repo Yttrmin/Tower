@@ -15,19 +15,25 @@ var repnotify float ReplicatedTime;
 var bool bModsLoaded;
 var repnotify int ModCount;
 var repnotify TowerModInfo RootMod;
+var repnotify TowerModuleReplicationInfo ModuleReplicationInfo;
 
 replication
 {
 	if(bNetDirty)
 		Phase, Round, EnemyCount, MaxEnemyCount, ReplicatedTime;
 	if(bNetInitial)
-		ModCount, RootMod;
+		ModCount, RootMod, ModuleReplicationInfo;
 }
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	AreModsLoaded();
+}
+
+function InitModuleReplicationInfo()
+{
+	ModuleReplicationInfo = Spawn(class'TowerModuleReplicationInfo', self);
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -48,6 +54,11 @@ simulated event ReplicatedEvent(name VarName)
 	else if(VarName == 'RootMod')
 	{
 		AreModsLoaded();
+	}
+	else if(VarName == 'ModuleReplicationInfo')
+	{
+		`log("ModuleReplicationInfo replicated!");
+		ModuleReplicationInfo.ClientInitialize(TowerPlayerReplicationInfo(GetPlayerController().PlayerReplicationInfo));
 	}
 }
 

@@ -30,6 +30,12 @@ event PreBeginPlay()
 	CheckForMods();
 }
 
+function InitGameReplicationInfo()
+{
+	Super.InitGameReplicationInfo();
+	TowerGameReplicationInfo(GameReplicationInfo).InitModuleReplicationInfo();
+}
+
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();

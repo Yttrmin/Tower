@@ -17,7 +17,6 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SaveSystem = new class'TowerSaveSystem';
-	`log("TPC PBP");
 //	SaveSystem.TestInt = 123456;
 //	SaveSystem.TransTestInt = 345678;
 //	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
@@ -98,7 +97,7 @@ function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector Gr
 {
 	local AddTicket Ticket;
 	local int ModIndex, ModPlaceableIndex;
-	if(Role != Role_Authority && !Placeable.IsReplicable())
+	if(!Placeable.IsReplicable())
 	{
 		GenerateAddTicket(Ticket, Placeable, Parent, GridLocation);
 		ServerSendAddTicket(Ticket);
@@ -119,15 +118,18 @@ reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex,
 reliable server function ServerSendAddTicket(AddTicket Ticket)
 {
 	//@TODO - Make this better and less copy-paste.
+	local TowerPlaceable Placeable;
 	`log("Received AddTicket:"@Ticket.TicketID@Ticket.ModIndex@Ticket.ModPlaceableIndex@Ticket.GridLocation@Ticket.Parent);
-	if(TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex),
-		Ticket.Parent, Ticket.GridLocation) != None)
+	Placeable = TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex),
+		Ticket.Parent, Ticket.GridLocation);
+	if(Placeable != None)
 	{
-		ClientHandleTicket(Ticket.TicketID, TRUE);
+		GetTPRI().ServerAddModule(TowerModule(Placeable));
+//		ClientHandleTicket(Ticket.TicketID, TRUE);
 	}
 	else
 	{
-		ClientHandleTicket(Ticket.TicketID, FALSE);
+//		ClientHandleTicket(Ticket.TicketID, FALSE);
 	}
 }
 
