@@ -1,6 +1,16 @@
 class TowerPlayerController extends GamePlayerController
 	config(Tower);
 
+struct AddTicket
+{
+	var int TicketID;
+	var int ModIndex, ModPlaceableIndex;
+	var Vector GridLocation;
+	var TowerBlock Parent;
+};
+
+var int NextTicketID;
+var array<AddTicket> PendingTickets;
 var TowerSaveSystem SaveSystem;
 
 simulated event PostBeginPlay()
@@ -86,22 +96,75 @@ exec function RequestUpdateTime()
 
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
 {
+	local AddTicket Ticket;
 	local int ModIndex, ModPlaceableIndex;
-	if(Role != Role_Authority)
+	if(Role != Role_Authority && !Placeable.IsReplicable())
 	{
-		ConvertPlaceableToIndexes(Placeable, ModIndex, ModPlaceableIndex);
-		ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
+		GenerateAddTicket(Ticket, Placeable, Parent, GridLocation);
+		ServerSendAddTicket(Ticket);
 	}
 	else
 	{
-		TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
+		ConvertPlaceableToIndexes(Placeable, ModIndex, ModPlaceableIndex);
+		ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
+		//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 	}
 }
 
-reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent,
-	Vector GridLocation)
+reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent, Vector GridLocation)
 {
 	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(ModIndex, ModPlaceableIndex), Parent, GridLocation);
+}
+
+reliable server function ServerSendAddTicket(AddTicket Ticket)
+{
+	//@TODO - Make this better and less copy-paste.
+	`log("Received AddTicket:"@Ticket.TicketID@Ticket.ModIndex@Ticket.ModPlaceableIndex@Ticket.GridLocation@Ticket.Parent);
+	if(TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex),
+		Ticket.Parent, Ticket.GridLocation) != None)
+	{
+		ClientHandleTicket(Ticket.TicketID, TRUE);
+	}
+	else
+	{
+		ClientHandleTicket(Ticket.TicketID, FALSE);
+	}
+}
+
+reliable client function ClientHandleTicket(int TicketID, bool bAllowTicket)
+{
+	local byte Index;
+	local AddTicket Ticket;
+	Index = PendingTickets.find('TicketID', TicketID);
+	if(Index != -1)
+	{
+		`log("Got our ticket back!"@bAllowTicket);
+		Ticket = PendingTickets[Index];
+		if(bAllowTicket)
+		{
+			AddLocalPlaceable(ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex), Ticket.Parent, Ticket.GridLocation);
+			PendingTickets.Remove(Index, 1);
+			if(PendingTickets.Length == 0)
+			{
+				NextTicketID = 0;
+			}
+		}
+		else
+		{
+
+		}
+	}
+	else
+	{
+		`log("Ticket somehow does not exist?"@TicketID);
+	}
+}
+
+simulated function AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+{
+	local Vector SpawnLocation;
+	SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
+	Placeable.AttachPlaceable(Placeable, Parent, GetTower().NodeTree, SpawnLocation, GridLocation);
 }
 
 simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int ModIndex, out int ModPlaceableIndex)
@@ -117,6 +180,17 @@ simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int M
 		}
 		ModIndex++;
 	}
+}
+
+simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+{
+	OutTicket.TicketID = NextTicketID;
+	OutTicket.GridLocation = GridLocation;
+	OutTicket.Parent = Parent;
+	
+	ConvertPlaceableToIndexes(Placeable, OutTicket.ModIndex, OutTicket.ModPlaceableIndex);
+	NextTicketID++;
+	PendingTickets.AddItem(OutTicket);
 }
 
 function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)

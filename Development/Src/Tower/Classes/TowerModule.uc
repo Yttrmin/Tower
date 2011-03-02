@@ -16,6 +16,8 @@ var() const bool bAddToPlaceablesList;
 
 var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
 
+var() editconst int ID;
+
 var Vector GridLocation, ParentDirection;
 
 event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
@@ -50,6 +52,7 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	{
 		NewRotation = Module.Rotation;
 	}
+//	`log("NewRotation:"@NewRotation);
 	NewTranslation.X = NewParentDirection.X*128;
 	NewTranslation.Y = NewParentDirection.Y*128;
 	NewTranslation.Z = NewParentDirection.Z*128;
@@ -58,6 +61,21 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	Module.Initialize(NewGridLocation, NewParentDirection, Parent.OwnerPRI);
 	Parent.AttachComponent(Module);
 	return Module;
+}
+
+static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree)
+{
+	ActorComponent(Placeable).Owner.DetachComponent(ActorComponent(Placeable));
+}
+
+static final function bool IsReplicable()
+{
+	return FALSE;
+}
+
+simulated function Vector GetGridLocation()
+{
+	return GridLocation;
 }
 
 function StaticMesh GetPlaceableStaticMesh()
@@ -70,6 +88,17 @@ function MaterialInterface GetPlaceableMaterial(int Index)
 	return GetMaterial(Index);
 }
 
+final simulated function Highlight()
+{
+//	MaterialInstance.SetVectorParameterValue('HighlightColor', 
+//		OwnerPRI.HighlightColor);
+}
+
+final simulated function UnHighlight()
+{
+//	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
+}
+
 DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
@@ -77,4 +106,11 @@ DefaultProperties
 	PrioritizedTargets(0)=(TargetType=Infantry,Priority=0)
 	PrioritizedTargets(1)=(TargetType=Vehicle,Priority=0)
 	PrioritizedTargets(2)=(TargetType=Projectile,Priority=0)
+
+	CollideActors=TRUE
+	BlockActors=True
+	BlockZeroExtent=TRUE
+	BlockNonZeroExtent=TRUE
+	BlockRigidBody=TRUE
+	AlwaysCheckCollision=TRUE
 }

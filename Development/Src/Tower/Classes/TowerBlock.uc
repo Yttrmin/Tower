@@ -78,6 +78,11 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	return Block;
 }
 
+static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree)
+{
+	NodeTree.RemoveNode(Placeable);
+}
+
 function StaticMesh GetPlaceableStaticMesh()
 {
 	return StaticMeshComponent.StaticMesh;
@@ -86,6 +91,11 @@ function StaticMesh GetPlaceableStaticMesh()
 function MaterialInterface GetPlaceableMaterial(int Index)
 {
 	return StaticMeshComponent.GetMaterial(Index);
+}
+
+simulated function Vector GetGridLocation()
+{
+	return GridLocation;
 }
 
 event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
@@ -142,6 +152,11 @@ final simulated function UnHighlight()
 final simulated function SetColor()
 {
 
+}
+
+static final function bool IsReplicable()
+{
+	return TRUE;
 }
 
 auto state Stable
