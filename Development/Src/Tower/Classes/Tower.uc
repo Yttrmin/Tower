@@ -6,7 +6,7 @@ Represents a player's tower, which a player can only have one of. Tower's are es
 class Tower extends Actor
 	dependson(TowerBlock);
 
-var protectedwrite TowerTree NodeTree;
+var TowerTree NodeTree;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
 non-debug in-game things ever!*/
@@ -14,11 +14,21 @@ var() private array<TowerBlock> DebugBlocks;
 
 var() string TowerName;
 var() repnotify TowerPlayerReplicationInfo OwnerPRI;
+var() TowerModuleReplicationInfo ModuleReplicationInfo;
 
 replication
 {
 	if(bNetDirty)
-		TowerName, OwnerPRI;
+		TowerName, OwnerPRI, ModuleReplicationInfo;
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	Super.ReplicatedEvent(VarName);
+	if(VarName == 'ModuleReplicationInfo')
+	{
+		`log("TMRI: New InfoPakcet received!");
+	}
 }
 
 simulated event PostBeginPlay()
@@ -41,7 +51,9 @@ function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent
 
 function bool RemovePlaceable(TowerPlaceable Placeable)
 {
-	NodeTree.RemoveNode(Placeable);
+	Placeable.RemovePlaceable(Placeable, NodeTree);
+	return true;
+//	NodeTree.RemoveNode(Placeable);
 }
 
 function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, out Vector ParentDirection)

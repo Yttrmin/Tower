@@ -332,7 +332,7 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 	local Vector SpawnLocation;
 	SpawnLocation = GridLocationToVector(GridLocation);
 	// Pivot point in middle, bump up.
-	SpawnLocation.Z += 128;
+//	SpawnLocation.Z += 128;
 	`assert(Placeable != None);
 	if(CanAddBlock(GridLocation))
 	{
@@ -354,17 +354,19 @@ function bool CanAddBlock(out Vector GridLocation)
 	return (IsGridLocationFree(GridLocation) && IsGridLocationOnGrid(GridLocation));
 }
 
-function Vector GridLocationToVector(out Vector GridLocation, optional class<TowerBlock> BlockClass)
+static function Vector GridLocationToVector(out Vector GridLocation, optional class<TowerBlock> BlockClass)
 {
-	local int MapBlockWidth, MapBlockHeight;
+//	local int MapBlockWidth, MapBlockHeight;
 	local Vector NewBlockLocation;
-	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
-	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
+//	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
+//	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (GridLocation.X * MapBlockWidth);
-	NewBlockLocation.Y = (GridLocation.Y * MapBlockWidth);
+	NewBlockLocation.X = (GridLocation.X * 256);
+	NewBlockLocation.Y = (GridLocation.Y * 256);
 	// Z is the very bottom of the block.
-	NewBlockLocation.Z = (GridLocation.Z * MapBlockHeight);
+	NewBlockLocation.Z = (GridLocation.Z * 256);
+	// Pivot point in middle, bump it up.
+	NewBlockLocation.Z += 128;
 	return NewBlockLocation;
 }
 
