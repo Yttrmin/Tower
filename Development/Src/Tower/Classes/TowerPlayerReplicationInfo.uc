@@ -48,6 +48,70 @@ reliable server function RequestUpdatedTime()
 	`log("UPDATED TIME! NEW VALUE:"@TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime);
 }
 
+simulated function TowerPlayerController GetPlayerController()
+{
+	//@TODO - Doesn't handle split screen.
+	local TowerPlayerController PC;
+	foreach LocalPlayerControllers(class'TowerPlayerController',PC)
+	{
+		return PC;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TowerModuleReplicationInfo-related functions.
+
+reliable server function ServerAddModule(TowerModule Module)
+{
+	Module.ID = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.NextModuleID;
+	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.AddItem(Module);
+
+	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.NextModuleID++;
+	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Count = 
+		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
+	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum += Module.ID;
+}
+
+reliable server function QueryModuleInfo(int ModuleID)
+{
+	local TowerModule Module;
+	local ModuleInfo Info;
+	local int ModIndex, ModPlaceableIndex;
+	`log("Received query for module:"@ModuleID);
+	foreach TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules(Module)
+	{
+		if(Module.ID == ModuleID)
+		{
+			Info.ID = ModuleID;
+			Info.GridLocation = Module.GridLocation;
+			GetPlayerController().ConvertPlaceableToIndexes(Module.ObjectArchetype, ModIndex, ModPlaceableIndex);
+			Info.ModIndex = ModIndex;
+			Info.ModPlaceableIndex = ModPlaceableIndex;
+			Info.Parent = TowerBlock(Module.Owner);
+
+			`log("Sent off ModuleInfo in response to query for module:"@ModuleID@Info.Parent);
+			ReceiveModuleInfo(Info);
+			return;
+		}
+	}
+}
+
+reliable client function ReceiveModuleInfo(ModuleInfo Info)
+{
+	`log("Received module info for module:"@Info.ID@Info.Parent);
+	if(TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.ModuleExist(Info.ID))
+	{
+		// Modify module.
+	}
+	else
+	{
+		// Spawn module
+		`log("Adding module at"@Info.GridLocation);
+		GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex, Info.ModPlaceableIndex), 
+			Info.Parent, Info.GridLocation);
+	}
+}
+
 DefaultProperties
 {
 	bSkipActorPropertyReplication=False

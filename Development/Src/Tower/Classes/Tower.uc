@@ -14,21 +14,16 @@ var() private array<TowerBlock> DebugBlocks;
 
 var() string TowerName;
 var() repnotify TowerPlayerReplicationInfo OwnerPRI;
-var() TowerModuleReplicationInfo ModuleReplicationInfo;
 
 replication
 {
 	if(bNetDirty)
-		TowerName, OwnerPRI, ModuleReplicationInfo;
+		TowerName, OwnerPRI;
 }
 
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
-	if(VarName == 'ModuleReplicationInfo')
-	{
-		`log("TMRI: New InfoPakcet received!");
-	}
 }
 
 simulated event PostBeginPlay()
@@ -46,7 +41,9 @@ reliable server function AddTree()
 function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
 	out Vector SpawnLocation, out Vector GridLocation)
 {
-	return Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	local TowerPlaceable NewPlaceable;
+	NewPlaceable = Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	return NewPlaceable;
 }
 
 function bool RemovePlaceable(TowerPlaceable Placeable)
