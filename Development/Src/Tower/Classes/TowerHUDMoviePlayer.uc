@@ -88,7 +88,6 @@ function SetRoundTime(float NewTime)
 event OnBuildListChange(int Index)
 {
 	`log("New Index:"@Index);
-	//@TODO - DO THIS
 	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(
 		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
 	HUD.SetPlaceable(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
@@ -141,7 +140,7 @@ DefaultProperties
 	bPauseGameWhileActive=FALSE
 	//bCaptureInput=TRUE
 	bAllowFocus=TRUE
-	bIgnoreMouseInput=FALSE
+	bIgnoreMouseInput=TRUE
 
 	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
 

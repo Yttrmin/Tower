@@ -72,6 +72,33 @@ reliable server function ServerAddModule(TowerModule Module)
 	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum += Module.ID;
 }
 
+reliable server function ServerRemoveModule(int ModuleID)
+{
+	local int Index;
+	local InfoPacket Packet;
+	local TowerModule Module;
+	`log("Iterating through"@TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length@"modules.");
+	foreach TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules(Module, Index)
+	{
+		`log("Found module with ID"@Module.ID);
+		if(Module.ID == ModuleID)
+		{
+			`log("Found Module at index:"@Index);
+			break;
+		}
+	}
+	`log("Found Module"@ModuleID@"at index:"@Index@"(outside foreach)");
+	if(Index != -1)
+	{
+		Packet.Checksum = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum - 
+			TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules[Index].ID;
+		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Remove(Index, 1);
+		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Count = 
+			TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
+		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet = Packet;
+	}
+}
+
 reliable server function QueryModuleInfo(int ModuleID)
 {
 	local TowerModule Module;
@@ -98,6 +125,7 @@ reliable server function QueryModuleInfo(int ModuleID)
 
 reliable client function ReceiveModuleInfo(ModuleInfo Info)
 {
+	local TowerModule Module;
 	`log("Received module info for module:"@Info.ID@Info.Parent);
 	if(TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.ModuleExist(Info.ID))
 	{
@@ -107,8 +135,11 @@ reliable client function ReceiveModuleInfo(ModuleInfo Info)
 	{
 		// Spawn module
 		`log("Adding module at"@Info.GridLocation);
-		GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex, Info.ModPlaceableIndex), 
-			Info.Parent, Info.GridLocation);
+		Module = GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex, 
+			Info.ModPlaceableIndex), Info.Parent, Info.GridLocation);
+		Module.ID = Info.ID;
+		
+		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.AddModule(Module);
 	}
 }
 

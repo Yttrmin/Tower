@@ -23,6 +23,8 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 
 static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree);
 
+reliable server function RemoveSelf();
+
 /** Whether or not this TowerPlaceable is capable of normal replication, or we'll have to use the Ticket system.
 Return TRUE for normal replication, FALSE for Ticket system. 
 Mostly used for TowerModules, as they're ActorComponent-derived and can't be normally replicated. */

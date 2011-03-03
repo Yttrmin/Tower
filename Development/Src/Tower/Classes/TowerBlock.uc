@@ -19,6 +19,8 @@ var const int DropRate;
 var int BlocksFallen;
 var int StartZ;
 
+var repnotify bool bFalling;
+
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
 var protectedwrite editconst Vector ParentDirection;
@@ -41,8 +43,26 @@ var() const bool bAddToPlaceablesList;
 
 replication
 {
+	if(bNetDirty)
+		bFalling;
 	if(bNetInitial)
 		GridLocation, OwnerPRI;
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	Super.ReplicatedEvent(VarName);
+	if(VarName == 'bFalling')
+	{
+		if(bFalling)
+		{
+			GotoState('Unstable');
+		}
+		else
+		{
+			GotoState('Stable');
+		}
+	}
 }
 
 simulated event PostBeginPlay()
@@ -104,6 +124,7 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
+//	SetOwner(OwnerPRI);
 }
 
 final function TowerBlock GetParent()
@@ -159,7 +180,12 @@ static final function bool IsReplicable()
 	return TRUE;
 }
 
-auto state Stable
+reliable server function RemoveSelf()
+{
+	`log(Self@"Says to remove self!");
+}
+
+auto simulated state Stable
 {
 	function StopFall()
 	{
@@ -184,7 +210,7 @@ auto state Stable
 }
 
 /** State for root blocks of orphan branches. Block falls with all its attachments. */
-state Unstable
+simulated state Unstable
 {
 	//@TODO - Experiment with Move() function.
 	/** Called after block should have dropped 256 units.  */
@@ -203,6 +229,7 @@ state Unstable
 		{
 			`log("Found parent:"@Base);
 			GotoState('Stable');
+			bFalling = false;
 		}
 		// NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
 		
@@ -214,7 +241,7 @@ state Unstable
 		StartZ = Location.Z;
 		SetTimer(TimeToDrop(), false, 'DroppedSpace');
 	}
-	event Tick(float DeltaTime)
+	simulated event Tick(float DeltaTime)
 	{
 		local Vector NewLocation;
 		Super.Tick(DeltaTime);
@@ -246,6 +273,7 @@ function float TimeToDrop()
 event OrphanedParent()
 {
 	local TowerBlock Node;
+	bFalling = true;
 	GotoState('Unstable');
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach BasedActors(class'TowerBlock', Node)
@@ -308,5 +336,6 @@ DefaultProperties
 		RBCollideWithChannels=(Default=TRUE,BlockingVolume=TRUE,GameplayPhysics=TRUE,EffectPhysics=TRUE)
 		bNotifyRigidBodyCollision=TRUE
 		BlockRigidBody=true
+		BlockNonZeroExtent=true
 	End Object
 }

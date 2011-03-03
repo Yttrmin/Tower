@@ -9,6 +9,10 @@ var const array<ASValue> EmptyArguments;
 /** Called by TowerHUDMoviePlayer whenever the mouse moves onto us. */
 event MousedOn()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	if(GetRendererIndex() != RolledOverIndex)
 	{
 		onRollOut();
@@ -20,6 +24,10 @@ event MousedOn()
 /** Called by TowerHUDMoviePlayer whenever the mouse moves off of us. */
 event MousedOff()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	onRollOut();
 	bMousedOnPreviousFrame = FALSE;
 }
@@ -28,6 +36,10 @@ event MousedOff()
 Tells the ItemRenderer at RolledOverIndex that the mouse rolled out. */
 event onRollOut()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	GetRendererAt(RolledOverIndex).Invoke("handleMouseRollOut", EmptyArguments);
 }
 
@@ -36,6 +48,10 @@ Tells the ItemRenderer at GetRendererIndex() that the mouse rolled over it.
 Sets RolledOverIndex to GetRendererIndex(). */
 event onRollOver()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	GetRendererAt(GetRendererIndex()).Invoke("handleMouseRollOver", EmptyArguments);
 	RolledOverIndex = GetRendererIndex();
 }
@@ -44,6 +60,10 @@ event onRollOver()
 Tells the ItemRenderer at RolledOverIndex that the mouse pressed it down. */
 event onMousePress()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	GetRendererAt(RolledOverIndex).Invoke("handleMousePress", EmptyArguments);
 }
 
@@ -51,6 +71,10 @@ event onMousePress()
 Tells the ItemRenderer at RolledOverIndex that the mouse pressed on it has been released. */
 event onMouseRelease()
 {
+	if(!HUDMovie.bInMenu)
+	{
+		return;
+	}
 	GetRendererAt(RolledOverIndex).Invoke("handleMouseRelease", EmptyArguments);
 }
 

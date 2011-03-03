@@ -33,32 +33,33 @@ event OnMouseClick(int Button)
 	local TowerPlaceable TracedPlaceable;
 	local Vector HitNormal, FinalGridLocation;
 	// Left mouse button.
-	if(HUDMovie.bInMenu)
-	{
-		return;
-	}
+	HUDMovie.GetMouseCoordinates(Mouse, true);
 	if(Button == 0)
 	{
-		HUDMovie.PlaceablesList.onMousePress();
-		HUDMovie.GetMouseCoordinates(Mouse, true);
-		TraceForBlock(Mouse, TracedPlaceable, HitNormal);
-		if(TracedPlaceable != None)
+		if(HUDMovie.bInMenu)
 		{
-			FinalGridLocation =   TracedPlaceable.GetGridLocation() + HitNormal;
-			FinalGridLocation.X = Round(FinalGridLocation.X);
-			FinalGridLocation.Y = Round(FinalGridLocation.Y);
-			FinalGridLocation.Z = Round(FinalGridLocation.Z);
-			`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
-			if(TowerModule(TracedPlaceable) == None)
+			HUDMovie.PlaceablesList.onMousePress();
+		}
+		else
+		{
+			TraceForBlock(Mouse, TracedPlaceable, HitNormal);
+			if(TracedPlaceable != None)
 			{
-				TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TracedPlaceable, FinalGridLocation);
+				FinalGridLocation =   TracedPlaceable.GetGridLocation() + HitNormal;
+				FinalGridLocation.X = Round(FinalGridLocation.X);
+				FinalGridLocation.Y = Round(FinalGridLocation.Y);
+				FinalGridLocation.Z = Round(FinalGridLocation.Z);
+				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
+				if(TowerModule(TracedPlaceable) == None)
+				{
+					TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TracedPlaceable, FinalGridLocation);
+				}
 			}
 		}
 	}
 	// Right mouse button.
 	else if(Button == 1)
 	{
-		HUDMovie.GetMouseCoordinates(Mouse, true);
 		TraceForBlock(Mouse, TracedPlaceable, HitNormal);
 		//@TODO - Ask to make sure they want to remove the block.
 		TowerPlayerController(PlayerOwner).RemovePlaceable(TracedPlaceable);
