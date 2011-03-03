@@ -149,7 +149,7 @@ function CheckForMods()
 	`log("ReplicatedModList:"@ReplicatedModList);
 //	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
 	TowerGameReplicationInfo(GameReplicationInfo).ModCount = GameMods.Length;
-	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
+//	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
 }
 
 function PopulateSpawnPointArrays()

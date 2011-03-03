@@ -99,6 +99,11 @@ final simulated function UnHighlight()
 //	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
 }
 
+reliable server function RemoveSelf()
+{
+	`log(Self@"Says to remove self!");
+}
+
 DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"

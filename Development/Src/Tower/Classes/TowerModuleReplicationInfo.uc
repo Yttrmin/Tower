@@ -38,7 +38,10 @@ simulated function ClientInitialize(TowerPlayerReplicationInfo TPRI)
 
 simulated function AddModule(TowerModule Module)
 {
-	
+	Modules.AddItem(Module);
+	OldCount = Packet.Count;
+	OldChecksum = Packet.Checksum;
+	NextModuleID++;
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -56,7 +59,8 @@ simulated event ReplicatedEvent(name VarName)
 
 simulated function HandleNewInfoPacket()
 {
-	local int i;
+	local int i, ChangedID;
+	local TowerModule Module;
 	if(Packet.Count > OldCount && Packet.Checksum > OldChecksum)
 	{
 		// Module added.
@@ -69,10 +73,20 @@ simulated function HandleNewInfoPacket()
 	}
 	else if(Packet.Count < OldCount && Packet.Checksum < OldChecksum)
 	{
+		ChangedID = OldChecksum - Packet.Checksum;
+		foreach Modules(Module)
+		{
+			if(Module.ID == ChangedID)
+			{
+
+			}
+		}
+		`log("TMRI: Detected module removed.");
 		// Module removed.
 	}
 	else if(Packet.Count == OldCount && Packet.Checksum > OldChecksum)
 	{
+		`log("TMRI: Detected module replaced. Hopefully shouldn't really happen?");
 		// Module removed but another added before replicated.
 	}
 }

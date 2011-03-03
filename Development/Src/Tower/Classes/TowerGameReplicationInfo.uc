@@ -53,6 +53,7 @@ simulated event ReplicatedEvent(name VarName)
 	}
 	else if(VarName == 'RootMod')
 	{
+		`log("RootMod replicated!");
 		AreModsLoaded();
 	}
 	else if(VarName == 'ModuleReplicationInfo')
@@ -66,6 +67,12 @@ simulated function bool AreModsLoaded()
 {
 	local int Count;
 	local TowerModInfo Mod;
+	`log("AREMODSLOADED");
+	ScriptTrace();
+	if(bModsLoaded)
+	{
+		return true;
+	}
 	if(ModCount != 0)
 	{
 		for(Mod = RootMod; Mod != None; Mod = Mod.NextMod)
@@ -113,6 +120,7 @@ simulated function LoadMod(TowerModInfo Mod)
 simulated function ConstructPlaceablesList()
 {
 	local TowerPlayerController PC;
+	`log("Constructing placeables list!");
 	foreach LocalPlayerControllers(class'TowerPlayerController', PC)
 	{
 		`log("FOUND A PLAYER TRING THING");
