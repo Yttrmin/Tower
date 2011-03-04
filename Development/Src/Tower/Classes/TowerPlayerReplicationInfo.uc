@@ -93,8 +93,7 @@ reliable server function ServerRemoveModule(int ModuleID)
 		Packet.Checksum = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum - 
 			TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules[Index].ID;
 		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Remove(Index, 1);
-		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Count = 
-			TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
+		Packet.Count = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
 		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet = Packet;
 	}
 }
