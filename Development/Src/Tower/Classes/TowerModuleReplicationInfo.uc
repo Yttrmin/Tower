@@ -19,9 +19,11 @@ var array<TowerModule> Modules;
 var repnotify InfoPacket Packet;
 var TowerPlayerReplicationInfo PlayerOwner;
 
+// Only used by clients.
 var int OldCount;
 var int OldChecksum;
 
+// Only used by server.
 var int NextModuleID;
 
 replication
@@ -44,6 +46,14 @@ simulated function AddModule(TowerModule Module)
 	NextModuleID++;
 }
 
+simulated function RemoveModule(int Index)
+{
+	Modules[Index].Owner.DetachComponent(Modules[Index]);
+	Modules.Remove(Index, 1);
+	OldCount = Packet.Count;
+	OldChecksum = Packet.Checksum;
+}
+
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
@@ -64,30 +74,40 @@ simulated function HandleNewInfoPacket()
 	if(Packet.Count > OldCount && Packet.Checksum > OldChecksum)
 	{
 		// Module added.
-		`log("TMRI: Detected module added.");
+		`log("TMRI: Detected"@Packet.Count-OldCount@"module added.");
 		for(i = Packet.Count - OldCount; i > 0; i--)
 		{
-			`log("Querying for module"@OldCount+i);
-			PlayerOwner.QueryModuleInfo(OldCount + i);
+			`log("Querying for module"@Packet.Checksum - OldChecksum);
+			PlayerOwner.QueryModuleInfo(Packet.Checksum - OldChecksum);
 		}
 	}
 	else if(Packet.Count < OldCount && Packet.Checksum < OldChecksum)
 	{
+		// Module removed.
+		`log("TMRI: Detected module removed.");
 		ChangedID = OldChecksum - Packet.Checksum;
-		foreach Modules(Module)
+		foreach Modules(Module, i)
 		{
 			if(Module.ID == ChangedID)
 			{
-
+				`log("Found removed module, removing!");
+				RemoveModule(i);
 			}
 		}
-		`log("TMRI: Detected module removed.");
-		// Module removed.
 	}
 	else if(Packet.Count == OldCount && Packet.Checksum > OldChecksum)
 	{
-		`log("TMRI: Detected module replaced. Hopefully shouldn't really happen?");
 		// Module removed but another added before replicated.
+		`log("TMRI: Detected module replaced. Hopefully shouldn't really happen?");
+	}
+	else if(Packet.Count == OldCount && Packet.Checksum == OldChecksum)
+	{
+		`log("TMRI: Replicated a Packet with identical data to our own? I think we messed up our values!");
+	}
+	else
+	{
+		`log("TMRI: Unknown packet scenario. Packet.Count:"@Packet.Count@"OldCount:"@OldCount@"Packet.Checksum:"@Packet.Checksum@
+			"OldChecksum:"@OldChecksum);
 	}
 }
 
