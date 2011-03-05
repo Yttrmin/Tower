@@ -5,7 +5,7 @@ Class used to save and load games on the PC and iOS. */
 class TowerSaveSystem extends Object
 	config(Tower);
 
-struct BlockSaveInfo
+struct immutable BlockSaveInfo
 {
 	// ModIndex, BlockInfoIndex
 	var int M, I;

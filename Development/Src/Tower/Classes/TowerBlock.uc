@@ -180,9 +180,16 @@ static final function bool IsReplicable()
 	return TRUE;
 }
 
+/** This would be extremely useful if not for collision issues between the PlayerController and TowerBlocks. */
 reliable server function RemoveSelf()
 {
 	`log(Self@"Says to remove self!");
+}
+
+/** Blocks don't care about Targetables. */
+simulated function OnEnterRange(TowerTargetable Targetable)
+{
+
 }
 
 auto simulated state Stable

@@ -1,6 +1,14 @@
 class TowerPlayerReplicationInfo extends PlayerReplicationInfo
 	config(Tower);
 
+enum InformClient
+{
+	IC_ModuleAdded,
+	IC_ModuleRemoved,
+	IC_ModuleNewTarget,
+	IC_ModuleFire
+};
+
 struct ModOption
 {
 	var String ModName;
@@ -8,17 +16,29 @@ struct ModOption
 	var bool bRunForServer;
 };
 
+struct ModuleInfo
+{
+	var Vector GridLocation;
+	var int ModIndex, ModPlaceableIndex;
+	var TowerBlock Parent;
+	var int ID;
+};
+
 var Tower Tower;
 /** Color used to highlight blocks when mousing over it. Setting this to black disables it. */
-var config LinearColor HighlightColor;
+var protectedwrite globalconfig LinearColor HighlightColor;
 /** How much to mutliply HighlightColor by, so it actually glows. Setting this to 0 disables it.
 Setting this to 1 means no bloom assuming HighlightColor has no colors over 1.*/
-var config byte HighlightFactor;
+var protectedwrite globalconfig byte HighlightFactor;
 
 /** If TRUE, ModLoaded() in TowerModInfo contains an array of mod names, if FALSE, it contains an
 empty array.*/
 var protected globalconfig bool bShareModNamesWithMods;
 var protected globalconfig bool bDebugMods;
+
+/** Holds a reference to all TowerModules, since they can't be replicated.
+Despite being independent, everyone's Modules array should always be synchronized. */
+var private array<TowerModule> Modules;
 
 replication
 {
@@ -61,24 +81,29 @@ simulated function TowerPlayerController GetPlayerController()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TowerModuleReplicationInfo-related functions.
 
-reliable server function ServerAddModule(TowerModule Module)
+simulated function TowerModuleReplicationInfo GetTMRI()
 {
-	Module.ID = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.NextModuleID;
-	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.AddItem(Module);
-
-	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.NextModuleID++;
-	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Count = 
-		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
-	TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum += Module.ID;
+	return TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo;
 }
 
-reliable server function ServerRemoveModule(int ModuleID)
+reliable server function ServerAddModule(TowerModule Module)
+{
+	local InfoPacket Packet;
+	Module.ID = GetTMRI().NextModuleID;
+	GetTMRI().Modules.AddItem(Module);
+	GetTMRI().NextModuleID++;
+	Packet.Count = GetTMRI().Modules.Length;
+	Packet.Checksum += Module.ID;
+	GetTMRI().Packet = Packet;
+}
+
+function ServerRemoveModule(int ModuleID)
 {
 	local int Index;
 	local InfoPacket Packet;
 	local TowerModule Module;
-	`log("Iterating through"@TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length@"modules.");
-	foreach TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules(Module, Index)
+	`log("Iterating through"@GetTMRI().Modules.Length@"modules.");
+	foreach GetTMRI().Modules(Module, Index)
 	{
 		`log("Found module with ID"@Module.ID);
 		if(Module.ID == ModuleID)
@@ -90,21 +115,37 @@ reliable server function ServerRemoveModule(int ModuleID)
 	`log("Found Module"@ModuleID@"at index:"@Index@"(outside foreach)");
 	if(Index != -1)
 	{
-		Packet.Checksum = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet.Checksum - 
-			TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules[Index].ID;
-		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Remove(Index, 1);
-		Packet.Count = TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules.Length;
-		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Packet = Packet;
+		Packet.Checksum = GetTMRI().Packet.Checksum - GetTMRI().Modules[Index].ID;
+		GetTMRI().Modules.Remove(Index, 1);
+		Packet.Count = GetTMRI().Modules.Length;
+		GetTMRI().Packet = Packet;
 	}
 }
 
+function InformClientOf(InformClient Type, optional int InInt, optional Actor InActor, optional ModuleInfo InModuleInfo)
+{
+	local PlayerReplicationInfo PRI;
+	local TowerPlayerReplicationInfo TPRI;
+	foreach WorldInfo.GRI.PRIArray(PRI)
+	{
+		TPRI = TowerPlayerReplicationInfo(PRI);
+		switch(Type)
+		{
+		case IC_ModuleAdded:
+			//TPRI.ClientModuleAdded();
+			break;
+		}
+	}
+}
+
+/** Deprecated. */
 reliable server function QueryModuleInfo(int ModuleID)
 {
 	local TowerModule Module;
 	local ModuleInfo Info;
 	local int ModIndex, ModPlaceableIndex;
 	`log("Received query for module:"@ModuleID);
-	foreach TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.Modules(Module)
+	foreach GetTMRI().Modules(Module)
 	{
 		if(Module.ID == ModuleID)
 		{
@@ -122,11 +163,12 @@ reliable server function QueryModuleInfo(int ModuleID)
 	}
 }
 
+/** Deprecated. */
 reliable client function ReceiveModuleInfo(ModuleInfo Info)
 {
 	local TowerModule Module;
 	`log("Received module info for module:"@Info.ID@Info.Parent);
-	if(TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.ModuleExist(Info.ID))
+	if(GetTMRI().ModuleExist(Info.ID))
 	{
 		// Modify module.
 	}
@@ -138,9 +180,21 @@ reliable client function ReceiveModuleInfo(ModuleInfo Info)
 			Info.ModPlaceableIndex), Info.Parent, Info.GridLocation);
 		Module.ID = Info.ID;
 		
-		TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo.AddModule(Module);
+		GetTMRI().AddModule(Module);
 	}
 }
+
+/** Under normal circumstances removing items from the Modules array keeps the size the same but replaces the element with None.
+This forces everyone to go through the array and remove any None elements. */
+reliable client function ForceCompactArrays();
+
+reliable client function ClientModuleAdded(ModuleInfo Info);
+
+reliable client function ClientModuleRemoved(int Index);
+
+unreliable client function ClientModuleNewTarget(Actor Target);
+
+unreliable client function ClientModuleFire();
 
 DefaultProperties
 {

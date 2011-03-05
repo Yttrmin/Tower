@@ -4,7 +4,23 @@ TowerKProjectile
 Base class for any sort of projectiles that are affected by physics (e.g. cannonball, rocks, etc).
 */
 class TowerKProjectile extends KActorSpawnable
+	implements(TowerTargetable)
 	abstract;
+
+function bool IsProjectile()
+{
+	return TRUE;
+}
+
+function bool IsVehicle()
+{
+	return FALSE;
+}
+
+function bool IsInfantry()
+{
+	return FALSE;
+}
 
 function Launch(Vector Direction)
 {

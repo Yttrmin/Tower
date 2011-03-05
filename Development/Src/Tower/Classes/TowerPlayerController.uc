@@ -30,6 +30,50 @@ simulated event PostBeginPlay()
 
 /**
 Adding TowerModules:
+(Note: TMRI = TowerModuleReplicationInfo, TPRI = TowerPlayerReplicationInfo, TPC = TowerPlayerController)
+(Note: TPRI is used for sending client/server functions as it'd be impossible for all clients to do such with one TMRI.)
+
+Server: 
+AddPlaceable() (Called from TowerHUD. Determines whether or not Placeable needs to use tickets. In this case, yes.)
+-> GenerateAddTicket() 
+-> ServerSendAddTicket() (Yes, the server creates and sends AddTickets to itself. Keeps consistency.)
+-> TowerGame::AddPlaceable() (Leads to TowerPlaceable::CreatePlaceable(), creates and initializes component.)
+-> TPRI::ServerAddModule() (Updates TMRI's InfoPacket so that clients know to update.)
+
+Client:
+AddPlaceable() (Called from TowerHUD. Determines whether or not Placeable needs to use tickets. In this case, yes.)
+-> GenerateAddTicket() 
+-> ServerSendAddTicket()
+... Client is done here. If the server allows it, the TMRI's InfoPacket will be updated.
+TMRI::ReplicatedEvent() (Called when InfoPacket is updated, in this case because the server accepted our addition.
+-> HandleNewInfoPacket()
+-> QueryModuleInfo() (Client finds the server has 1 more module than itself, requests info about it so it can create it.)
+... Client is done here until the server (hopefully) responds shortly.
+-> TPRI::ReceiveModuleInfo()
+-> TMRI::AddModule() (Creates identical module based on info and updates its Count and Checksum data.)
+
+
+Removing TowerModules:
+
+Server:
+RemovePlaceable() (Called from TowerHUD. Determines whether or not to use RemoveModule(). In this case, yes.)
+-> RemoveModule() (Creates a RemoveTicket for the next function (Modules can't be replicated).)
+-> ServerSendRemoveTicket() (Yep, server sends a RemoveTicket to itself. This should probably come AFTER the rest to make sure valid.)
+-> TPRI::ServerRemoveModule() (Removes Module from game and updates InfoPacket in TMRI.)
+-> TPC::ServerRemovePlaceable() (Starts the chain of RemovePlaceables to actually remove Module from game.)
+-> TowerGame::RemovePlaceable()
+
+Client:
+RemovePlaceable() (Called from TowerHUD. Determines whether or not to use RemoveModule(). In this case, yes.)
+-> RemoveModule() (Creates a RemoveTicket for the next function (Modules can't be replicated).)
+-> ServerSendRemoveTicket() 
+... Client is done here. Server will update TMRI's InfoPacket if it's allowed.
+TMRI::ReplicatedEvent()
+-> HandleNewInfoPacket()
+-> RemoveModule() (Removes the module and updates its Count and Checksum data.)
+
+
+Updating TowerModules:
 
 
 */
@@ -74,7 +118,7 @@ exec function SetTowerName(string NewName)
 	ServerSetTowerName(NewName);
 }
 
-exec function SaveGame(string FileName, bool bTowerOnly)
+exec function SaveGame(string FileName)
 {
 	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
 	// stuff publically.
@@ -82,7 +126,7 @@ exec function SaveGame(string FileName, bool bTowerOnly)
 	{
 		return;
 	}
-	SaveSystem.SaveGame(FileName, bTowerOnly, self);
+	SaveSystem.SaveGame(FileName, false, self);
 }
 
 exec function LoadGame(string FileName, bool bTowerOnly)

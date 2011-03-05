@@ -1,12 +1,5 @@
-class TowerModuleReplicationInfo extends ReplicationInfo;
-
-struct ModuleInfo
-{
-	var Vector GridLocation;
-	var int ModIndex, ModPlaceableIndex;
-	var TowerBlock Parent;
-	var int ID;
-};
+class TowerModuleReplicationInfo extends ReplicationInfo
+	deprecated;
 
 struct InfoPacket
 {
@@ -38,6 +31,8 @@ simulated function ClientInitialize(TowerPlayerReplicationInfo TPRI)
 	HandleNewInfoPacket();
 }
 
+/** Simple wrapper function to handle adding a Module to the array and modifying the neccessary values.
+Only executed on clients. */
 simulated function AddModule(TowerModule Module)
 {
 	Modules.AddItem(Module);
@@ -46,6 +41,8 @@ simulated function AddModule(TowerModule Module)
 	NextModuleID++;
 }
 
+/** Simple wrapper function to handle removing a Module from the array and modifying the neccessary values.
+Only executed on clients. */
 simulated function RemoveModule(int Index)
 {
 	Modules[Index].Owner.DetachComponent(Modules[Index]);
@@ -67,6 +64,9 @@ simulated event ReplicatedEvent(name VarName)
 	}
 }
 
+/** Compares Packet to our previous Checksum and Count to determine what's changed, and makes the neccessary modifications
+to synchronize ourself with the packet.
+Only executed on clients. */
 simulated function HandleNewInfoPacket()
 {
 	local int i, ChangedID;
