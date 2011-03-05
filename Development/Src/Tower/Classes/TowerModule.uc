@@ -16,7 +16,7 @@ var() const bool bAddToPlaceablesList;
 
 var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
 
-var() editconst int ID;
+var() deprecated editconst int ID;
 
 var Vector GridLocation, ParentDirection;
 
@@ -99,9 +99,15 @@ final simulated function UnHighlight()
 //	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
 }
 
+/** This would be extremely useful if not for collision issues between the PlayerController and TowerBlocks. */
 reliable server function RemoveSelf()
 {
 	`log(Self@"Says to remove self!");
+}
+
+simulated function OnEnterRange(TowerTargetable Targetable)
+{
+	`log("Targetable in range!"@Targetable);
 }
 
 DefaultProperties

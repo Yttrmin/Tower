@@ -11,7 +11,7 @@ var Volume RadarVolume;
 var array<delegate<OnEnterRange> > InfantryRangeNotify, ProjectileRangeNotify, VehicleRangeNotify,
 	AllRangeNotify;
 
-delegate OnEnterRange(TowerTargetable Targetable);
+simulated delegate OnEnterRange(TowerTargetable Targetable);
 
 simulated event PostBeginPlay()
 {
@@ -19,13 +19,18 @@ simulated event PostBeginPlay()
 	ServerInitialize();
 }
 
-reliable server function ServerInitialize()
+function ServerInitialize()
 {
-	RadarVolume = TowerMapInfo(WorldInfo.GetMapInfo()).RadarVolume;
-	`assert(RadarVolume != None);
-	RadarVolume.AssociatedActor = Self;
-	RadarVolume.InitialState = GetStateName();
-	RadarVolume.GotoState('AssociatedTouch');
+	if(!TowerMapInfo(WorldInfo.GetMapInfo()).bRootBlockSet)
+	{
+		`log("Initializing root block! This should only be called on servers!");
+		RadarVolume = TowerMapInfo(WorldInfo.GetMapInfo()).RadarVolume;
+		`assert(RadarVolume != None);
+		RadarVolume.AssociatedActor = Self;
+		RadarVolume.InitialState = GetStateName();
+		RadarVolume.GotoState('AssociatedTouch');
+		TowerMapInfo(WorldInfo.GetMapInfo()).bRootBlockSet = true;
+	}
 }
 
 /** RadarVolume's Touch. */

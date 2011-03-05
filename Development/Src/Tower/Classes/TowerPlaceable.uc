@@ -16,6 +16,10 @@ simulated function Highlight();
 
 simulated function UnHighlight();
 
+/** Called whenever a TowerTargetable of a type that this Placeable can attack touches the RadarVolume controlled
+by a TowerBlockRoot. */
+simulated function OnEnterRange(TowerTargetable Targetable);
+
 // Placeable.CreatePlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation);
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,

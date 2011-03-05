@@ -73,9 +73,9 @@ function SetupPlaceablesList()
 	local int i;
 	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(IteratedPlaceable, i)
 	{
-		if(TowerBlock(IteratedPlaceable) != None)
+		if(TowerBlock(IteratedPlaceable) != None && TowerBlock(IteratedPlaceable).bAddToPlaceablesList)
 			HUDMovie.PlaceableStrings.AddItem(TowerBlock(IteratedPlaceable).DisplayName);
-		else if(TowerModule(IteratedPlaceable) != None)
+		else if(TowerModule(IteratedPlaceable) != None && TowerModule(IteratedPlaceable).bAddToPlaceablesList)
 			HUDMovie.PlaceableStrings.AddItem(TowerModule(IteratedPlaceable).DisplayName);
 		HUDMovie.PlaceableIndex.AddItem(i);
 	}
@@ -113,6 +113,7 @@ function Place()
 
 }
 
+/** Sets the TowerPlaceable that the game will attempt to place when the user clicks on a block. */
 function SetPlaceable(TowerPlaceable NewPlaceable)
 {
 	Self.Placeable = NewPlaceable;

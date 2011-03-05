@@ -1,4 +1,5 @@
-class TowerKProjRock extends TowerKProjectile;
+class TowerKProjRock extends TowerKProjectile
+	deprecated;
 
 DefaultProperties
 {
