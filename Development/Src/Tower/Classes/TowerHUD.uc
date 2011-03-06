@@ -49,7 +49,7 @@ event OnMouseClick(int Button)
 				FinalGridLocation.X = Round(FinalGridLocation.X);
 				FinalGridLocation.Y = Round(FinalGridLocation.Y);
 				FinalGridLocation.Z = Round(FinalGridLocation.Z);
-				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
+//				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
 				if(TowerModule(TracedPlaceable) == None)
 				{
 					TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TracedPlaceable, FinalGridLocation);
@@ -74,10 +74,15 @@ function SetupPlaceablesList()
 	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(IteratedPlaceable, i)
 	{
 		if(TowerBlock(IteratedPlaceable) != None && TowerBlock(IteratedPlaceable).bAddToPlaceablesList)
+		{
 			HUDMovie.PlaceableStrings.AddItem(TowerBlock(IteratedPlaceable).DisplayName);
+			HUDMovie.PlaceableIndex.AddItem(i);
+		}
 		else if(TowerModule(IteratedPlaceable) != None && TowerModule(IteratedPlaceable).bAddToPlaceablesList)
+		{
 			HUDMovie.PlaceableStrings.AddItem(TowerModule(IteratedPlaceable).DisplayName);
-		HUDMovie.PlaceableIndex.AddItem(i);
+			HUDMovie.PlaceableIndex.AddItem(i);
+		}
 	}
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.PlaceableStrings);
 	HUDMovie.OnBuildListChange(1);

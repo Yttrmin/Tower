@@ -21,7 +21,7 @@ struct ModuleInfo
 	var Vector GridLocation;
 	var int ModIndex, ModPlaceableIndex;
 	var TowerBlock Parent;
-	var int ID;
+//	var int ID;
 };
 
 var Tower Tower;
@@ -38,7 +38,7 @@ var protected globalconfig bool bDebugMods;
 
 /** Holds a reference to all TowerModules, since they can't be replicated.
 Despite being independent, everyone's Modules array should always be synchronized. */
-var private array<TowerModule> Modules;
+var protectedwrite array<TowerModule> Modules;
 
 replication
 {
@@ -81,24 +81,28 @@ simulated function TowerPlayerController GetPlayerController()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TowerModuleReplicationInfo-related functions.
 
-simulated function TowerModuleReplicationInfo GetTMRI()
+/** Called from TPC::ServerSendAddTicket() if TowerGame creates the Module.
+Module is an instantiated object, not an archetype. */
+function ServerAddModule(TowerModule Module)
 {
-	return TowerGameReplicationInfo(WorldInfo.GRI).ModuleReplicationInfo;
+	local ModuleInfo Info;
+	local int ModIndex, ModPlaceableIndex;
+	Info.GridLocation = Module.GridLocation;
+	GetPlayerController().ConvertPlaceableToIndexes(Module.ObjectArchetype, ModIndex, ModPlaceableIndex);
+	Info.ModIndex = ModIndex;
+	Info.ModPlaceableIndex = ModPlaceableIndex;
+	Info.Parent = TowerBlock(Module.Owner);
+	
+	Modules.AddItem(Module);
+	InformClientsOf(IC_ModuleAdded,,,Info);
 }
 
-reliable server function ServerAddModule(TowerModule Module)
-{
-	local InfoPacket Packet;
-	Module.ID = GetTMRI().NextModuleID;
-	GetTMRI().Modules.AddItem(Module);
-	GetTMRI().NextModuleID++;
-	Packet.Count = GetTMRI().Modules.Length;
-	Packet.Checksum += Module.ID;
-	GetTMRI().Packet = Packet;
-}
 
-function ServerRemoveModule(int ModuleID)
+function ServerRemoveModule(int Index)
 {
+	Modules[Index] = None;
+	InformClientsOf(IC_ModuleRemoved, Index);
+	/*
 	local int Index;
 	local InfoPacket Packet;
 	local TowerModule Module;
@@ -120,67 +124,28 @@ function ServerRemoveModule(int ModuleID)
 		Packet.Count = GetTMRI().Modules.Length;
 		GetTMRI().Packet = Packet;
 	}
+	*/
 }
 
-function InformClientOf(InformClient Type, optional int InInt, optional Actor InActor, optional ModuleInfo InModuleInfo)
+function InformClientsOf(InformClient Type, optional int InInt, optional Actor InActor, optional out ModuleInfo InModuleInfo)
 {
 	local PlayerReplicationInfo PRI;
 	local TowerPlayerReplicationInfo TPRI;
 	foreach WorldInfo.GRI.PRIArray(PRI)
 	{
-		TPRI = TowerPlayerReplicationInfo(PRI);
-		switch(Type)
+		if(!PRI.IsOwnedBy(GetPlayerController()))
 		{
-		case IC_ModuleAdded:
-			//TPRI.ClientModuleAdded();
-			break;
+			TPRI = TowerPlayerReplicationInfo(PRI);
+			switch(Type)
+			{
+			case IC_ModuleAdded:
+				TPRI.ClientModuleAdded(InModuleInfo);
+				break;
+			case IC_ModuleRemoved:
+				TPRI.ClientModuleRemoved(InInt);
+				break;
+			}
 		}
-	}
-}
-
-/** Deprecated. */
-reliable server function QueryModuleInfo(int ModuleID)
-{
-	local TowerModule Module;
-	local ModuleInfo Info;
-	local int ModIndex, ModPlaceableIndex;
-	`log("Received query for module:"@ModuleID);
-	foreach GetTMRI().Modules(Module)
-	{
-		if(Module.ID == ModuleID)
-		{
-			Info.ID = ModuleID;
-			Info.GridLocation = Module.GridLocation;
-			GetPlayerController().ConvertPlaceableToIndexes(Module.ObjectArchetype, ModIndex, ModPlaceableIndex);
-			Info.ModIndex = ModIndex;
-			Info.ModPlaceableIndex = ModPlaceableIndex;
-			Info.Parent = TowerBlock(Module.Owner);
-
-			`log("Sent off ModuleInfo in response to query for module:"@ModuleID@Info.Parent);
-			ReceiveModuleInfo(Info);
-			return;
-		}
-	}
-}
-
-/** Deprecated. */
-reliable client function ReceiveModuleInfo(ModuleInfo Info)
-{
-	local TowerModule Module;
-	`log("Received module info for module:"@Info.ID@Info.Parent);
-	if(GetTMRI().ModuleExist(Info.ID))
-	{
-		// Modify module.
-	}
-	else
-	{
-		// Spawn module
-		`log("Adding module at"@Info.GridLocation);
-		Module = GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex, 
-			Info.ModPlaceableIndex), Info.Parent, Info.GridLocation);
-		Module.ID = Info.ID;
-		
-		GetTMRI().AddModule(Module);
 	}
 }
 
@@ -188,9 +153,20 @@ reliable client function ReceiveModuleInfo(ModuleInfo Info)
 This forces everyone to go through the array and remove any None elements. */
 reliable client function ForceCompactArrays();
 
-reliable client function ClientModuleAdded(ModuleInfo Info);
+reliable client function ClientModuleAdded(ModuleInfo Info)
+{
+	`log("Server says Module added!");
+	Modules.AddItem(GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex,
+		Info.ModPlaceableIndex), Info.Parent, Info.GridLocation));
+//	Modules[Modules.Length-1].SetOwner(Info.Parent);
+}
 
-reliable client function ClientModuleRemoved(int Index);
+reliable client function ClientModuleRemoved(int Index)
+{
+	`log("Server says Module removed!");
+	Modules[Index].RemovePlaceable(TowerPlaceable(Modules[Index]), GetPlayerController().GetTower().NodeTree);
+	Modules[Index] = None;
+}
 
 unreliable client function ClientModuleNewTarget(Actor Target);
 

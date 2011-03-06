@@ -11,7 +11,7 @@ struct AddTicket
 struct RemoveTicket
 {
 	var TowerBlock Parent;
-	var int ModuleID;
+	var int Index;
 };
 
 var TowerSaveSystem SaveSystem;
@@ -26,6 +26,15 @@ simulated event PostBeginPlay()
 //	class'Engine'.static.BasicLoadObject(SaveSystem, "SaveGame.bin", true, 1);
 //	`log(SaveSystem.TestInt);
 //	`log(SaveSystem.TransTestInt);
+}
+
+function InitPlayerReplicationInfo()
+{
+	Super.InitPlayerReplicationInfo();
+	if(Role == Role_Authority && TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI == None)
+	{
+		TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI = TowerPlayerReplicationInfo(PlayerReplicationInfo);
+	}
 }
 
 /**
@@ -45,12 +54,12 @@ AddPlaceable() (Called from TowerHUD. Determines whether or not Placeable needs 
 -> GenerateAddTicket() 
 -> ServerSendAddTicket()
 ... Client is done here. If the server allows it, the TMRI's InfoPacket will be updated.
-TMRI::ReplicatedEvent() (Called when InfoPacket is updated, in this case because the server accepted our addition.
--> HandleNewInfoPacket()
--> QueryModuleInfo() (Client finds the server has 1 more module than itself, requests info about it so it can create it.)
-... Client is done here until the server (hopefully) responds shortly.
--> TPRI::ReceiveModuleInfo()
--> TMRI::AddModule() (Creates identical module based on info and updates its Count and Checksum data.)
+XTMRI::ReplicatedEvent() (Called when InfoPacket is updated, in this case because the server accepted our addition.
+X-> HandleNewInfoPacket()
+X-> QueryModuleInfo() (Client finds the server has 1 more module than itself, requests info about it so it can create it.)
+X... Client is done here until the server (hopefully) responds shortly.
+X-> TPRI::ReceiveModuleInfo()
+X-> TMRI::AddModule() (Creates identical module based on info and updates its Count and Checksum data.)
 
 
 Removing TowerModules:
@@ -140,6 +149,12 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
+exec function TestStaticSaveLoadGame(String FileName)
+{
+	class'TowerSaveSystem'.static.TestStaticSave(FileName, self);
+	class'TowerSaveSystem'.static.LoadStaticSave(FileName, self);
+}
+
 exec function RequestUpdateTime()
 {
 	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
@@ -177,7 +192,7 @@ reliable server function ServerSendAddTicket(AddTicket Ticket)
 		Ticket.Parent, Ticket.GridLocation);
 	if(Placeable != None)
 	{
-		GetTPRI().ServerAddModule(TowerModule(Placeable));
+		TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.ServerAddModule(TowerModule(Placeable));
 //		ClientHandleTicket(Ticket.TicketID, TRUE);
 	}
 	else
@@ -188,8 +203,9 @@ reliable server function ServerSendAddTicket(AddTicket Ticket)
 
 reliable server function ServerSendRemoveTicket(RemoveTicket Ticket)
 {
-	GetTPRI().ServerRemoveModule(Ticket.ModuleID);
+	//@TODO - Check exists.
 	ServerRemovePlaceable(GetModuleFromTicket(Ticket));
+	TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.ServerRemoveModule(Ticket.Index);
 }
 
 simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
@@ -207,7 +223,6 @@ simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int M
 		ModPlaceableIndex = Mod.ModPlaceables.find(Placeable);
 		if(ModPlaceableIndex != -1)
 		{
-			`log("FOUND PLACEABLE:"@ModIndex@ModPlaceableIndex);
 			return;
 		}
 		ModIndex++;
@@ -225,14 +240,7 @@ simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Pla
 
 function TowerModule GetModuleFromTicket(out RemoveTicket Ticket)
 {
-	local TowerModule Module;
-	foreach Ticket.Parent.ComponentList(class'TowerModule', Module)
-	{
-		if(Module.ID == Ticket.ModuleID)
-		{
-			return Module;
-		}
-	}
+	return TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.Modules[Ticket.Index];
 }
 
 function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)
@@ -270,9 +278,15 @@ simulated function RemovePlaceable(TowerPlaceable Placeable)
 simulated function RemoveModule(TowerModule Module)
 {
 	local RemoveTicket Ticket;
-	Ticket.Parent = TowerBlock(Module.Owner);
-	Ticket.ModuleID = Module.ID;
-	ServerSendRemoveTicket(Ticket);
+	local int Index;
+	Index = GetTPRI().Modules.Find(Module);
+	`log("Removing module"@Module@"at index"@Index$".");
+	if(Index != -1)
+	{
+		Ticket.Parent = TowerBlock(Module.Owner);
+		Ticket.Index = Index;
+		ServerSendRemoveTicket(Ticket);
+	}
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
