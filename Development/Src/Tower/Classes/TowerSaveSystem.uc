@@ -43,6 +43,23 @@ final function LoadGame(string FileName, bool bJustTower, TowerPlayerController 
 		NativeLoadGame(FileName, bJustTower, Player);
 }
 
+static final function TestStaticSave(string Filename, TowerPlayerController Player)
+{
+	local TowerSaveSystem Save;
+	Save = new class'TowerSaveSystem';
+	Save.SaveTowerName = "AJAJAJAJAJAJA";
+	class'Engine'.static.BasicSaveObject(Save, FileName$".bin", true, SAVE_FILE_VERSION);
+}
+
+static final function LoadStaticSave(string Filename, TowerPlayerController Player)
+{
+	local TowerSaveSystem Save;
+	Save = new class'TowerSaveSystem';
+//	Save.SaveTowerName = "AJAJAJAJAJAJA";
+	class'Engine'.static.BasicLoadObject(Save, FileName$".bin", true, SAVE_FILE_VERSION);
+	`log("Save file TowerName:"@Save.SaveTowerName);
+}
+
 /** Saves the game using Engine.uc's BasicSaveObject function, serializing this class. PC and iOS. */
 final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {

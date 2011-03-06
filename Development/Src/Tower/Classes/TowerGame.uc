@@ -30,12 +30,6 @@ event PreBeginPlay()
 	CheckForMods();
 }
 
-function InitGameReplicationInfo()
-{
-	Super.InitGameReplicationInfo();
-	TowerGameReplicationInfo(GameReplicationInfo).InitModuleReplicationInfo();
-}
-
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
@@ -109,7 +103,7 @@ function CheckForMods()
 	//@TODO - Convert package name to class name and such.
 	local int i;
 	local TowerModInfo Mod;
-	local String ReplicatedModList;
+//	local String ReplicatedModList;
 
 	local String TMIClass;
 	local String ModInfoPath;
@@ -142,11 +136,11 @@ function CheckForMods()
 	{
 		if(i > 0)
 		{
-			ReplicatedModList $= ";";
+//			ReplicatedModList $= ";";
 		}
-		ReplicatedModList $= Mod.ModName;
+//		ReplicatedModList $= Mod.ModName;
 	}
-	`log("ReplicatedModList:"@ReplicatedModList);
+//	`log("ReplicatedModList:"@ReplicatedModList);
 //	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
 	TowerGameReplicationInfo(GameReplicationInfo).ModCount = GameMods.Length;
 //	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();

@@ -15,25 +15,21 @@ var repnotify float ReplicatedTime;
 var bool bModsLoaded;
 var repnotify int ModCount;
 var repnotify TowerModInfo RootMod;
-var repnotify TowerModuleReplicationInfo ModuleReplicationInfo;
+
+var TowerPlayerReplicationInfo ServerTPRI;
 
 replication
 {
 	if(bNetDirty)
 		Phase, Round, EnemyCount, MaxEnemyCount, ReplicatedTime;
 	if(bNetInitial)
-		ModCount, RootMod, ModuleReplicationInfo;
+		ModCount, RootMod, ServerTPRI;
 }
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	AreModsLoaded();
-}
-
-function InitModuleReplicationInfo()
-{
-	ModuleReplicationInfo = Spawn(class'TowerModuleReplicationInfo', self);
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -56,11 +52,6 @@ simulated event ReplicatedEvent(name VarName)
 		`log("RootMod replicated!");
 		AreModsLoaded();
 	}
-	else if(VarName == 'ModuleReplicationInfo')
-	{
-		`log("ModuleReplicationInfo replicated!");
-		ModuleReplicationInfo.ClientInitialize(TowerPlayerReplicationInfo(GetPlayerController().PlayerReplicationInfo));
-	}
 }
 
 simulated function bool AreModsLoaded()
@@ -68,7 +59,6 @@ simulated function bool AreModsLoaded()
 	local int Count;
 	local TowerModInfo Mod;
 	`log("AREMODSLOADED");
-	ScriptTrace();
 	if(bModsLoaded)
 	{
 		return true;
