@@ -7,6 +7,7 @@ class Tower extends Actor
 	dependson(TowerBlock);
 
 var TowerTree NodeTree;
+var TowerBlockRoot Root;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
 non-debug in-game things ever!*/

@@ -100,13 +100,12 @@ event Think()
 
 event bool LaunchProjectile()
 {
-	/**
 	local TowerSpawnPoint SpawnPoint;
 	local TowerKProjRock Proj;
 	local TowerBlock Block, TargetBlock;
 	SpawnPoint = GetSpawnPoint();
 	Proj = Spawn(class'TowerKProjRock',,, SpawnPoint.Location);
-	foreach TargetTower.Blocks(Block)
+	foreach DynamicActors(class'TowerBlock', Block)
 	{
 		TargetBlock = Block;
 		break;
@@ -116,7 +115,7 @@ event bool LaunchProjectile()
 	`log("SHOT PROJECTILE, COOL DOWN");
 	SetTimer(2, false, 'CooledDown');
 	bCoolDown = TRUE;
-	*/
+	
 	return true;
 }
 

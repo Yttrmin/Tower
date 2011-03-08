@@ -38,6 +38,7 @@ event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLoca
 	vector HitNormal)
 {
 	local TowerTargetable Targetable;
+	`log("RadarVolume touched!");
 	Targetable = TowerTargetable(Other);
 	if(Targetable == None)
 	{
@@ -66,6 +67,7 @@ event k2override UnTouch(Actor Other)
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
 	bool bProjectileNotify, bool bVehicleNotify)
 {
+	`log("Adding range callback for Infantry:"@bInfantryNotify@"Projectile:"@bProjectileNotify@"Vehicle:"@bVehicleNotify);
 	if(bInfantryNotify && bProjectileNotify && bVehicleNotify)
 	{
 		AllRangeNotify.AddItem(Callback);
