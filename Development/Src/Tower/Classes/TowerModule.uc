@@ -16,7 +16,7 @@ var() const bool bAddToPlaceablesList;
 
 var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
 
-var() deprecated editconst int ID;
+var TowerTargetable Target;
 
 var Vector GridLocation, ParentDirection;
 
@@ -26,6 +26,10 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 	`log("MODULE INITIALIZE");
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
+	TowerBlock(Owner).OwnerPRI.Tower.Root.AddRangeNotifyCallback(OnEnterRange, 
+		PrioritizedTargets[0].Priority > 0 ? true : false, 
+		PrioritizedTargets[2].Priority > 0 ? true : false, 
+		PrioritizedTargets[1].Priority > 0 ? true : false );
 }
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
@@ -58,8 +62,8 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	NewTranslation.Z = NewParentDirection.Z*128;
 	Module.SetTranslation(NewTranslation);
 	Module.SetRotation(NewRotation);
-	Module.Initialize(NewGridLocation, NewParentDirection, Parent.OwnerPRI);
 	Parent.AttachComponent(Module);
+	Module.Initialize(NewGridLocation, NewParentDirection, Parent.OwnerPRI);
 	return Module;
 }
 
@@ -108,6 +112,20 @@ reliable server function RemoveSelf()
 simulated function OnEnterRange(TowerTargetable Targetable)
 {
 	`log("Targetable in range!"@Targetable);
+	if(Target == None)
+	{
+		SetTarget(Targetable);
+	}
+	else
+	{
+		// Priority and stuff to decide if we want to switch targets!
+	}
+}
+
+function SetTarget(TowerTargetable NewTarget)
+{
+	`log(Self@"setting new target! From"@Target@"to"@NewTarget$"!");
+	Target = NewTarget;
 }
 
 DefaultProperties
