@@ -33,7 +33,7 @@ var protected MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
 var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
-var protected NavMeshObstacle Obstacle;
+var private DynamicNavMeshObstacle Obstacle;
 
 var int ModIndex, ModPlaceablesIndex;
 
@@ -211,6 +211,7 @@ auto simulated state Stable
 	{
 		if(PreviousStateName == 'Unstable')
 		{
+			bReplicateMovement = true;
 			StopFall();
 		}
 	}
@@ -243,7 +244,7 @@ simulated state Unstable
 	}
 	event BeginState(name PreviousStateName)
 	{
-		`log(Self@"I AM NOW UNSTABLE!!!!!!");
+		bReplicateMovement = false;
 		BlocksFallen = 0;
 		StartZ = Location.Z;
 		SetTimer(TimeToDrop(), false, 'DroppedSpace');

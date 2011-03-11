@@ -20,6 +20,8 @@ replication
 {
 	if(bNetDirty)
 		TowerName, OwnerPRI;
+	if(bNetInitial)
+		Root;
 }
 
 simulated event ReplicatedEvent(name VarName)
