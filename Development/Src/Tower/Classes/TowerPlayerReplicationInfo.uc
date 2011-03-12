@@ -36,9 +36,9 @@ empty array.*/
 var protected globalconfig bool bShareModNamesWithMods;
 var protected globalconfig bool bDebugMods;
 
-/** Holds a reference to all TowerModules, since they can't be replicated.
-Despite being independent, everyone's Modules array should always be synchronized. */
-var protectedwrite array<TowerModule> Modules;
+/** Holds a reference to all TowerPlaceables using the ticket system, since they can't be replicated.
+Despite being independent, everyone's TicketedPlaceables array should always be synchronized. */
+var protectedwrite array<TowerPlaceable> TicketedPlaceables;
 
 replication
 {
@@ -93,21 +93,21 @@ function ServerAddModule(TowerModule Module)
 	Info.ModPlaceableIndex = ModPlaceableIndex;
 	Info.Parent = TowerBlock(Module.Owner);
 	
-	Modules.AddItem(Module);
+	TicketedPlaceables.AddItem(Module);
 	InformClientsOf(IC_ModuleAdded,,,Info);
 }
 
 
 function ServerRemoveModule(int Index)
 {
-	Modules[Index] = None;
+	TicketedPlaceables[Index] = None;
 	InformClientsOf(IC_ModuleRemoved, Index);
 	/*
 	local int Index;
 	local InfoPacket Packet;
 	local TowerModule Module;
-	`log("Iterating through"@GetTMRI().Modules.Length@"modules.");
-	foreach GetTMRI().Modules(Module, Index)
+	`log("Iterating through"@GetTMRI().TicketedPlaceables.Length@"TicketedPlaceables.");
+	foreach GetTMRI().TicketedPlaceables(Module, Index)
 	{
 		`log("Found module with ID"@Module.ID);
 		if(Module.ID == ModuleID)
@@ -119,9 +119,9 @@ function ServerRemoveModule(int Index)
 	`log("Found Module"@ModuleID@"at index:"@Index@"(outside foreach)");
 	if(Index != -1)
 	{
-		Packet.Checksum = GetTMRI().Packet.Checksum - GetTMRI().Modules[Index].ID;
-		GetTMRI().Modules.Remove(Index, 1);
-		Packet.Count = GetTMRI().Modules.Length;
+		Packet.Checksum = GetTMRI().Packet.Checksum - GetTMRI().TicketedPlaceables[Index].ID;
+		GetTMRI().TicketedPlaceables.Remove(Index, 1);
+		Packet.Count = GetTMRI().TicketedPlaceables.Length;
 		GetTMRI().Packet = Packet;
 	}
 	*/
@@ -149,23 +149,23 @@ function InformClientsOf(InformClient Type, optional int InInt, optional Actor I
 	}
 }
 
-/** Under normal circumstances removing items from the Modules array keeps the size the same but replaces the element with None.
+/** Under normal circumstances removing items from the TicketedPlaceables array keeps the size the same but replaces the element with None.
 This forces everyone to go through the array and remove any None elements. */
 reliable client function ForceCompactArrays();
 
 reliable client function ClientModuleAdded(ModuleInfo Info)
 {
 	`log("Server says Module added!");
-	Modules.AddItem(GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex,
+	TicketedPlaceables.AddItem(GetPlayerController().AddLocalPlaceable(GetPlayerController().ConvertIndexesToPlaceable(Info.ModIndex,
 		Info.ModPlaceableIndex), Info.Parent, Info.GridLocation));
-//	Modules[Modules.Length-1].SetOwner(Info.Parent);
+//	TicketedPlaceables[TicketedPlaceables.Length-1].SetOwner(Info.Parent);
 }
 
 reliable client function ClientModuleRemoved(int Index)
 {
 	`log("Server says Module removed!");
-	Modules[Index].RemovePlaceable(TowerPlaceable(Modules[Index]), GetPlayerController().GetTower().NodeTree);
-	Modules[Index] = None;
+	TicketedPlaceables[Index].RemovePlaceable(TicketedPlaceables[Index], GetPlayerController().GetTower().NodeTree);
+	TicketedPlaceables[Index] = None;
 }
 
 unreliable client function ClientModuleNewTarget(Actor Target);

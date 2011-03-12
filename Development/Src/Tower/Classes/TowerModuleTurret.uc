@@ -4,12 +4,6 @@ class TowerModuleTurret extends TowerModule
 var StaticMeshComponent StaticMeshComponent;
 //var SkeletalMeshComponent SkeletalMeshComponent;
 
-replication
-{
-	if(true)
-		StaticMeshComponent;
-}
-
 DefaultProperties
 {
 	/*
