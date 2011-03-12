@@ -446,15 +446,6 @@ function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int
 	return None;
 }
 
-function RestartPlayer(Controller aPlayer)
-{
-	Super.RestartPlayer(aPlayer);
-	// aPlayer default state is PlayerWaiting
-	// self default state is PendingMatch
-	TowerPlayerController(aPlayer).GotoState('Master');
-
-}
-
 function int GetRemainingTime()
 {
 	return (GetTimerRate('GameTimerExpired') - GetTimerCount('GameTimerExpired')+1);

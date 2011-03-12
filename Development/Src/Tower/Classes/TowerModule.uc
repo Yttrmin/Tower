@@ -12,6 +12,7 @@ struct PriorityTarget
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
+/** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
 var() const bool bAddToPlaceablesList;
 
 var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
@@ -30,6 +31,7 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 		PrioritizedTargets[0].Priority > 0 ? true : false, 
 		PrioritizedTargets[2].Priority > 0 ? true : false, 
 		PrioritizedTargets[1].Priority > 0 ? true : false );
+	Owner.SetTimer(2, true, 'Think', Self);
 }
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
@@ -69,6 +71,8 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 
 static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree)
 {
+	ActorComponent(Placeable).Owner.ClearTimer('Think', Placeable);
+
 	ActorComponent(Placeable).Owner.DetachComponent(ActorComponent(Placeable));
 }
 
@@ -126,6 +130,12 @@ function SetTarget(TowerTargetable NewTarget)
 {
 	`log(Self@"setting new target! From"@Target@"to"@NewTarget$"!");
 	Target = NewTarget;
+	Think();
+}
+
+event Think()
+{
+	`log("Think");
 }
 
 DefaultProperties

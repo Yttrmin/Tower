@@ -240,7 +240,7 @@ simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Pla
 
 function TowerModule GetModuleFromTicket(out RemoveTicket Ticket)
 {
-	return TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.Modules[Ticket.Index];
+	return TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.TicketedPlaceables[Ticket.Index];
 }
 
 function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)
@@ -279,7 +279,7 @@ simulated function RemoveModule(TowerModule Module)
 {
 	local RemoveTicket Ticket;
 	local int Index;
-	Index = GetTPRI().Modules.Find(Module);
+	Index = GetTPRI().TicketedPlaceables.Find(Module);
 	`log("Removing module"@Module@"at index"@Index$".");
 	if(Index != -1)
 	{
@@ -325,12 +325,6 @@ function Tower GetTower()
 function TowerPlayerReplicationInfo GetTPRI()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
-}
-
-//@FIXME
-state Master extends Spectating
-{
-	ignores StartFire, StopFire;
 }
 
 DefaultProperties
