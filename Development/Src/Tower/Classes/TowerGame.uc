@@ -36,13 +36,14 @@ event PostBeginPlay()
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
+	/*
 	class'Engine'.static.GetFacebookIntegration().UserID = "1637497802";
 	class'Engine'.static.GetFacebookIntegration().AppID = "195347980485261";
 	class'Engine'.static.GetFacebookIntegration().AddAuthorizationCompleteDelegate(OnAuthorizationComplete);
 	class'Engine'.static.GetFacebookIntegration().AddFacebookRequestCompleteDelegate(OnFacebookRequestComplete);
 	class'Engine'.static.GetFacebookIntegration().AddWebRequestCompleteDelegate(OnWebRequestComplete);
 	class'Engine'.static.GetFacebookIntegration().Init();
-	class'Engine'.static.GetFacebookIntegration().Authorize();
+	class'Engine'.static.GetFacebookIntegration().Authorize();*/
 	//1637497802
 //	StartNextRound();
 }

@@ -5,7 +5,8 @@ Base class of all the blocks that make up a Tower.
 
 Keep in mind this class and its children will likely be opened up to modding!
 */
-class TowerBlock extends DynamicSMActor_Spawnable
+class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
+	config(Tower)
 	HideCategories(Movement,Attachment,Collision,Physics,Advanced,Object)
 	dependson(TowerModule)
 	ClassGroup(Tower)
@@ -21,13 +22,16 @@ var int StartZ;
 
 var repnotify bool bFalling;
 
+/** If FALSE, only StaticMeshComponents will be used with TowerBlocks. */
+var private const globalconfig bool bEnableApexDestructibles;
+
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
 var protectedwrite editconst Vector ParentDirection;
 /** Block's position on the grid. */
 var protectedwrite editconst Vector GridLocation;
-var const editconst int XSize, YSize, ZSize;
-var protectedwrite bool bRootBlock;
+var() const editconst int XSize, YSize, ZSize;
+var protectedwrite deprecated bool bRootBlock;
 
 var protected MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
@@ -35,11 +39,16 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
+/** Block's MeshComponent. Will be either StaticMeshComponent or ApexStaticDestructibleComponent. */
+var private MeshComponent MeshComponent;
+
 var int ModIndex, ModPlaceablesIndex;
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
 var() const bool bAddToPlaceablesList;
+var() const bool bUseApexDestructible;
+var() const editconst editinline MeshComponent MeshComponents[2];
 
 replication
 {
@@ -124,7 +133,23 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
+	InitializeMeshComponent();
 //	SetOwner(OwnerPRI);
+}
+
+function InitializeMeshComponent()
+{
+	local MeshComponent NewMeshComponent;
+	if(bEnableApexDestructibles && TowerBlock(ObjectArchetype).bUseApexDestructible)
+	{
+		NewMeshComponent = new class'ApexStaticDestructibleComponent' (MeshComponents[1]);
+	}
+	else
+	{
+		NewMeshComponent = new class'StaticMeshComponent' (MeshComponents[0]);
+	}
+	MeshComponent = NewMeshComponent;
+	AttachComponent(MeshComponent);
 }
 
 final function TowerBlock GetParent()
@@ -319,6 +344,8 @@ DefaultProperties
 	DisplayName="GIVE ME A NAME"
 	bAddToPlaceablesList=TRUE
 
+	CustomTimeDilation=1
+
 	ZAcceleration=1039.829009434
 	DropRate=128
 //	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
@@ -330,6 +357,14 @@ DefaultProperties
 	XSize = 0
 	YSize = 0
 	ZSize = 0
+
+	Begin Object Class=TowerPlaceableStaticMeshComponent Name=TPSMC
+	End Object
+	Begin Object Class=TowerPlaceableDestructibleMeshComponent Name=TPDMC
+	End Object
+	MeshComponents(0)=TPSMC
+	MeshComponents(1)=TPDMC
+
 	Begin Object Name=MyLightEnvironment
 		bEnabled=TRUE
 		TickGroup=TG_DuringAsyncWork
