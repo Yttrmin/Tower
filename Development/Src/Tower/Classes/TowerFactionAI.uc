@@ -110,10 +110,10 @@ event bool LaunchProjectile()
 		TargetBlock = Block;
 		break;
 	}
-
+//	`log(0.5*ASin((1039.829009434*VSize(Vect(-1756,1755,78) - Proj.Location))/5000));
 	Proj.Launch(TargetBlock.Location);
 	`log("SHOT PROJECTILE, COOL DOWN");
-	SetTimer(2, false, 'CooledDown');
+	SetTimer(0.5, false, 'CooledDown');
 	bCoolDown = TRUE;
 	
 	return true;

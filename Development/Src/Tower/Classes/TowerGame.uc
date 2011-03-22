@@ -23,6 +23,7 @@ var array<TowerModInfo> GameMods;
 
 var array<TowerModInfo> Mods;
 var config array<String> ModPackages;
+var SeqAct_TowerCrowdSpawner CrowdSpawner;
 
 event PreBeginPlay()
 {
@@ -32,10 +33,17 @@ event PreBeginPlay()
 
 event PostBeginPlay()
 {
+	local int i;
 	Super.PostBeginPlay();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
+	CrowdSpawner = new class'SeqAct_TowerCrowdSpawner';
+	`log("Got Spawner?"@CrowdSpawner);
+	for(i = 0; i < 30; i++)
+	{
+		CrowdSpawner.SpawnAgent(ProjectilePoints[0]);
+	}
 	/*
 	class'Engine'.static.GetFacebookIntegration().UserID = "1637497802";
 	class'Engine'.static.GetFacebookIntegration().AppID = "195347980485261";
@@ -238,7 +246,7 @@ exec function StartGame()
 function StartMatch()
 {
 	local Actor A;
-
+	`log("StartMatch!");
 	if ( MyAutoTestManager != None )
 	{
 		MyAutoTestManager.StartMatch();

@@ -19,6 +19,7 @@ var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
 
 var TowerTargetable Target;
 
+var const float ThinkRate;
 var Vector GridLocation, ParentDirection;
 
 event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
@@ -31,7 +32,7 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 		PrioritizedTargets[0].Priority > 0 ? true : false, 
 		PrioritizedTargets[2].Priority > 0 ? true : false, 
 		PrioritizedTargets[1].Priority > 0 ? true : false );
-	Owner.SetTimer(2, true, 'Think', Self);
+	Owner.SetTimer(ThinkRate, true, 'Think', Self);
 }
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
@@ -142,6 +143,7 @@ DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
 	bAddToPlaceablesList=TRUE
+	ThinkRate=2.0
 	PrioritizedTargets(0)=(TargetType=Infantry,Priority=0)
 	PrioritizedTargets(1)=(TargetType=Vehicle,Priority=0)
 	PrioritizedTargets(2)=(TargetType=Projectile,Priority=0)
