@@ -4,23 +4,37 @@ class TowerModuleTurret extends TowerModule
 //var StaticMeshComponent StaticMeshComponent;
 //var SkeletalMeshComponent SkeletalMeshComponent;
 
+var SkelControlLookAt Barrel;
+
 function Vector CalculateShootVector(Actor ShotTarget)
 {
 	return Normal(ShotTarget.Location - Owner.Location);
 }
 
+/** called after initializing the AnimTree for the given SkeletalMeshComponent that has this Actor as its Owner
+ * this is a good place to cache references to skeletal controllers, etc that the Actor modifies
+ */
+event PostInitAnimTree(SkeletalMeshComponent SkelComp)
+{
+	`log("PostInitAnimTree!");
+}
+
 function Shoot(Vector Direction)
 {
 	local vector HitLocation, HitNormal;
+	local vector ShotOrigin;
 	local Actor HitActor;
-	HitActor = Owner.Trace(HitLocation, HitNormal, Owner.Location+Direction*10000, Owner.Location, true);
+
+	ShotOrigin = Translation;
+	ShotOrigin.Z += 128;
+	HitActor = Owner.Trace(HitLocation, HitNormal, ShotOrigin+Direction*10000, ShotOrigin, true);
 	
-	Owner.DrawDebugLine(Owner.Location, Owner.Location+Direction*10000, 1, 0, 0, True);
+	Owner.DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
 	
-	`log(Self@"shot"@HitActor@"through the path ending at"@Owner.Location+Direction*10000$"!");
+	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
 	if(HitActor != None)
 	{
-		HitActor.Destroy();
+		//HitActor.Destroy();
 	}
 }
 
