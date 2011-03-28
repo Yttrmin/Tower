@@ -23,7 +23,7 @@ var array<TowerModInfo> GameMods;
 
 var array<TowerModInfo> Mods;
 var config array<String> ModPackages;
-var SeqAct_TowerCrowdSpawner CrowdSpawner;
+var TowerCrowdSpawner CrowdSpawner;
 
 event PreBeginPlay()
 {
@@ -33,17 +33,11 @@ event PreBeginPlay()
 
 event PostBeginPlay()
 {
-	local int i;
 	Super.PostBeginPlay();
 	PopulateSpawnPointArrays();
 	AddFactionAIs();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
-	CrowdSpawner = new class'SeqAct_TowerCrowdSpawner';
-	`log("Got Spawner?"@CrowdSpawner);
-	for(i = 0; i < 30; i++)
-	{
-		CrowdSpawner.SpawnAgent(ProjectilePoints[0]);
-	}
+	CrowdSpawner = new class'TowerCrowdSpawner';
 	/*
 	class'Engine'.static.GetFacebookIntegration().UserID = "1637497802";
 	class'Engine'.static.GetFacebookIntegration().AppID = "195347980485261";
@@ -240,36 +234,19 @@ exec function LaunchMissile()
 
 exec function StartGame()
 {
-	StartCoolDown();
+	StartMatch();
 }
 
 function StartMatch()
 {
-	local Actor A;
+	local GameCrowdAgent Agent;
 	`log("StartMatch!");
-	if ( MyAutoTestManager != None )
-	{
-		MyAutoTestManager.StartMatch();
-	}
-
-	// tell all actors the game is starting
-	ForEach AllActors(class'Actor', A)
-	{
-		A.MatchStarting();
-	}
-
-	// start human players first
-	StartHumans();
-
-	// start AI players
-	StartBots();
-
-	bWaitingToStartMatch = false;
-
-	StartOnlineGame();
-
-	// fire off any level startup events
-	WorldInfo.NotifyMatchStarted();
+	Super.StartMatch();
+//	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
+//		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
+	Agent = CrowdSpawner.SpawnAgent(InfantryPoints[0]);
+//	Agent.CurrentDestination = InfantryPoints[0].NextDestinations[0];
+	StartCoolDown();
 }
 
 exec function SkipRound()

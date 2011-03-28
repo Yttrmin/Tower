@@ -46,6 +46,10 @@ function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent
 {
 	local TowerPlaceable NewPlaceable;
 	NewPlaceable = Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	if(TowerBlock(NewPlaceable) != None && NewPlaceable.GetGridLocation().Z == 0)
+	{
+		TowerGame(WorldInfo.Game).CrowdSpawner.BlockSpawned(TowerBlock(NewPlaceable));
+	}
 	return NewPlaceable;
 }
 
