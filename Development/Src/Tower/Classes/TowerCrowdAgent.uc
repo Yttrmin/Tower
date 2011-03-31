@@ -1,22 +1,80 @@
 class TowerCrowdAgent extends GameCrowdAgentSkeletal;
 
-var private Weapon Weapon;
+var protected TowerWeapon Weapon;
+var protected TowerWeaponAttachment WeaponAttachment;
+var protectedwrite const name WeaponSocket;
+
+var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	InitializeWeapon();
+	WeaponAttachmentChanged();
+
+//	Weapon.StartFire(0);
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	if(VarName == 'ReplicatedCurrentDestination')
+	{
+		SetCurrentDestination(ReplicatedCurrentDestination);
+	}
+	Super.ReplicatedEvent(VarName);
 }
 
 function InitializeWeapon()
 {
-	Weapon = Spawn(class'UTWeap_ShockRifle');
+	local int i;
+	Weapon = Spawn(class'TowerWeapon_Rifle', self);
+//	Weapon.Instigator = Self;
+	Weapon.Activate();
+//	UTWeapon(Weapon).AttachWeaponTo(SkeletalMeshComponent);
+//	Weapon.GotoState('Active');
+//	for(i = 0; i < 1000; i++)
+//		Weapon.FireAmmunition();
+}
+
+simulated event SetCurrentDestination(GameCrowdDestination NewDestination)
+{
+	if ( NewDestination != CurrentDestination )
+	{
+		if ( CurrentBehavior != None )
+		{
+			CurrentBehavior.ChangingDestination(NewDestination);
+		}
+		CurrentDestination = NewDestination;
+		ReplicatedCurrentDestination = CurrentDestination;
+		CurrentDestination.IncrementCustomerCount(self);
+		
+		ReachThreshold = CurrentDestination.bSoftPerimeter ? 0.5 + 0.5*FRand() : 1.0;
+	}
+	if ( CurrentDestination.bFleeDestination && !IsPanicked() )
+	{
+		SetPanic(None, TRUE);
+	}
+}
+
+simulated function WeaponAttachmentChanged()
+{
+	if(WeaponAttachment == None)
+	{
+		WeaponAttachment = Spawn(class'TowerWeaponAttachment_Rifle', self);
+
+		if(WeaponAttachment != None)
+		{
+			WeaponAttachment.AttachTo(Self);
+		}
+	}
 }
 
 DefaultProperties
 {
 	Health=20
 	bProjTarget=true
+
+	WeaponSocket=WeaponPoint
 	
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'UTExampleCrowd.Mesh.SK_Crowd_Robot'
@@ -31,7 +89,7 @@ DefaultProperties
 	FollowPathStrength=600.0
 	MaxWalkingSpeed=200.0
 
-	bUpdateSimulatedPosition=true
-//	bReplicateMovement=true
+	bUpdateSimulatedPosition=false
+	bReplicateMovement=false
 	RemoteRole=Role_SimulatedProxy
 }
