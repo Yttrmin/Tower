@@ -102,9 +102,10 @@ event BlockSpawned(TowerBlock Block)
 /** Called when agent is spawned - sets agent output and triggers spawned event */
 event SpawnedAgent(GameCrowdAgent NewAgent)
 {
+	// Probably want to iterate in the future.
 	local TowerCrowdDestinationSpawnable Destination;
 	Destination = Destinations[0];
-	NewAgent.CurrentDestination = Destination;
+	NewAgent.SetCurrentDestination(Destination);
 }
 
 /** Called from C++ to actually create a new CrowdAgent actor, and initialise it */
