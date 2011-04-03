@@ -18,7 +18,7 @@ struct ModOption
 
 struct ModuleInfo
 {
-	var Vector GridLocation;
+	var IVector GridLocation;
 	var int ModIndex, ModPlaceableIndex;
 	var TowerBlock Parent;
 //	var int ID;

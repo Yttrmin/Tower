@@ -5,12 +5,13 @@ var repnotify byte Round;
 
 var protectedwrite bool bRoundInProgress;
 
-var int EnemyCount;
 var int MaxEnemyCount;
 
 var array<TowerPlaceable> Placeables;
 
 var repnotify float ReplicatedTime;
+
+var repnotify int RemainingEnemies;
 
 var bool bModsLoaded;
 var repnotify int ModCount;
@@ -21,7 +22,7 @@ var TowerPlayerReplicationInfo ServerTPRI;
 replication
 {
 	if(bNetDirty)
-		Phase, Round, EnemyCount, MaxEnemyCount, ReplicatedTime;
+		Phase, Round, MaxEnemyCount, ReplicatedTime, RemainingEnemies;
 	if(bNetInitial)
 		ModCount, RootMod, ServerTPRI;
 }

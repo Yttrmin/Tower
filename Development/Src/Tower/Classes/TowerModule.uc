@@ -20,9 +20,9 @@ var() const PriorityTarget PrioritizedTargets[3]<FullyExpand=true>;
 var TowerTargetable Target;
 
 var const float ThinkRate;
-var Vector GridLocation, ParentDirection;
+var IVector GridLocation, ParentDirection;
 
-event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
 	`log("MODULE INITIALIZE");
@@ -37,13 +37,14 @@ event Initialize(out Vector NewGridLocation, out Vector NewParentDirection,
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
-	out Vector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
+	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
 	local TowerModule Module;
-	local Vector NewParentDirection, NewTranslation;
+	local IVector NewParentDirection;
+	local Vector NewTranslation;
 	local Rotator NewRotation;
 	`assert(Parent != None);
-	NewParentDirection = Normal(SpawnLocation - Parent.Location);
+	NewParentDirection = FromVect(Normal(SpawnLocation - Parent.Location));
 	Module = new(None) PlaceableTemplate.class (PlaceableTemplate);
 	if(round(NewParentDirection.Z) == 0)
 	{
@@ -82,7 +83,7 @@ static final function bool IsReplicable()
 	return FALSE;
 }
 
-simulated function Vector GetGridLocation()
+simulated function IVector GetGridLocation()
 {
 	return GridLocation;
 }

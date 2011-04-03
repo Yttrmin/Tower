@@ -31,7 +31,8 @@ event OnMouseClick(int Button)
 {
 	local Vector2D Mouse;
 	local TowerPlaceable TracedPlaceable;
-	local Vector HitNormal, FinalGridLocation;
+	local Vector HitNormal;
+	local IVector FinalGridLocation;
 	// Left mouse button.
 	HUDMovie.GetMouseCoordinates(Mouse, true);
 	if(Button == 0)
@@ -45,10 +46,10 @@ event OnMouseClick(int Button)
 			TraceForBlock(Mouse, TracedPlaceable, HitNormal);
 			if(TracedPlaceable != None)
 			{
-				FinalGridLocation =   TracedPlaceable.GetGridLocation() + HitNormal;
-				FinalGridLocation.X = Round(FinalGridLocation.X);
-				FinalGridLocation.Y = Round(FinalGridLocation.Y);
-				FinalGridLocation.Z = Round(FinalGridLocation.Z);
+				FinalGridLocation = TracedPlaceable.GetGridLocation() + HitNormal;
+//				FinalGridLocation.X = Round(FinalGridLocation.X);
+//				FinalGridLocation.Y = Round(FinalGridLocation.Y);
+//				FinalGridLocation.Z = Round(FinalGridLocation.Z);
 //				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
 				if(TowerModule(TracedPlaceable) == None)
 				{

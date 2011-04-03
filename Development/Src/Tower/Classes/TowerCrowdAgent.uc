@@ -1,7 +1,7 @@
 class TowerCrowdAgent extends GameCrowdAgentSkeletal;
 
 var protected TowerWeapon Weapon;
-var protected TowerWeaponAttachment WeaponAttachment;
+var protectedwrite TowerWeaponAttachment WeaponAttachment;
 var protectedwrite const name WeaponSocket;
 
 var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
@@ -67,6 +67,15 @@ simulated function WeaponAttachmentChanged()
 			WeaponAttachment.AttachTo(Self);
 		}
 	}
+}
+
+simulated event Destroyed()
+{
+	if(Weapon != None)
+	{
+		Weapon.Destroy();
+	}
+	Super.Destroyed();
 }
 
 DefaultProperties

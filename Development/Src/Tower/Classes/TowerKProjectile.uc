@@ -5,7 +5,7 @@ Base class for any sort of projectiles that are affected by physics (e.g. cannon
 */
 class TowerKProjectile extends KActorSpawnable
 	implements(TowerTargetable)
-	abstract;
+	/*abstract*/;
 
 var int LaunchForce;
 

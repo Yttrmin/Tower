@@ -1,12 +1,9 @@
 /** Faction AI used solely for testing. */
 class TowerFactionAIDebug extends TowerFactionAI;
 
-var bool bTemp;
-
 event PostBeginPlay()
 {
 	super.PostBeginPlay();
-	WorldInfo.Game.Broadcast(None, "Debug Faction spawned and ready.");
 }
 
 event Think()
@@ -14,7 +11,7 @@ event Think()
 	Super.Think();
 	if(TroopBudget > 0 && !bCoolDown)
 	{
-		LaunchProjectile();
+//		LaunchProjectile();
 	}
 }
 

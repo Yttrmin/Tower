@@ -4,16 +4,17 @@ TowerPlaceable
 Interface for all classes that can be placed by the player.
 Primarily implemented by TowerBlock and TowerModule so there doesn't need to be a set of functions for each. 
 */
-interface TowerPlaceable;
+interface TowerPlaceable
+	dependson(TowerGame);
 
 /**  */
-event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI);
 
 // Placeable.CreatePlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation);
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
-	out Vector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI);
+	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI);
 
 static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree);
 
@@ -30,7 +31,7 @@ function StaticMesh GetPlaceableStaticMesh();
 
 function MaterialInterface GetPlaceableMaterial(int Index);
 
-simulated function Vector GetGridLocation();
+simulated function IVector GetGridLocation();
 
 simulated function Highlight();
 

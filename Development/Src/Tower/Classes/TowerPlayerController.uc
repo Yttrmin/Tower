@@ -4,7 +4,7 @@ class TowerPlayerController extends GamePlayerController
 struct AddTicket
 {
 	var int ModIndex, ModPlaceableIndex;
-	var Vector GridLocation;
+	var IVector GridLocation;
 	var TowerBlock Parent;
 };
 
@@ -161,7 +161,59 @@ exec function RequestUpdateTime()
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
 }
 
-function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+// Only thing that really matters is lighting! (hopefully!)
+//@TODO - But what about when blocks are falling?!
+/** Creates a bunch of blocks and modules (as components) to test how many MeshComponents we can handle! */
+exec function DebugTestManyBlocks(bool bAsComponents, optional bool bUseAAMesh)
+{
+	local int i, u;
+	local Vector NewTranslation;
+	local StaticMeshComponent NewComponent;
+	local TowerBlock Parent;
+	local TowerBlockStructural NewBlock;
+	// Module: StaticMesh'TowerModules.DebugAA'
+	// ModuleSKel: SkeletalMesh'TowerMod.DebugAAMessiah_DebugAA2'
+	Parent = GetTower().Root;
+
+	for(u = 0; u < 5; u++)
+	{
+		NewTranslation = Vect(0, 0, 0);
+		for(i = 0; i < 100; i++)
+		{
+			/*
+			if(u == 0)
+				NewTranslation.X = 256*i;
+			else if(u == 1)
+				NewTranslation.X = -256*i;
+			else if(u == 2)
+				NewTranslation.Y = 256*i;
+			else if(u == 3)
+				NewTranslation.Y = -256*i;
+			else if(u == 4)
+				NewTranslation.Z = 256*i;
+			*/
+			if(bAsComponents)
+			{
+				NewComponent = new class'StaticMeshComponent';
+				if(bUseAAMesh)
+					NewComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
+				else
+					NewComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
+				NewComponent.SetTranslation(NewTranslation);
+				Parent.AttachComponent(NewComponent);
+			}
+			else
+			{
+				NewBlock = Parent.Spawn(class'Tower.TowerBlockStructural',,,NewTranslation,,,false);
+				`log("Spawned NewBlock?:"@NewBlock);
+				NewBlock.StaticMeshComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
+			}
+		}
+	}
+}
+
+
+function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local AddTicket Ticket;
 	local int ModIndex, ModPlaceableIndex;
@@ -178,7 +230,7 @@ function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector Gr
 	}
 }
 
-reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent, Vector GridLocation)
+reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent, IVector GridLocation)
 {
 	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(ModIndex, ModPlaceableIndex), Parent, GridLocation);
 }
@@ -187,7 +239,7 @@ reliable server function ServerSendAddTicket(AddTicket Ticket)
 {
 	//@TODO - Make this better and less copy-paste.
 	local TowerPlaceable Placeable;
-	`log("Received AddTicket:"@Ticket.ModIndex@Ticket.ModPlaceableIndex@Ticket.GridLocation@Ticket.Parent);
+//	`log("Received AddTicket:"@Ticket.ModIndex@Ticket.ModPlaceableIndex@Ticket.GridLocation@Ticket.Parent);
 	Placeable = TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex),
 		Ticket.Parent, Ticket.GridLocation);
 	if(Placeable != None)
@@ -208,10 +260,12 @@ reliable server function ServerSendRemoveTicket(RemoveTicket Ticket)
 	TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.ServerRemoveModule(Ticket.Index);
 }
 
-simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local Vector SpawnLocation;
-	SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
+	local Vector VectorGridLocation;
+	VectorGridLocation = ToVect(GridLocation);
+	SpawnLocation = class'TowerGame'.static.GridLocationToVector(VectorGridLocation);
 	return Placeable.AttachPlaceable(Placeable, Parent, GetTower().NodeTree, SpawnLocation, GridLocation);
 }
 
@@ -229,7 +283,7 @@ simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int M
 	}
 }
 
-simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Placeable, TowerBlock Parent, out Vector GridLocation)
+simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	OutTicket.GridLocation = GridLocation;
 	OutTicket.Parent = Parent;
