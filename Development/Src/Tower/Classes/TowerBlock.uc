@@ -8,7 +8,8 @@ Keep in mind this class and its children will likely be opened up to modding!
 class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	config(Tower)
 	HideCategories(Movement,Attachment,Collision,Physics,Advanced,Object)
-	dependson(TowerModule)
+	AutoExpandCategories(TowerBlock)
+	dependson(TowerModule, TowerGame)
 	ClassGroup(Tower)
 	implements(TowerPlaceable)
 	placeable
@@ -27,9 +28,9 @@ var private const globalconfig bool bEnableApexDestructibles;
 
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
-var protectedwrite editconst Vector ParentDirection;
+var protectedwrite editconst IVector ParentDirection;
 /** Block's position on the grid. */
-var protectedwrite editconst Vector GridLocation;
+var protectedwrite editconst IVector GridLocation;
 var() const editconst int XSize, YSize, ZSize;
 var protectedwrite deprecated bool bRootBlock;
 
@@ -85,22 +86,22 @@ simulated event PostBeginPlay()
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
-	out Vector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
+	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
 	local TowerPlaceable Block;
-	local Vector ParentDir;
+	local IVector ParentDir;
 	if(Parent != None)
 	{
 		// Get PRI somewhere else since it might be none.
 		Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
-		ParentDir = Normal(Parent.Location - SpawnLocation);
+		ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 		Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
 	}
 	else
 	{
 		`assert(OwnerTPRI != None);
 		Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
-		ParentDir = Vect(0,0,0);
+		ParentDir = IVect(0,0,0);
 		Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
 	}
 	NodeTree.AddNode(Block, Parent);
@@ -122,12 +123,12 @@ function MaterialInterface GetPlaceableMaterial(int Index)
 	return StaticMeshComponent.GetMaterial(Index);
 }
 
-simulated function Vector GetGridLocation()
+simulated function IVector GetGridLocation()
 {
 	return GridLocation;
 }
 
-event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
 	GridLocation = NewGridLocation;

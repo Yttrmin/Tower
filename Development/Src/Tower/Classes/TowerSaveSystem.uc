@@ -10,7 +10,7 @@ struct immutable BlockSaveInfo
 	// ModIndex, BlockInfoIndex
 	var int M, I;
 	// GridLocation, ParentDirection.
-	var Vector G, P;
+	var IVector G, P;
 };
 
 const SAVE_FILE_VERSION = 2;
@@ -125,7 +125,7 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
 	foreach Blocks(LoadBlockInfo, i)
 	{
-		`log("Load:"@LoadBlockInfo.M@LoadBlockInfo.I@LoadBlockInfo.G@LoadBlockInfo.P);
+		`log("Load:"@LoadBlockInfo.M@LoadBlockInfo.I@ToVect(LoadBlockInfo.G)@ToVect(LoadBlockInfo.P));
 //		`log("Loaded Block:"@"Mod:"@ModNames[LoadBlockInfo.I]@"GridLoc:"@LoadBlockInfo.G@"ParentDir:"@LoadBlockInfo.P);
 //		LoadClass = class<TowerBlock>(DynamicLoadObject(ClassNames[LoadBlockInfo.I], class'class'
 //			, false));

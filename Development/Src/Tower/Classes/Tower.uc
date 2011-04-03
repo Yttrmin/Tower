@@ -42,7 +42,7 @@ reliable server function AddTree()
 }
 
 function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
-	out Vector SpawnLocation, out Vector GridLocation)
+	out Vector SpawnLocation, out IVector GridLocation)
 {
 	local TowerPlaceable NewPlaceable;
 	NewPlaceable = Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
@@ -60,11 +60,12 @@ function bool RemovePlaceable(TowerPlaceable Placeable)
 //	NodeTree.RemoveNode(Placeable);
 }
 
-function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, out Vector ParentDirection)
+function TowerBlock GetBlockFromLocationAndDirection(out IVector GridLocation, out IVector ParentDirection)
 {
 	local Actor Block;
-	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
-	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(GridLocation);
+	local Vector StartLocation, EndLocation, HitNormal, HitLocation, VectorGridLocation;
+	VectorGridLocation = ToVect(GridLocation);
+	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(VectorGridLocation);
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
 	StartLocation.Z += 128;
 	EndLocation.X = StartLocation.X + (ParentDirection.X * 512);
@@ -73,9 +74,9 @@ function TowerBlock GetBlockFromLocationAndDirection(out Vector GridLocation, ou
 	//StartLocation.X += abs(ParentDirection.X * 128);
 	//StartLocation.Y += abs(ParentDirection.Y * 128);
 	//StartLocation.Z += abs(ParentDirection.Z * 128);
-	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
+//	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
 	Block = NodeTree.Root.Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
-	`log(Block);
+//	`log(Block);
 	return TowerBlock(Block);
 }
 

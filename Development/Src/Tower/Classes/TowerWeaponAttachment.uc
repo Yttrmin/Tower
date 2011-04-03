@@ -1,7 +1,7 @@
 class TowerWeaponAttachment extends Actor
 	abstract;
 
-var protected SkeletalMeshComponent Mesh;
+var protectedwrite SkeletalMeshComponent Mesh;
 
 /**
  * Called on a client, this function Attaches the WeaponAttachment

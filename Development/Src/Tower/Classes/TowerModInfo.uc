@@ -6,6 +6,8 @@ making it easily accessible to the main game. The only required class for a mod.
 */
 class TowerModInfo extends ReplicationInfo
 	ClassGroup(Tower)
+	HideCategories(Display,Attachment,Physics,Advanced,Object)
+	AutoExpandCategories(TowerModInfo)
 	placeable; // Or make this placeable as well so it can all be done in UnrealEd?
 
 var() const string ModName;
@@ -14,9 +16,9 @@ var() const string Contact;
 var() const string Description;
 var() const string Version;
 
-var() protectedwrite const array<class<TowerModule> > ModModules;
-
 var() protectedwrite const array<TowerPlaceable> ModPlaceables;
+
+var() protectedwrite const array<TowerFactionAI> ModFactionAIs;
 
 var repnotify TowerModInfo NextMod;
 

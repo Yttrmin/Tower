@@ -33,7 +33,7 @@ final function bool AddNode(TowerBlock NewNode, optional TowerBlock ParentNode)
 		}
 		else
 		{
-			`Log("Tried to add a new node with no parent when there's already a root node!"@NewNode@"at grid location:"@NewNode.GridLocation);
+			`Log("Tried to add a new node with no parent when there's already a root node!"@NewNode@"at grid location:"@ToVect(NewNode.GridLocation));
 			return false;
 		}
 	}

@@ -9,16 +9,16 @@ We'll see how this plays out in the future!
 class TowerBlockComponent extends ActorComponent
 	implements(TowerPlaceable);
 
-var Vector GridLocation, ParentDirection;
+var IVector GridLocation, ParentDirection;
 
 /**  */
-event Initialize(out Vector NewGridLocation, out Vector NewParentDirection, 
+event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI);
 
 // Placeable.CreatePlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation);
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
-	out Vector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI);
+	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI);
 
 static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree);
 
@@ -38,7 +38,7 @@ function StaticMesh GetPlaceableStaticMesh();
 
 function MaterialInterface GetPlaceableMaterial(int Index);
 
-simulated function Vector GetGridLocation()
+simulated function IVector GetGridLocation()
 {
 	return GridLocation;
 }

@@ -6,7 +6,6 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
 class TowerGame extends FrameworkGame
-	dependson(TowerModule)
 	config(Tower);
 
 enum Factions
@@ -35,7 +34,6 @@ event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	PopulateSpawnPointArrays();
-	AddFactionAIs();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 	CrowdSpawner = new class'TowerCrowdSpawner';
 	/*
@@ -242,11 +240,24 @@ function StartMatch()
 	local GameCrowdAgent Agent;
 	`log("StartMatch!");
 	Super.StartMatch();
+	AddFactionAIs();
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
 	Agent = CrowdSpawner.SpawnAgent(InfantryPoints[0]);
 //	Agent.CurrentDestination = InfantryPoints[0].NextDestinations[0];
 	StartCoolDown();
+}
+
+//
+// Restart a player.
+//
+function RestartPlayer(Controller NewPlayer)
+{
+	if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
+	{
+		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
+		return;
+	}
 }
 
 exec function SkipRound()
@@ -257,7 +268,8 @@ exec function SkipRound()
 
 function AddFactionAIs()
 {
-	FactionAIs.AddItem(Spawn(class'TowerFactionAIDebug'));
+	FactionAIs.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
+	`log("Spawned AI?:"@FactionAIs[0]);
 }
 
 /** Very first part of a game, and happens between every round. */
@@ -272,7 +284,7 @@ function StartNextRound()
 	local TowerFactionAI Faction;
 	local int BudgetPerFaction;
 	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
-	SetGameTimer(120);
+	//SetGameTimer(120);
 	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionAIs.Length;
 	foreach FactionAIs(Faction)
 	{
@@ -308,10 +320,16 @@ event GameTimerExpired()
 	StartCoolDown();
 }
 
+/** */
+event EnemyUnitsDepleted()
+{
+
+}
+
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
-	local Vector GridLocation;
+	local IVector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	//@BUG
 	// For whatever reason PlayerController won't collide with children, so we're breaking
@@ -337,14 +355,16 @@ function SetTowerName(Tower Tower, string NewTowerName)
 }
 
 function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, TowerBlock Parent, 
-	out Vector GridLocation)
+	out IVector GridLocation)
 {
 	local Vector SpawnLocation;
-	SpawnLocation = GridLocationToVector(GridLocation);
+	local Vector VectorGridLocation;
+	VectorGridLocation = ToVect(GridLocation);
+	SpawnLocation = GridLocationToVector(VectorGridLocation);
 	// Pivot point in middle, bump up.
 //	SpawnLocation.Z += 128;
 	`assert(Placeable != None);
-	if(CanAddBlock(GridLocation))
+	if(CanAddBlock(VectorGridLocation))
 	{
 		return Tower.AddPlaceable(Placeable, Parent, SpawnLocation, GridLocation);
 	}
