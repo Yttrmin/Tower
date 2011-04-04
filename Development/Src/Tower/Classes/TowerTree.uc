@@ -48,12 +48,20 @@ will recursively get RemoveNode() called on them. */
 final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren)
 {
 	local TowerBlock Node;
+	local array<TowerBlock> BasedBlocks;
 	if(NodeToRemove == Root)
 	{
 		return;
 	}
-	`log("Removing node:"@NodeToRemove$"...");
+	/** Only TowerBlocks which have absolutely no base get OrphanedParent() called on them. Therefore, make sure
+	our soon-to-be-orphans have no base! */
 	foreach NodeToRemove.BasedActors(class'TowerBlock', Node)
+	{
+		BasedBlocks.AddItem(Node);
+	}
+	`log("Removing node:"@NodeToRemove$"...");
+	NodeToRemove.Destroy();
+	foreach BasedBlocks(Node)
 	{
 		`log("Getting children new parents...");
 		/*
@@ -67,7 +75,7 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 		FindNewParent(Node, NodeToRemove, true);
 	}
 	NodeCount--;
-	NodeToRemove.Destroy();
+	
 	`log("Done. Destroying node:"@NodeToRemove);
 }
 
@@ -131,14 +139,15 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	optional bool bChildrenFindParent=false)
 {
 	local TowerBlock Block;
+	local TraceHitInfo HitInfo;
 	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 //	Node.SetBase(None);
 //	Node.FindBase();
 //	`log("FindBase says:"@Node.Base);
-	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true)
+	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
-		`log("Found Potential Parent:"@Block);
-		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
+		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			ReparentNode(Node, Block, false);
 			Node.Adopted();
@@ -154,10 +163,15 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 			FindNewParent(Block, OldParent, bChildrenFindParent);
 		}
 	}
-	`log("No parents available,"@Node@"is an orphan. Handle this.");
-	// True orphan.
-	OrphanNodeRoots.AddItem(Node);
-	Node.OrphanedParent();
+	
+	
+	if(Node.Base == None)
+	{
+		`log("No parents available,"@Node@"is an orphan. Handle this.");
+		// True orphan.
+		OrphanNodeRoots.AddItem(Node);
+		Node.OrphanedParent();
+	}
 	return false;
 }
 

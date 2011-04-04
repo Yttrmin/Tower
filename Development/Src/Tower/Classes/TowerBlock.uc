@@ -309,6 +309,7 @@ event OrphanedParent()
 	local TowerBlock Node;
 	bFalling = true;
 	GotoState('Unstable');
+	`log(Self@"is now unstable!");
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach BasedActors(class'TowerBlock', Node)
 	{
