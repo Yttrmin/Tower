@@ -55,6 +55,11 @@ simulated event ReplicatedEvent(name VarName)
 	}
 }
 
+event OnSpawnUnit()
+{
+	RemainingEnemies--;
+}
+
 simulated function bool AreModsLoaded()
 {
 	local int Count;

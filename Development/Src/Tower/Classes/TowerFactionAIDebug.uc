@@ -1,6 +1,7 @@
 /** Faction AI used solely for testing. */
-class TowerFactionAIDebug extends TowerFactionAI;
-
+class TowerFactionAIDebug extends TowerFactionAI
+	deprecated;
+/*
 event PostBeginPlay()
 {
 	super.PostBeginPlay();
@@ -28,3 +29,4 @@ DefaultProperties
 		KProjectiles.Add(class'TowerKProjRock');
 	End Object
 }
+*/

@@ -1,6 +1,8 @@
 class TowerWeapon extends UDKWeapon
 	abstract;
 
+var class<TowerWeaponAttachment> AttachmentClass;
+
 
 /**
  * Fires a projectile.

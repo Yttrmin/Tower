@@ -8,7 +8,10 @@ var SkelControlLookAt Barrel;
 
 function Vector CalculateShootVector(Actor ShotTarget)
 {
-	return Normal(ShotTarget.Location - Owner.Location);
+	local vector Origin;
+	Origin = Translation;
+	Origin.Z += 128;
+	return Normal(ShotTarget.Location - Origin);
 }
 
 /** called after initializing the AnimTree for the given SkeletalMeshComponent that has this Actor as its Owner

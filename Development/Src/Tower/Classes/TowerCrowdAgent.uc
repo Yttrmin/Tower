@@ -1,8 +1,19 @@
-class TowerCrowdAgent extends GameCrowdAgentSkeletal;
+class TowerCrowdAgent extends GameCrowdAgentSkeletal
+	implements(TowerTargetable)
+	HideCategories(Physics,Debug);
+
+//var() array<class<TowerWeapon> > AvailableWeapons;
 
 var protected TowerWeapon Weapon;
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
-var protectedwrite const name WeaponSocket;
+var() protectedwrite const name WeaponSocket;
+/** If TRUE, this agent will check every 0.5 seconds if it's in TowerMapInfo's RadarVolume, and notify the Root block when it occurs.
+If FALSE, this agent will notify the Root block that it's in range upon spawning, regardless of if it actually is. 
+If you're sure this agent will always be spawned in the RadarVolume (or don't care if it's detected outside it), this should be FALSE. 
+bNotifyInRange must be TRUE for this to have any effect. */
+var() protected const bool bCheckInRange;
+/** If FALSE, this agent will never automatically notify the root block if it's in range, it must be done through script if at all. */
+var() protected const bool bNotifyInRange;
 
 var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
 
@@ -11,8 +22,61 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 	InitializeWeapon();
 	WeaponAttachmentChanged();
-
+	
+	if(bNotifyInRange)
+	{
+		if(Role == Role_Authority)
+		{
+			if(bCheckInRange)
+			{
+				if(!CheckInRange())
+				{
+					SetTimer(0.5, true, 'CheckInRange');
+				}
+			}
+			else
+			{
+				NotifyInRange();
+			}
+		}
+	}
 //	Weapon.StartFire(0);
+}
+
+function bool CheckInRange()
+{
+	if(TowerMapInfo(WorldInfo.GetMapInfo()).RadarVolume.Encompasses(self))
+	{
+		NotifyInRange();
+		ClearTimer('CheckInRange');
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+function NotifyInRange()
+{
+	// TowerCrowdAgent's can't Touch(), so we have to call the function manually.
+	TowerPlayerReplicationInfo(TowerGameReplicationInfo(WorldInfo.GRI).PRIArray[0]).Tower.Root.
+		Touch(Self, SkeletalMeshComponent, Location, Vect(0,0,0));
+}
+
+function bool IsProjectile()
+{
+	return FALSE;	
+}
+
+function bool IsVehicle()
+{
+	return FALSE;
+}
+
+function bool IsInfantry()
+{
+	return TRUE;
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -26,14 +90,8 @@ simulated event ReplicatedEvent(name VarName)
 
 function InitializeWeapon()
 {
-	local int i;
 	Weapon = Spawn(class'TowerWeapon_Rifle', self);
-//	Weapon.Instigator = Self;
 	Weapon.Activate();
-//	UTWeapon(Weapon).AttachWeaponTo(SkeletalMeshComponent);
-//	Weapon.GotoState('Active');
-//	for(i = 0; i < 1000; i++)
-//		Weapon.FireAmmunition();
 }
 
 simulated event SetCurrentDestination(GameCrowdDestination NewDestination)
@@ -60,7 +118,7 @@ simulated function WeaponAttachmentChanged()
 {
 	if(WeaponAttachment == None)
 	{
-		WeaponAttachment = Spawn(class'TowerWeaponAttachment_Rifle', self);
+		WeaponAttachment = Spawn(Weapon.AttachmentClass, self);
 
 		if(WeaponAttachment != None)
 		{
@@ -84,6 +142,8 @@ DefaultProperties
 	bProjTarget=true
 
 	WeaponSocket=WeaponPoint
+	bNotifyInRange=true
+	bCheckInRange=false
 	
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'UTExampleCrowd.Mesh.SK_Crowd_Robot'

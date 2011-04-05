@@ -19,7 +19,7 @@ simulated function AttachTo(Actor OwnerPawn)
 	else if(TowerPawn(OwnerPawn) != None)
 	{
 		OwnerTowerPawn = TowerPawn(OwnerPawn);
-//		OwnerTowerPawn.SkeletalMeshComponent.AttachComponentToSocket(Mesh, O
+		OwnerTowerPawn.Mesh.AttachComponentToSocket(Mesh, OwnerTowerPawn.WeaponSocket);
 	}
 }
 
