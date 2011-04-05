@@ -7,6 +7,7 @@ var Actor Target;
 
 DefaultProperties
 {
+	TickGroup=TG_DuringAsyncWork
 	bStatic=false
 	bNoDelete=false
 }

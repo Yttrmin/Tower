@@ -24,6 +24,9 @@ var array<TowerModInfo> Mods;
 var config array<String> ModPackages;
 var TowerCrowdSpawner CrowdSpawner;
 
+/** Number of factions that either have enemies alive or the capability to spawn more. */
+var protected byte RemainingActiveFactions;
+
 event PreBeginPlay()
 {
 	Super.PreBeginPlay();
@@ -32,10 +35,15 @@ event PreBeginPlay()
 
 event PostBeginPlay()
 {
+//	local TowerModInfo ZMOd;
 	Super.PostBeginPlay();
 	PopulateSpawnPointArrays();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 	CrowdSpawner = new class'TowerCrowdSpawner';
+	
+//	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
+//	`log("ZMod:"@ZMod@ZMod.ModName);
+//	ZMod.TestCallMe();
 	/*
 	class'Engine'.static.GetFacebookIntegration().UserID = "1637497802";
 	class'Engine'.static.GetFacebookIntegration().AppID = "195347980485261";
@@ -237,13 +245,12 @@ exec function StartGame()
 
 function StartMatch()
 {
-	local GameCrowdAgent Agent;
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionAIs();
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
-	Agent = CrowdSpawner.SpawnAgent(InfantryPoints[0]);
+	CrowdSpawner.SpawnAgent(InfantryPoints[0]);
 //	Agent.CurrentDestination = InfantryPoints[0].NextDestinations[0];
 	StartCoolDown();
 }
@@ -321,9 +328,13 @@ event GameTimerExpired()
 }
 
 /** */
-event EnemyUnitsDepleted()
+event FactionInactive(TowerFactionAI Faction)
 {
+	RemainingActiveFactions--;
+	if(RemainingActiveFactions <= 0)
+	{
 
+	}
 }
 
 function AddTower(TowerPlayerController Player,  optional string TowerName="")

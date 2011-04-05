@@ -38,6 +38,8 @@ simulated state WeaponFiring
 
 DefaultProperties
 {
+	AttachmentClass=class'Tower.TowerWeaponAttachment_Rifle'
+
 	FireInterval(0)=0.01
 	Spread(0)=10.0
 	WeaponFireTypes(0)=EWFT_Projectile

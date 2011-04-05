@@ -8,8 +8,8 @@ Note anytime "Troops" is used it includes missiles and such, not just infantry.
 class TowerFactionAI extends Info
 	ClassGroup(Tower)
 	dependson(TowerGame)
-	AutoExpandCategories(TowerFactionAI)
-	HideCategories(Object)
+//	AutoExpandCategories(TowerFactionAI)
+	HideCategories(Display,Attachment,Collision,Physics,Advanced,Object,Debug)
 	placeable // Please don't actually place me. =(
 	/*abstract*/;
 
@@ -32,13 +32,48 @@ Strategies:
 /** Series of flags to be used with a Formation. Tells AI what this Formation might be good for. */
 struct FormationUsage
 {
+	/** If TRUE, this formation will never be randomly spawned. */
+	var() const bool bScriptSpecific;
+	/** If TRUE, this formation can only be spawned once per round. */
+	var() const bool bSingleUse;
+	/** If TRUE, this formation is effective against infantry. */
+	var() const bool bAntiInfantry;
+	/** If TRUE, this formation is effective against vehicles. */
+	var() const bool bAntiVehicle;
+	/** If TRUE, this formation is effective against blocks. */
+	var() const bool bAntiBlock;
+	/** If TRUE, this formation is effective against turrets. */
+	var() const bool bAntiTurret;
+	/** If TRUE, this formation is effective against shields. */
+	var() const bool bAntiShield;
+	/** If TRUE, this formation is effective against projectiles. */
+	var() const bool bAntiProjectile;
 	/** */
-	var() const bool bbbbb; 
+	var() const bool bSpecial;
+	/** */
+	var() const bool bAreaDenial;
+	/** */
+	var() const bool bWave;
+	/** */
+	var() const bool bSpam;
+	/** */
+	var() const bool bSuicidal;
+	/** If TRUE, this formation can be used to setup a base. */
+	var() const bool bPortableBase;
+	/** */
+	var() const bool bDefensive;
+	/** */
+	var() const bool bOffensive;
 };
 
 struct TroopBehavior
 {
-	var() bool bb;
+	/** If TRUE, OnVIPDeath() will be called in TowerFactionAI when this troop dies. */
+	var() const bool bVIP;
+	/** */
+	var() const bool bGuard;
+	/** If TRUE, this troop is not afraid of death. */
+	var() const bool bSuicidal;
 };
 
 struct TroopInfo
@@ -49,6 +84,7 @@ struct TroopInfo
 	/** Rotation inside this formation. (0,0,0) rotation is facing forward (positive X). 
 	Keep in mind the troop AI may completely undo this rotation to get to its target. */
 	var() const Rotator RelativeRotation;
+	var() const TroopBehavior TroopBehaviorFlags;
 	var() const TargetType Type;
 };
 
@@ -56,9 +92,9 @@ struct Formation
 {
 	var() const array<TroopInfo> TroopInfo;
 	/** Name of this formation. Solely used for human identification. */
-	var() const name Name;
+	var() const editoronly name Name;
 	var() const editoronly string Description;
-	var() const FormationUsage Usage;
+	var() const FormationUsage FormationUsageFlags;
 };
 
 /** Strategy the AI uses during the current round. */ 
@@ -80,9 +116,12 @@ var protected TowerGameReplicationInfo GRI;
 
 /** Current strategy this faction is basing its decisions on. 
 Only has an effect when changed ingame. */
-var() protected Strategy CurrentStrategy;
+var(InGame) protected Strategy CurrentStrategy;
 
 var() protected array<Formation> Formations;
+
+/** List of units this faction can spawn. */
+var() protected noclear TowerUnitsList UnitList;
 
 /** Array of all factions that this faction is at war with. If not in this array, peace is assumed. */
 //var() array<Factions> AtWar;
@@ -91,23 +130,66 @@ var() protected array<Formation> Formations;
 
 /** Amount of troops remaining that can be spawned. The AI is free to spend the budget as it sees fit.
 Only has an effect when changed ingame.*/
-var() protected int TroopBudget;
+var(InGame) protected int TroopBudget;
 
 /** Whether or not the AI is willing to spawn troops in other faction's borders. */
-var() protected bool bInfringeBorders;
+var(InGame) protected bool bInfringeBorders;
 
 /** Set to TRUE after spawning a troop, during which no more can be spanwed. */
-var() protected editconst bool bCoolDown;
+var(InGame) protected editconst bool bCoolDown;
 
 /** FALSE during cool-down between rounds, disallowing the AI from spawning troops. */
-var() protected editconst bool bCanFight;
+var(InGame) protected editconst bool bCanFight;
+
+//var(InGame) protected editconst array<> OrderQueue;
+
+var int UnitsOut;
+
+state Active
+{
+	event Tick(float DeltaTime)
+	{
+		Super.Tick(DeltaTime);
+		Think();
+	}
+
+	event Think()
+	{
+		if(TargetTower == None)
+		{
+			`log("GRAB NEW ONE");
+			GetNewTarget();
+		}
+	//	SpawnFormation(0);
+	}
+
+	/** Called directly after the round is declared over, before cool-down period. */
+	event RoundEnded()
+	{
+		bCanFight = False;
+		GotoState('InActive');
+	}
+}
+
+auto state InActive
+{
+	event RoundStarted(const int AwardedBudget)
+	{
+		TroopBudget = AwardedBudget;
+		bCanFight = True;
+		GotoState('Active');
+	}
+}
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	`assert(UnitList != None);
 	Game = TowerGame(WorldInfo.Game);
 	GRI = TowerGameReplicationInfo(Game.GameReplicationInfo);
 }
+
+event RoundStarted(const int AwardedBudget);
 
 function GetNewTarget()
 {
@@ -133,27 +215,17 @@ function TowerSpawnPoint GetSpawnPoint()
 	}
 }
 
-event RoundStarted(const int AwardedBudget)
-{
-	TroopBudget = AwardedBudget;
-	bCanFight = True;
-}
 
-event Tick(float DeltaTime)
-{
-	Super.Tick(DeltaTime);
-	if(GRI.bRoundInProgress)
-	{
-		Think();
-	}
-}
 
-event Think()
+function SpawnFormation(int Index)
 {
-	if(TargetTower == None)
+	local int i;
+	for(i = 0; i < Formations[Index].TroopInfo.Length; i++)
 	{
-		`log("GRAB NEW ONE");
-		GetNewTarget();
+		if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
+		{
+			SpawnUnit(UnitList.InfantryArchetypes[0]);
+		}
 	}
 }
 
@@ -166,9 +238,11 @@ event Think()
 // Can static functions return components? Probably not.
 // Spawn and then get cost? If you're spawning a lot of units this could get expensive.
 // Create a cache to relate the name of a unit to its cost!?/12
+// UGUIJGHIHGH;
 event bool SpawnUnit(TowerTargetable UnitArchetype)
 {
 	local int Cost;
+
 	if(UnitArchetype.class == class'TowerProjectile')
 	{
 //		Cost = TowerProjectile.
@@ -193,11 +267,33 @@ event bool SpawnUnit(TowerTargetable UnitArchetype)
 	{
 		`warn(UnitARchetype.class@"is not handled by SpawnUnit!");
 	}
+
 	if(HasBudget(Cost))
 	{
 
 	}
+	else
+	{
+		return false;
+	}
+	CheckActivity();
 }
+
+function int GetUnitCost(TowerTargetable UnitArchetype)
+{
+
+}
+
+function CheckActivity()
+{
+	// Check against minimum cost?
+	if(TroopBudget > 0)
+	{
+		
+	}
+}
+
+//function TowerSpawnPoint GetSpawnPoint()
 
 event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 {
@@ -220,17 +316,22 @@ event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 	return true;
 }
 
-event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype);
+event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype)
+{
+
+}
 
 //@TODO - Pawn support? Are we really even going to use pawns ever?
-event bool SpawnInfantry(TowerCrowdAgent InfantryArchetype);
-
-event bool SpawnVehicle(TowerVehicle VehicleArchetype);
-
-/** Called directly after the round is declared over, before cool-down period. */
-event RoundEnded()
+event bool SpawnInfantry(TowerCrowdAgent InfantryArchetype)
 {
-	bCanFight = False;
+}
+
+event bool SpawnVehicle(TowerVehicle VehicleArchetype)
+{
+}
+
+event VIPDeath(TowerCrowdAgent VIP)
+{
 }
 
 event CooledDown()
@@ -238,13 +339,16 @@ event CooledDown()
 	bCoolDown = FALSE;
 }
 
-function bool HasBudget(int Amount);
+function bool HasBudget(int Amount)
+{
+	return TRUE;
+}
 
 function ConsumeBudget(int Amount);
 
 DefaultProperties
 {
-	bTest=FALSE
+	UnitList=TowerUnitsList'TowerMod.NullObjects.NullUnitsList'
 
 	CurrentStrategy=S_Spam_Projectile
 	RemoteRole=ROLE_None

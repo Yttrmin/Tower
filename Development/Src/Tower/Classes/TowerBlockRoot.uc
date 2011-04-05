@@ -38,23 +38,23 @@ event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLoca
 	vector HitNormal)
 {
 	local TowerTargetable Targetable;
-	`log("RadarVolume touched!");
 	Targetable = TowerTargetable(Other);
-	if(Targetable == None)
+	if(Targetable != None)
 	{
-		return;
-	}
-	if(Targetable.IsInfantry())
-	{
-		ExecuteCallbacks(TT_Infantry, Targetable);
-	}
-	else if(Targetable.IsProjectile())
-	{
-		ExecuteCallbacks(TT_Projectile, Targetable);
-	}
-	else if(Targetable.IsVehicle())
-	{
-		ExecuteCallbacks(TT_Vehicle, Targetable);
+		`log("RadarVolume touched!"@"Infantry:"@Targetable.IsInfantry()@"Projectile:"@Targetable.IsProjectile()
+			@"Vehicle:"@Targetable.IsVehicle());
+		if(Targetable.IsInfantry())
+		{
+			ExecuteCallbacks(TT_Infantry, Targetable);
+		}
+		else if(Targetable.IsProjectile())
+		{
+			ExecuteCallbacks(TT_Projectile, Targetable);
+		}
+		else if(Targetable.IsVehicle())
+		{
+			ExecuteCallbacks(TT_Vehicle, Targetable);
+		}
 	}
 }
 
@@ -68,20 +68,20 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 	bool bProjectileNotify, bool bVehicleNotify)
 {
 	`log("Adding range callback for Infantry:"@bInfantryNotify@"Projectile:"@bProjectileNotify@"Vehicle:"@bVehicleNotify);
-	if(bInfantryNotify && bProjectileNotify && bVehicleNotify)
-	{
-		AllRangeNotify.AddItem(Callback);
-		return;
-	}
-	else if(bInfantryNotify)
+//	if(bInfantryNotify && bProjectileNotify && bVehicleNotify)
+//	{
+//		AllRangeNotify.AddItem(Callback);
+//		return;
+//	}
+	if(bInfantryNotify)
 	{
 		InfantryRangeNotify.AddItem(Callback);
 	}
-	else if(bProjectileNotify)
+	if(bProjectileNotify)
 	{
 		ProjectileRangeNotify.AddItem(Callback);
 	}
-	else if(bVehicleNotify)
+	if(bVehicleNotify)
 	{
 		VehicleRangeNotify.AddItem(Callback);
 	}

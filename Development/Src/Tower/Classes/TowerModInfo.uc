@@ -23,6 +23,7 @@ var() protectedwrite const array<TowerFactionAI> ModFactionAIs;
 var repnotify TowerModInfo NextMod;
 
 var bool bLoaded;
+var bool bTest;
 
 replication
 {
@@ -70,6 +71,11 @@ final function AddMod(TowerModInfo Mod)
 	ModList.NextMod = Mod;
 }
 
+final function TestCallMe()
+{
+	`log("I WAS CALLLLLLLLLLLLLLLLLLLLLED"@self@bTest@!bTest);
+}
+
 DefaultProperties
 {
 	ModName="My Mod Name"
@@ -79,6 +85,4 @@ DefaultProperties
 	Version="1.0"
 
 	bAlwaysRelevant=TRUE
-	// Example of adding your own block. MyTowerBlock must derive from TowerBlock.
-//	ModBlocks.Add(class'MyTowerBlock')
 }
