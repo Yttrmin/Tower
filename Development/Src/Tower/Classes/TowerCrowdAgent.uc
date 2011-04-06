@@ -14,8 +14,11 @@ bNotifyInRange must be TRUE for this to have any effect. */
 var() protected const bool bCheckInRange;
 /** If FALSE, this agent will never automatically notify the root block if it's in range, it must be done through script if at all. */
 var() protected const bool bNotifyInRange;
+var() protected const int Cost;
 
 var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
+//@TODO - Combine interface and component instead?
+var() editconst protected TowerFaction OwningFaction;
 
 simulated event PostBeginPlay()
 {
@@ -43,6 +46,29 @@ simulated event PostBeginPlay()
 //	Weapon.StartFire(0);
 }
 
+function TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
+{
+	if ( Health > 0 )
+	{
+		Health -= DamageAmount;
+
+		if(Health <= 0)
+		{
+			Health = -1;
+			SetCollision(FALSE, FALSE, FALSE); // Turn off all collision when dead.
+			PlayDeath(normal(Momentum) * DamageType.default.KDamageImpulse + Vect(0,0,1)*DamageType.default.KDeathUpKick);
+		}
+		else
+		{
+			if ( CurrentBehavior == None )
+			{	
+				// Agent is still alive and there is no current behavior, start a take damage behavior
+				PickBehaviorFrom(TakeDamageBehaviors);
+			}
+		}
+	}
+}
+
 function bool CheckInRange()
 {
 	if(TowerMapInfo(WorldInfo.GetMapInfo()).RadarVolume.Encompasses(self))
@@ -62,6 +88,26 @@ function NotifyInRange()
 	// TowerCrowdAgent's can't Touch(), so we have to call the function manually.
 	TowerPlayerReplicationInfo(TowerGameReplicationInfo(WorldInfo.GRI).PRIArray[0]).Tower.Root.
 		Touch(Self, SkeletalMeshComponent, Location, Vect(0,0,0));
+}
+
+static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,
+	TowerFaction NewOwningFaction)
+{
+	local TowerCrowdAgent Agent;
+	//@FIXME - Hackey and assuming. Maybe just go for a base class and not an interface?
+	Agent = Actor(NewOwningFaction).Spawn(class'TowerCrowdAgent',,,SpawnLocation,,TargetableArchetype);
+	Agent.OwningFaction = NewOwningFaction;
+	return Agent;
+}
+
+function SetOwningFaction(TowerFaction Faction)
+{
+	OwningFaction = Faction;
+}
+
+static function int GetCost(TowerTargetable SelfArchetype)
+{
+	return TowerCrowdAgent(SelfArchetype).Cost;
 }
 
 function bool IsProjectile()

@@ -21,7 +21,7 @@ var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;
 
 var array<TowerModInfo> Mods;
-var config array<String> ModPackages;
+var config const array<String> ModPackages;
 var TowerCrowdSpawner CrowdSpawner;
 
 /** Number of factions that either have enemies alive or the capability to spawn more. */
@@ -245,12 +245,14 @@ exec function StartGame()
 
 function StartMatch()
 {
+	local int i;
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionAIs();
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
-	CrowdSpawner.SpawnAgent(InfantryPoints[0]);
+	for(i = 0; i < 200; i++)
+		CrowdSpawner.SpawnAgent(InfantryPoints[0]);
 //	Agent.CurrentDestination = InfantryPoints[0].NextDestinations[0];
 	StartCoolDown();
 }
@@ -333,7 +335,6 @@ event FactionInactive(TowerFactionAI Faction)
 	RemainingActiveFactions--;
 	if(RemainingActiveFactions <= 0)
 	{
-
 	}
 }
 
