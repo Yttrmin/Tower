@@ -8,6 +8,28 @@ class TowerKProjectile extends KActorSpawnable
 	/*abstract*/;
 
 var int LaunchForce;
+var() protected const int Cost;
+var() editconst protected TowerFaction OwningFaction;
+
+static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,
+	TowerFaction NewOwningFaction)
+{
+	local TowerKProjectile Projectile;
+	//@FIXME - Hackey and assuming. Maybe just go for a base class and not an interface?
+	Projectile = Actor(NewOwningFaction).Spawn(class'TowerKProjectile',,,SpawnLocation,,TargetableArchetype);
+	Projectile.OwningFaction = NewOwningFaction;
+	return Projectile;
+}
+
+static function int GetCost(TowerTargetable SelfArchetype)
+{
+	return TowerKProjectile(SelfArchetype).Cost;
+}
+
+function SetOwningFaction(TowerFaction Faction)
+{
+	OwningFaction = Faction;
+}
 
 function bool IsProjectile()
 {

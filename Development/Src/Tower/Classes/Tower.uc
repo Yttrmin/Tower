@@ -4,6 +4,7 @@ Tower
 Represents a player's tower, which a player can only have one of. Tower's are essentially containers for TowerBlocks.
 */
 class Tower extends Actor
+	implements(TowerFaction)
 	dependson(TowerBlock);
 
 var TowerTree NodeTree;
@@ -51,6 +52,10 @@ function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent
 		TowerGame(WorldInfo.Game).CrowdSpawner.BlockSpawned(TowerBlock(NewPlaceable));
 	}
 	return NewPlaceable;
+}
+
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
+{
 }
 
 function bool RemovePlaceable(TowerPlaceable Placeable)

@@ -6,6 +6,7 @@ Each faction gets its own AI. Exist server-side only.
 Note anytime "Troops" is used it includes missiles and such, not just infantry.
 */
 class TowerFactionAI extends Info
+	implements(TowerFaction)
 	ClassGroup(Tower)
 	dependson(TowerGame)
 //	AutoExpandCategories(TowerFactionAI)
@@ -95,6 +96,10 @@ struct Formation
 	var() const editoronly name Name;
 	var() const editoronly string Description;
 	var() const FormationUsage FormationUsageFlags;
+
+	// But how do we handle randomly picked formations? Base cost?
+	/** Cost of the entire formation. A sum of all Unit costs. */
+	var() const editconst int FormationCost;
 };
 
 /** Strategy the AI uses during the current round. */ 
@@ -143,7 +148,7 @@ var(InGame) protected editconst bool bCanFight;
 
 //var(InGame) protected editconst array<> OrderQueue;
 
-var int UnitsOut;
+var(InGame) protected editconst int UnitsOut;
 
 state Active
 {
@@ -215,68 +220,43 @@ function TowerSpawnPoint GetSpawnPoint()
 	}
 }
 
-
-
-function SpawnFormation(int Index)
+function SpawnFormation(int Index, TowerSpawnPoint SpawnPoint)
 {
 	local int i;
-	for(i = 0; i < Formations[Index].TroopInfo.Length; i++)
+	local Vector FormationLocation;
+	local int FormationCost;
+	FormationLocation = SpawnPoint.Location;
+	
+	if(HasBudget(FormationCost))
 	{
-		if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
+		for(i = 0; i < Formations[Index].TroopInfo.Length; i++)
 		{
-			SpawnUnit(UnitList.InfantryArchetypes[0]);
+			if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
+			{
+				SpawnUnit(UnitList.InfantryArchetypes[0], FormationLocation, Formations[Index].TroopInfo[i]);
+			}
 		}
 	}
 }
 
-// How will we get cost? Archetype+Cost in struct? No, that's awful. Aggggh...
-// Or just not use this!
-// But it seems so wrong...
-// Typecast? Hey you still only have to use one function!
-// How dumb is the idea of typecasting to the archetypes class and calling a variable we know will be in all their classes? VERY.
-// How dumb is the idea of using a switch statement for determining the class? Very I guess.
-// Can static functions return components? Probably not.
-// Spawn and then get cost? If you're spawning a lot of units this could get expensive.
-// Create a cache to relate the name of a unit to its cost!?/12
-// UGUIJGHIHGH;
-event bool SpawnUnit(TowerTargetable UnitArchetype)
+event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, out vector FormationLocation, const TroopInfo UnitTroopInfo)
 {
 	local int Cost;
+	local TowerTargetable Unit;
+	local Vector SpawnLocation;
 
-	if(UnitArchetype.class == class'TowerProjectile')
-	{
-//		Cost = TowerProjectile.
-	}
-	else if(UnitArchetype.class == class'TowerKProjectile')
-	{
-
-	}
-	else if(UnitArchetype.class == class'TowerCrowdAgent')
-	{
-
-	}
-	else if(UnitArchetype.class == class'TowerEnemyPawn')
-	{
-
-	}
-	else if(UnitArchetype.class == class'TowerVehicle')
-	{
-
-	}
-	else
-	{
-		`warn(UnitARchetype.class@"is not handled by SpawnUnit!");
-	}
+	Cost = UnitArchetype.GetCost(UnitArchetype);
 
 	if(HasBudget(Cost))
 	{
-
+		SpawnLocation = FormationLocation + UnitTroopInfo.RelativeLocation;
+		return UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
 	}
 	else
 	{
-		return false;
+		CheckActivity();
+		return None;
 	}
-	CheckActivity();
 }
 
 function int GetUnitCost(TowerTargetable UnitArchetype)
@@ -321,16 +301,12 @@ event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype)
 
 }
 
-//@TODO - Pawn support? Are we really even going to use pawns ever?
-event bool SpawnInfantry(TowerCrowdAgent InfantryArchetype)
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
 {
+
 }
 
-event bool SpawnVehicle(TowerVehicle VehicleArchetype)
-{
-}
-
-event VIPDeath(TowerCrowdAgent VIP)
+event OnVIPDeath(TowerCrowdAgent VIP)
 {
 }
 

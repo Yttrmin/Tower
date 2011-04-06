@@ -368,11 +368,15 @@ DefaultProperties
 	MeshComponents(1)=TPDMC
 
 	Begin Object Name=MyLightEnvironment
+		bDynamic=FALSE
+		bForceNonCompositeDynamicLights=TRUE
 		bEnabled=TRUE
+		bCastShadows=FALSE
 		TickGroup=TG_DuringAsyncWork
 		// Using a skylight for secondary lighting by default to be cheap
 		// Characters and other important skeletal meshes should set bSynthesizeSHLight=true
 	End Object
+
 	 // 256x256x256 cube.
 	Begin Object Name=StaticMeshComponent0
 		ScriptRigidBodyCollisionThreshold=0.01
