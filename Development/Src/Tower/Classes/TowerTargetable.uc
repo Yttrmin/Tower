@@ -14,7 +14,7 @@ function bool IsInfantry();
 static function int GetCost(TowerTargetable SelfArchetype);
 
 //@TODO - Combine interface and component instead?
-function SetOwningFaction(TowerFaction Faction);
+function TowerFaction GetOwningFaction();
 
 //function AddOnDeathDelegate(delegate<OnDeathDelegate> Callback);
 

@@ -37,6 +37,7 @@ function Shoot(Vector Direction)
 	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
 	if(HitActor != None)
 	{
+		// Call TakeDamage();
 		//HitActor.Destroy();
 	}
 }

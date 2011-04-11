@@ -155,6 +155,11 @@ function IgnoreMouseMovement()
 /** Only time where Canvas is valid. */
 event PostRender()
 {
+	// Variables for calling NativePostRenderFor().
+	local int i;
+	local Vector CamLocation;
+	local Rotator CamRotation;
+
 	local Vector HitNormal;
 	local Vector2D Mouse;
 	local TowerBlock IterateBlock;
@@ -182,6 +187,12 @@ event PostRender()
 	{
 		TracedPlaceable.Highlight();
 		LastHighlightedBlock = TracedPlaceable;
+	}
+
+	PlayerOwner.GetPlayerViewpoint(CamLocation, CamRotation);
+	for(i = 0; i < PostRenderedActors.Length; i++)
+	{
+		PostRenderedActors[i].NativePostRenderFor(PlayerOwner, Canvas, CamLocation, Vector(CamRotation));
 	}
 }
 

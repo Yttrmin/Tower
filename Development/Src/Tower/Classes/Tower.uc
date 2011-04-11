@@ -3,8 +3,7 @@ Tower
 
 Represents a player's tower, which a player can only have one of. Tower's are essentially containers for TowerBlocks.
 */
-class Tower extends Actor
-	implements(TowerFaction)
+class Tower extends TowerFaction
 	dependson(TowerBlock);
 
 var TowerTree NodeTree;
@@ -122,6 +121,8 @@ function FindBlock()
 
 DefaultProperties
 {
-	bAlwaysRelevant = true;
 	RemoteRole=ROLE_SimulatedProxy
+	bAlwaysRelevant=True
+	bStatic=False
+	bNoDelete=False
 }
