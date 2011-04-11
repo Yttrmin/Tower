@@ -15,8 +15,6 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	placeable
 	abstract;
 
-//@TODO - Figure out how acceleration is calculated.
-var const float ZAcceleration;
 var const int DropRate;
 var int BlocksFallen;
 var int StartZ;
@@ -348,7 +346,7 @@ DefaultProperties
 
 	CustomTimeDilation=1
 
-	ZAcceleration=1039.829009434
+//	ZAcceleration=1039.829009434
 	DropRate=128
 //	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
 	bCollideWorld=false

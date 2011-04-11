@@ -14,7 +14,7 @@ bNotifyInRange must be TRUE for this to have any effect. */
 var() protected const bool bCheckInRange;
 /** If FALSE, this agent will never automatically notify the root block if it's in range, it must be done through script if at all. */
 var() protected const bool bNotifyInRange;
-var() protected const int Cost;
+var() protected const int Cost<ClampMin=1>;
 
 var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
 //@TODO - Combine interface and component instead?
@@ -54,9 +54,7 @@ function TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLoca
 
 		if(Health <= 0)
 		{
-			Health = -1;
-			SetCollision(FALSE, FALSE, FALSE); // Turn off all collision when dead.
-			PlayDeath(normal(Momentum) * DamageType.default.KDamageImpulse + Vect(0,0,1)*DamageType.default.KDeathUpKick);
+			Die(DamageAmount, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 		}
 		else
 		{
@@ -67,6 +65,17 @@ function TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLoca
 			}
 		}
 	}
+}
+
+event Die(int DamageAmount, out vector HitLocation, out vector Momentum, 
+	class<DamageType> DamageType, optional out TraceHitInfo HitInfo, optional Actor DamageCauser)
+{
+	`log(Self@"died! Cause:"@DamageCauser@DamageType);
+	Health = -1;
+	SetCollision(FALSE, FALSE, FALSE); // Turn off all collision when dead.
+	PlayDeath(normal(Momentum) * DamageType.default.KDamageImpulse + Vect(0,0,1)*DamageType.default.KDeathUpKick);
+
+	OwningFaction.OnTargetableDeath(Self, TowerTargetable(DamageCauser), TowerPlaceable(DamageCauser));
 }
 
 function bool CheckInRange()
@@ -94,15 +103,14 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	TowerFaction NewOwningFaction)
 {
 	local TowerCrowdAgent Agent;
-	//@FIXME - Hackey and assuming. Maybe just go for a base class and not an interface?
-	Agent = Actor(NewOwningFaction).Spawn(class'TowerCrowdAgent',,,SpawnLocation,,TargetableArchetype);
+	Agent = NewOwningFaction.Spawn(class'TowerCrowdAgent',,,SpawnLocation,,TargetableArchetype);
 	Agent.OwningFaction = NewOwningFaction;
 	return Agent;
 }
 
-function SetOwningFaction(TowerFaction Faction)
+function TowerFaction GetOwningFaction()
 {
-	OwningFaction = Faction;
+	return OwningFaction;
 }
 
 static function int GetCost(TowerTargetable SelfArchetype)
@@ -184,6 +192,8 @@ simulated event Destroyed()
 
 DefaultProperties
 {
+	Cost=1
+
 	Health=20
 	bProjTarget=true
 

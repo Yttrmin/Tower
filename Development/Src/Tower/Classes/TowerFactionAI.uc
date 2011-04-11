@@ -5,8 +5,7 @@ Controls the various factions, deciding on what troops and such to spawn, as wel
 Each faction gets its own AI. Exist server-side only.
 Note anytime "Troops" is used it includes missiles and such, not just infantry.
 */
-class TowerFactionAI extends Info
-	implements(TowerFaction)
+class TowerFactionAI extends TowerFaction
 	ClassGroup(Tower)
 	dependson(TowerGame)
 //	AutoExpandCategories(TowerFactionAI)
@@ -29,6 +28,29 @@ Strategies:
 	* MAYBE LATER
 * Some sort of troop behavior struct? Eg, so troops will actually stick around the vehicle they're escorting.
 */
+
+struct PlaceableUsage
+{
+	var bool bStructural;
+	var bool bGunHitscan;
+	var bool bGunProjectile;
+	var bool bShield;
+	var bool bAntiInfantry;
+	var bool bAntiVehicle;
+	var bool bAntiProjectile;
+};
+
+struct PlaceableInfo
+{
+	var TowerPlaceable PlaceableArchetype;
+	var PlaceableUsage Flags;
+};
+
+struct PlaceableKillInfo
+{
+	var TowerPlaceable Placeable;
+	var int InfantryKillCount, ProjectileKillCount, VehicleKillCount;
+};
 
 /** Series of flags to be used with a Formation. Tells AI what this Formation might be good for. */
 struct FormationUsage
@@ -97,7 +119,7 @@ struct Formation
 	var() const editoronly string Description;
 	var() const FormationUsage FormationUsageFlags;
 
-	// But how do we handle randomly picked formations? Base cost?
+	// But how do we handle randomly picked formations? Base cost? Low/High cost?
 	/** Cost of the entire formation. A sum of all Unit costs. */
 	var() const editconst int FormationCost;
 };
@@ -107,6 +129,10 @@ enum Strategy
 {
 	/** Default, used when not at war with anyone and thus not fighting. */
 	S_None,
+	/** The AI has enough information about the enemy and is trying to counter its forces. */
+	S_Counter,
+	/** The AI doesn't know enough about the enemy to counter it. */
+	S_CollectData,
 	S_Spam_Projectile
 };
 
@@ -150,8 +176,38 @@ var(InGame) protected editconst bool bCanFight;
 
 var(InGame) protected editconst int UnitsOut;
 
+//============================================================================================================
+// CollectData-related variables.
+
+var array<PlaceableKillInfo> Killers;
+
+//============================================================================================================
+
+var array<PlaceableInfo> Targets;
+
+var TowerFactionAIHivemind Hivemind;
+
+auto state InActive
+{
+	event BeginState(Name PreviousStateName)
+	{
+		bCanFight = False;
+		SetStrategy(S_None);
+	}
+	event RoundStarted(const int AwardedBudget)
+	{
+		TroopBudget = AwardedBudget;
+		bCanFight = True;
+		GotoState('Active');
+	}
+}
+
 state Active
 {
+	event BeginState(Name PreviousStateName)
+	{
+		DetermineStrategy();
+	}
 	event Tick(float DeltaTime)
 	{
 		Super.Tick(DeltaTime);
@@ -171,27 +227,141 @@ state Active
 	/** Called directly after the round is declared over, before cool-down period. */
 	event RoundEnded()
 	{
-		bCanFight = False;
 		GotoState('InActive');
+	}
+
+	protected function DetermineStrategy()
+	{
+		// Actually, you know, determine a strategy.
+		SetStrategy(S_CollectData);
 	}
 }
 
-auto state InActive
+state CollectData extends Active
 {
-	event RoundStarted(const int AwardedBudget)
+	event BeginState(Name PreviousStateName)
 	{
-		TroopBudget = AwardedBudget;
-		bCanFight = True;
-		GotoState('Active');
+		SetTimer(20, false, 'DoneCollecting');
 	}
+
+	event Think()
+	{
+		if(TargetTower == None)
+		{
+			`log("GRAB NEW ONE");
+			GetNewTarget();
+		}
+	}
+
+	function DoneCollecting()
+	{
+		// Sort by most killed and by type.
+	}
+
+	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
+	{
+		local int Index;
+		if(TargetableKiller != None)
+		{
+		//	Index = Killers.find('PlaceableArchetype', Targetable
+		}
+		else if(PlaceableKiller != None)
+		{
+			Index = Killers.find('Placeable', PlaceableKiller);
+			if(Index != -1)
+			{
+				AppendToKillersArray(Index, Targetable);
+			}
+			else
+			{
+				Killers.Add(1);
+				Index = Killers.Length-1;
+				Killers[Index].Placeable = PlaceableKiller;
+				AppendToKillersArray(Index, Targetable);
+			}
+		}
+	}
+}
+
+function AppendToKillersArray(int Index, TowerTargetable KilledTargetable)
+{
+	if(KilledTargetable.IsInfantry())
+	{
+		Killers[Index].InfantryKillCount++;
+	}
+	if(KilledTargetable.IsVehicle())
+	{
+		Killers[Index].VehicleKillCount++;
+	}
+	if(KilledTargetable.IsProjectile())
+	{
+		Killers[Index].ProjectileKillCount++;
+	}
+}
+
+state Counter extends Active
+{
+
+}
+
+protected function SetStrategy(Strategy NewStrategy)
+{
+	CurrentStrategy = NewStrategy;
 }
 
 event PostBeginPlay()
 {
+	local PlayerController PC;
+	foreach LocalPlayerControllers(class'PlayerController', PC)
+	{
+		PC.myHUD.AddPostRenderedActor(self);
+	}
 	Super.PostBeginPlay();
 	`assert(UnitList != None);
 	Game = TowerGame(WorldInfo.Game);
 	GRI = TowerGameReplicationInfo(Game.GameReplicationInfo);
+	CalculateAllCosts();
+}
+
+simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
+{
+	// Note that drawings on the canvas are NOT persistent.
+//	Canvas.CurX = UnitsOut;
+//	Canvas.DrawText("HI");
+//	UnitsOut++;
+
+	Canvas.CurY = 50;
+	Canvas.DrawText("Faction:"@Self);
+
+	Canvas.CurX = Canvas.SizeX-150;
+	Canvas.CurY = 50;
+	Canvas.DrawText("TroopBudget:"@TroopBudget);
+	
+	Canvas.CurX = Canvas.SizeX-150;
+	Canvas.CurY = 65;
+	Canvas.DrawText("UnitsOut:"@UnitsOut);
+
+	Canvas.CurX = 0;
+	Canvas.CurY = 65;
+	Canvas.DrawText("State:"@GetStateName());
+
+	Canvas.CurY = 80;
+	Canvas.DrawText("CurrentStrategy:"@CurrentStrategy);
+}
+
+function CalculateAllCosts()
+{
+	local int i;
+	local TowerTargetable CheapestInfantry;
+	for(i = 0; i < UnitList.InfantryArchetypes.Length; i++)
+	{
+		if(CheapestInfantry == None || 
+			CheapestInfantry.GetCost(CheapestInfantry) > UnitList.InfantryArchetypes[i].GetCost(UnitList.InfantryArchetypes[i]))
+		{
+			CheapestInfantry = UnitList.InfantryArchetypes[i];
+		}
+	}
+	`log("Cheapest infantry unit:"@CheapestInfantry@CheapestInfantry.GetCost(CheapestInfantry));
 }
 
 event RoundStarted(const int AwardedBudget);
@@ -303,7 +473,8 @@ event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype)
 
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
 {
-
+	//@TODO - Collect information about deaths so we can figure out what to counter.
+	UnitsOut--;
 }
 
 event OnVIPDeath(TowerCrowdAgent VIP)
@@ -326,7 +497,9 @@ DefaultProperties
 {
 	UnitList=TowerUnitsList'TowerMod.NullObjects.NullUnitsList'
 
-	CurrentStrategy=S_Spam_Projectile
+	bPostRenderIfNotVisible=true
+
+	CurrentStrategy=S_None
 	RemoteRole=ROLE_None
 	Begin Object Class=TowerFactionInfo Name=FactionInfo0
 	End Object
