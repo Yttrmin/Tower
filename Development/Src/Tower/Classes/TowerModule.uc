@@ -45,7 +45,8 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	local Rotator NewRotation;
 	`assert(Parent != None);
 	NewParentDirection = FromVect(Normal(SpawnLocation - Parent.Location));
-	Module = new(None) PlaceableTemplate.class (PlaceableTemplate);
+	//@FIXME - Fixed?
+	Module = new(None) TowerModule(PlaceableTemplate).class (PlaceableTemplate);
 	if(round(NewParentDirection.Z) == 0)
 	{
 		NewRotation.Pitch = NewParentDirection.X * (-90 * DegToUnrRot);

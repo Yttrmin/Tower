@@ -351,6 +351,8 @@ event FactionInactive(TowerFactionAI Faction)
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
+	local TowerPlaceable Root;
+	local TowerBlockRoot BlockRoot;
 	local IVector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	//@BUG
@@ -363,7 +365,8 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
-	TPRI.Tower.Root = AddPlaceable(TPRI.Tower, GameMods[0].ModPlaceables[0], None, GridLocation);
+	Root = AddPlaceable(TPRI.Tower, GameMods[0].ModPlaceables[0], None, GridLocation);
+	TPRI.Tower.Root = TowerBlockRoot(Root);
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{

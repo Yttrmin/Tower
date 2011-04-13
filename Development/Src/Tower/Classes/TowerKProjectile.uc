@@ -15,7 +15,9 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	TowerFaction NewOwningFaction)
 {
 	local TowerKProjectile Projectile;
-	Projectile = NewOwningFaction.Spawn(class'TowerKProjectile',,,SpawnLocation,,TargetableArchetype);
+	//@FIXME - Fixed?
+	Projectile = NewOwningFaction.Spawn(TowerKProjectile(TargetableArchetype).class,,,SpawnLocation,,
+		TowerKProjectile(TargetableArchetype));
 	Projectile.OwningFaction = NewOwningFaction;
 	return Projectile;
 }

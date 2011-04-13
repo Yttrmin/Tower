@@ -263,10 +263,13 @@ reliable server function ServerSendRemoveTicket(RemoveTicket Ticket)
 simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local Vector SpawnLocation;
+	local TowerModule Module;
+	local TowerPlaceable PlaceableModule;
 	local Vector VectorGridLocation;
 	VectorGridLocation = ToVect(GridLocation);
 	SpawnLocation = class'TowerGame'.static.GridLocationToVector(VectorGridLocation);
-	return Placeable.AttachPlaceable(Placeable, Parent, GetTower().NodeTree, SpawnLocation, GridLocation);
+	PlaceableModule = Placeable.AttachPlaceable(Placeable, Parent, GetTower().NodeTree, SpawnLocation, GridLocation);
+	return TowerModule(PlaceableModule);
 }
 
 simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int ModIndex, out int ModPlaceableIndex)
@@ -294,7 +297,10 @@ simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Pla
 
 function TowerModule GetModuleFromTicket(out RemoveTicket Ticket)
 {
-	return TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.TicketedPlaceables[Ticket.Index];
+	//@WORKAROUND
+	local TowerPlaceable ModulePlaceable;
+	ModulePlaceable = TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.TicketedPlaceables[Ticket.Index];
+	return TowerModule(ModulePlaceable);
 }
 
 function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)

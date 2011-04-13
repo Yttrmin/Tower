@@ -86,19 +86,19 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
 	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
-	local TowerPlaceable Block;
+	local TowerBlock Block;
 	local IVector ParentDir;
 	if(Parent != None)
 	{
 		// Get PRI somewhere else since it might be none.
-		Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
+		Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
 		ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 		Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
 	}
 	else
 	{
 		`assert(OwnerTPRI != None);
-		Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,PlaceableTemplate,TRUE);
+		Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
 		ParentDir = IVect(0,0,0);
 		Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
 	}
@@ -108,7 +108,7 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 
 static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree)
 {
-	NodeTree.RemoveNode(Placeable);
+	NodeTree.RemoveNode(TowerBlock(Placeable));
 }
 
 function StaticMesh GetPlaceableStaticMesh()
@@ -357,13 +357,6 @@ DefaultProperties
 	XSize = 0
 	YSize = 0
 	ZSize = 0
-
-	Begin Object Class=TowerPlaceableStaticMeshComponent Name=TPSMC
-	End Object
-	Begin Object Class=TowerPlaceableDestructibleMeshComponent Name=TPDMC
-	End Object
-	MeshComponents(0)=TPSMC
-	MeshComponents(1)=TPDMC
 
 	Begin Object Name=MyLightEnvironment
 		bDynamic=FALSE

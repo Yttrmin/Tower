@@ -47,7 +47,7 @@ event Think()
 	Super.Think();
 	if(Target != None)
 	{
-		Shoot(CalculateShootVector(Target));
+		Shoot(CalculateShootVector(Actor(Target)));
 	}
 }
 
