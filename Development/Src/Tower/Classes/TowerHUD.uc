@@ -53,7 +53,8 @@ event OnMouseClick(int Button)
 //				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
 				if(TowerModule(TracedPlaceable) == None)
 				{
-					TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TracedPlaceable, FinalGridLocation);
+					//@FIXME
+					TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TowerBlock(TracedPlaceable), FinalGridLocation);
 				}
 			}
 		}

@@ -103,7 +103,7 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	TowerFaction NewOwningFaction)
 {
 	local TowerCrowdAgent Agent;
-	Agent = NewOwningFaction.Spawn(class'TowerCrowdAgent',,,SpawnLocation,,TargetableArchetype);
+	Agent = NewOwningFaction.Spawn(class'TowerCrowdAgent',,,SpawnLocation,,TowerCrowdAgent(TargetableArchetype));
 	Agent.OwningFaction = NewOwningFaction;
 	return Agent;
 }
@@ -150,7 +150,7 @@ function InitializeWeapon()
 
 simulated event SetCurrentDestination(GameCrowdDestination NewDestination)
 {
-	if ( NewDestination != CurrentDestination )
+	if( NewDestination != CurrentDestination )
 	{
 		if ( CurrentBehavior != None )
 		{
@@ -161,10 +161,6 @@ simulated event SetCurrentDestination(GameCrowdDestination NewDestination)
 		CurrentDestination.IncrementCustomerCount(self);
 		
 		ReachThreshold = CurrentDestination.bSoftPerimeter ? 0.5 + 0.5*FRand() : 1.0;
-	}
-	if ( CurrentDestination.bFleeDestination && !IsPanicked() )
-	{
-		SetPanic(None, TRUE);
 	}
 }
 

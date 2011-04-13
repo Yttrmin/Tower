@@ -5,7 +5,8 @@ Takes the place of the Kismet node usually used to handle crowd spawning.
 Most of this is straight-up taken from SeqAct_GameCrowdSpawner, but has the
 advantage of not being a Kismet node.
 */
-class TowerCrowdSpawner extends Object;
+class TowerCrowdSpawner extends Object
+	deprecated;
 
 /** Set by kismet action inputs - controls whether we are actively spawning agents. */
 var		bool	bSpawningActive;
@@ -218,7 +219,7 @@ function GameCrowdAgent CreateNewAgent(Actor SpawnLoc, GameCrowdAgent AgentTempl
 		Agent.bUseNavMeshPathing = true;
 	}
 	
-	Agent.InitializeAgent(SpawnLoc, AgentTemplate, NewGroup, AgentWarmUpTime*2.0*FRand(), bWarmupPosition, true);
+//	Agent.InitializeAgent(SpawnLoc, AgentTemplate, NewGroup, AgentWarmUpTime*2.0*FRand(), bWarmupPosition, true);
 	SpawnedList[SpawnedList.Length] = Agent;
 	return Agent;
 }
