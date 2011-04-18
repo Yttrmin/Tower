@@ -144,5 +144,6 @@ DefaultProperties
 
 	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
 
+	bDisplayWithHudOff=false
 }
 

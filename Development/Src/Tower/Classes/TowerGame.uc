@@ -8,16 +8,18 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 class TowerGame extends FrameworkGame
 	config(Tower);
 
-enum Factions
+enum FactionLocation
 {
-	F_Debug,
-	// F_Player represents all humans players in the game since it's co-op only.
-	F_Player
+	FL_None,
+	FL_PosX,
+	FL_NegX,
+	FL_PosY,
+	FL_NegY
 };
 
 var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
-var array<TowerSpawnPoint> InfantryPoints, ProjectilePoints, VehiclePoints;
+var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;
 
 var array<TowerModInfo> Mods;
@@ -28,6 +30,8 @@ var TowerFactionAIHivemind Hivemind;
 
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var protected byte RemainingActiveFactions;
+
+var const Vector Borders[4];
 
 event PreBeginPlay()
 {
@@ -44,7 +48,9 @@ event PostBeginPlay()
 	PopulateSpawnPointArrays();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 	CrowdSpawner = new class'TowerCrowdSpawner';
-	
+//	TowerGameViewportClient(class'Engine'.static.GetEngine().GameViewport).
+	class'Engine'.static.StopMovie(true);
+
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	`log("ZMod:"@ZMod@ZMod.ModName);
 //	ZMod.TestCallMe();
@@ -191,21 +197,41 @@ function CheckForMods()
 function PopulateSpawnPointArrays()
 {
 	local TowerSpawnPoint Point;
+	Point.Faction = GetPointFactionLocation(Point.Location);
 	foreach WorldInfo.AllNavigationPoints(class'TowerSpawnPoint', Point)
 	{
-		if(Point.bCanSpawnInfantry)
+		SpawnPoints.AddItem(Point);
+	}
+}
+
+/** Returns the FactionLocation that the given point is in.
+Useful for determining who's land the Point is on. */
+function FactionLocation GetPointFactionLocation(Vector Point)
+{
+	if(Point dot Borders[0] > 0)
+	{
+		// NegX or PosY.
+		if(Point dot Borders[1] > 0)
 		{
-			InfantryPoints.AddItem(Point);
+			return FL_PosY;
 		}
-		if(Point.bCanSpawnProjectile)
+		else if(Point dot Borders[3] > 0)
 		{
-			ProjectilePoints.AddItem(Point);
-		}
-		if(Point.bCanSpawnVehicle)
-		{
-			VehiclePoints.AddItem(Point);
+			return FL_NegX;
 		}
 	}
+	// PosX or NegY.
+	else if(Point dot Borders[1] > 0)
+	{
+		return FL_PosX;
+	}
+	else if(Point dot Borders[3] > 0)
+	{
+		return FL_NegY;
+	}
+	ScriptTrace();
+	`warn("Determined FactionLocation was FL_None for point:"@Point$"!");
+	return FL_None;
 }
 
 function GenericPlayerInitialization(Controller C)
@@ -240,6 +266,11 @@ local PlayerController PC;
 	{
 		BaseMutator.NotifyLogin(C);
 	}
+}
+
+exec function DebugGetFactionLocation(Vector Point)
+{
+	`log(GetEnum(Enum'FactionLocation', GetPointFactionLocation(Point)));
 }
 
 exec function LaunchMissile()
@@ -286,9 +317,30 @@ exec function SkipRound()
 
 function AddFactionAIs()
 {
-	FactionAIs.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
-	FactionAIs[FactionAIs.Length-1].Hivemind = Hivemind;
-	`log("Spawned AI?:"@FactionAIs[0]);
+	local int i;
+	local array<TowerSpawnPoint> FactionSpawnPoints;
+	local TowerSpawnPoint Point;
+	local byte AssignedFaction;
+	AssignedFaction = 1;
+	for(i = 0; i < 1/*4*/; i++)
+	{
+		// Empty the array each iteration so we don't give the Faction points it doesn't own.
+		SpawnPoints.Remove(0, SpawnPoints.Length);
+		// Fill an array of spawn points for the AI.
+		foreach SpawnPoints(Point)
+		{
+			if(Point.Faction == AssignedFaction)
+			{
+				FactionSpawnPoints.AddItem(Point);
+			}
+		}
+		FactionAIs.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
+		FactionAIs[FactionAIs.Length-1].Hivemind = Hivemind;
+		FactionAIs[FactionAIs.Length-1].Faction = FactionLocation(AssignedFaction);
+		FactionAIs[FactionAIs.Length-1].ReceiveSpawnPoints(FactionSpawnPoints);
+		AssignedFaction++;
+		`log("Spawned AI?:"@FactionAIs[0]);
+	}
 }
 
 /** Very first part of a game, and happens between every round. */
@@ -490,4 +542,9 @@ DefaultProperties
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
 	DefaultPawnClass=class'Tower.TowerPawn'
 	HUDType=class'Tower.TowerHUD'
+
+	Borders[0]=(X=-1,Y=1,Z=0)
+	Borders[1]=(X=1,Y=1,Z=0)
+	Borders[2]=(X=1,Y=-1,Z=0)
+	Borders[3]=(X=-1,Y=-1,Z=0)
 }
