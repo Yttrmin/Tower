@@ -5,7 +5,7 @@ Controls the various factions, deciding on what troops and such to spawn, as wel
 Each faction gets its own AI. Exist server-side only.
 Note anytime "Troops" is used it includes missiles and such, not just infantry.
 */
-class TowerFactionAI extends TowerFaction
+class TowerFactionAI extends TowerFaction 
 	ClassGroup(Tower)
 	dependson(TowerGame)
 //	AutoExpandCategories(TowerFactionAI)
@@ -50,6 +50,12 @@ struct PlaceableKillInfo
 {
 	var TowerPlaceable Placeable;
 	var int InfantryKillCount, ProjectileKillCount, VehicleKillCount;
+};
+
+struct PlaceableTargetInfo
+{
+	var TowerPlaceable Placeable;
+	var int ArchetypeIndex;
 };
 
 /** Series of flags to be used with a Formation. Tells AI what this Formation might be good for. */
@@ -124,6 +130,12 @@ struct Formation
 	var() const editconst int FormationCost;
 };
 
+struct FormationSpawnInfo
+{
+	var int FormationIndex;
+	var NavigationPoint SpawnPoint;
+};
+
 /** Strategy the AI uses during the current round. */ 
 enum Strategy
 {
@@ -140,6 +152,7 @@ var() protected const name FactionName;
 
 var protected Tower TargetTower;
 var() protected TowerFactionInfo FactionInfo;
+var() editconst FactionLocation Faction;
 
 // These exist purely to cut down on the typecasting and function calling every tick.
 var protected TowerGame Game;
@@ -147,9 +160,9 @@ var protected TowerGameReplicationInfo GRI;
 
 /** Current strategy this faction is basing its decisions on. 
 Only has an effect when changed ingame. */
-var(InGame) protected Strategy CurrentStrategy;
+var(InGame) protected deprecated Strategy CurrentStrategy;
 
-var() protected array<Formation> Formations;
+var() protected const array<Formation> Formations;
 
 /** List of units this faction can spawn. */
 var() protected noclear TowerUnitsList UnitList;
@@ -176,6 +189,8 @@ var(InGame) protected editconst bool bCanFight;
 
 var(InGame) protected editconst int UnitsOut;
 
+var TowerFactionAIHivemind Hivemind;
+
 //============================================================================================================
 // CollectData-related variables.
 
@@ -183,9 +198,19 @@ var array<PlaceableKillInfo> Killers;
 
 //============================================================================================================
 
-var array<PlaceableInfo> Targets;
+var array<PlaceableTargetInfo> Targets;
 
-var TowerFactionAIHivemind Hivemind;
+var array<FormationSpawnInfo> OrderQueue;
+
+var array<NavigationPoint> InfantryDestinations;
+
+var array<TowerSpawnPoint> SpawnPoints;
+
+event ReceiveSpawnPoints(out array<TowerSpawnPoint> NewSpawnPoints)
+{
+	ScriptTrace();
+	`warn("ReceiveSpawnPoints called on"@self@"outside of InActive!");
+}
 
 auto state InActive
 {
@@ -200,6 +225,15 @@ auto state InActive
 		bCanFight = True;
 		GotoState('Active');
 	}
+	event ReceiveSpawnPoints(out array<TowerSpawnPoint> NewSpawnPoints)
+	{
+		NewSpawnPoints = SpawnPoints;
+	}
+	function int SortSpawnPoints(TowerSpawnPoint A, TowerSpawnPoint B)
+	{
+		//@TODO - Actually sort.
+		return 0;
+	}
 }
 
 state Active
@@ -208,6 +242,7 @@ state Active
 	{
 		DetermineStrategy();
 	}
+	// Do we really need to think every tick?
 	event Tick(float DeltaTime)
 	{
 		Super.Tick(DeltaTime);
@@ -233,7 +268,7 @@ state Active
 	protected function DetermineStrategy()
 	{
 		// Actually, you know, determine a strategy.
-		SetStrategy(S_CollectData);
+		GotoState('CollectData');
 	}
 }
 
@@ -241,6 +276,7 @@ state CollectData extends Active
 {
 	event BeginState(Name PreviousStateName)
 	{
+		QueueFormations();
 		SetTimer(20, false, 'DoneCollecting');
 	}
 
@@ -253,9 +289,61 @@ state CollectData extends Active
 		}
 	}
 
+	function QueueFormations()
+	{
+
+	}
+
 	function DoneCollecting()
 	{
+		local PlaceableTargetInfo Info;
+		local int i;
 		// Sort by most killed and by type.
+		Killers.sort(SortKillers);
+		for(i = 0; i < Killers.Length; i++)
+		{
+			CreatePlaceableTargetInfo(Killers[i], Info);
+			Targets.AddItem(Info);
+		}
+		GotoState('Counter');
+	}
+
+	function CreatePlaceableTargetInfo(PlaceableKillInfo KillInfo, out PlaceableTargetInfo TargetInfo)
+	{
+		TargetInfo.Placeable = KillInfo.Placeable;
+		TargetInfo.ArchetypeIndex = Hivemind.Placeables.Find('PlaceableArchetype', KillInfo.Placeable.ObjectArchetype);
+		if(TargetInfo.ArchetypeIndex == -1)
+		{
+			TargetInfo.ArchetypeIndex = AddPlaceableInfoFromKillInfo(KillInfo);
+		}
+	}
+
+	function int AddPlaceableInfoFromKillInfo(PlaceableKillInfo Info)
+	{
+		local PlaceableInfo NewInfo;
+		NewInfo.PlaceableArchetype = Info.Placeable.ObjectArchetype;
+		// Assign flags!
+		Hivemind.Placeables.AddItem(NewInfo);
+		return Hivemind.Placeables.Length-1;
+	}
+
+	function int SortKillers(out PlaceableKillInfo P1, out PlaceableKillInfo P2)
+	{
+		local int P1Count, P2Count;
+		P1Count = P1.InfantryKillCount + P1.ProjectileKillCount + P1.VehicleKillCount;
+		P2Count = P2.InfantryKillCount + P2.ProjectileKillCount + P2.VehicleKillCount;
+		if(P1Count > P2Count)
+		{
+			return 1;
+		}
+		else if(P1Count < P2Count)
+		{
+			return -1;
+		}
+		else
+		{
+			return 0;
+		}
 	}
 
 	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
@@ -333,6 +421,10 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Canvas.CurY = 50;
 	Canvas.DrawText("Faction:"@Self);
 
+	Canvas.CurX = 0;
+	Canvas.CurY = 65;
+	Canvas.DrawText("FactionLocation:"@GetEnum(Enum'FactionLocation', Faction));
+
 	Canvas.CurX = Canvas.SizeX-150;
 	Canvas.CurY = 50;
 	Canvas.DrawText("TroopBudget:"@TroopBudget);
@@ -342,11 +434,8 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Canvas.DrawText("UnitsOut:"@UnitsOut);
 
 	Canvas.CurX = 0;
-	Canvas.CurY = 65;
-	Canvas.DrawText("State:"@GetStateName());
-
 	Canvas.CurY = 80;
-	Canvas.DrawText("CurrentStrategy:"@CurrentStrategy);
+	Canvas.DrawText("State:"@GetStateName());
 }
 
 function CalculateAllCosts()
@@ -384,10 +473,12 @@ function GetNewTarget()
 function TowerSpawnPoint GetSpawnPoint()
 {
 	local TowerSpawnPoint SpawnPoint;
-	foreach TowerGame(WorldInfo.Game).ProjectilePoints(SpawnPoint)
+	//@TODO - Actually do.
+	/*foreach TowerGame(WorldInfo.Game).ProjectilePoints(SpawnPoint)
 	{
 		return SpawnPoint;
-	}
+	}*/
+	return None;
 }
 
 function SpawnFormation(int Index, TowerSpawnPoint SpawnPoint)
@@ -505,4 +596,7 @@ DefaultProperties
 	End Object
 	Components.Add(FactionInfo0)
 	FactionInfo=FactionInfo0
+
+	// Consider how to get this during AsyncWork.
+	TickGroup=TG_PreAsyncWork
 }

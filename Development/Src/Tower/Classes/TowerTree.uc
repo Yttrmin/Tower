@@ -140,24 +140,24 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 {
 	local TowerBlock Block;
 	local TraceHitInfo HitInfo;
-	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
+//	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 //	Node.SetBase(None);
 //	Node.FindBase();
 //	`log("FindBase says:"@Node.Base);
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
-		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+//		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			ReparentNode(Node, Block, false);
 			Node.Adopted();
-			`log("And it's good!");
+//			`log("And it's good!");
 			return TRUE;
 		}
 	}
 	if(bChildrenFindParent)
 	{
-		`log("Having children look for supported parents...");
+//		`log("Having children look for supported parents...");
 		foreach Node.BasedActors(class'TowerBlock', Block)
 		{
 			FindNewParent(Block, OldParent, bChildrenFindParent);
@@ -165,9 +165,9 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	}
 	
 	
-	if(Node.Base == None)
+	if(Node.Base == None && OldParent != None)
 	{
-		`log("No parents available,"@Node@"is an orphan. Handle this.");
+//		`log("No parents available,"@Node@"is an orphan. Handle this.");
 		// True orphan.
 		OrphanNodeRoots.AddItem(Node);
 		Node.OrphanedParent();

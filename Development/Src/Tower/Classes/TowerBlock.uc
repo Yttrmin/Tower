@@ -75,11 +75,28 @@ simulated event ReplicatedEvent(name VarName)
 
 simulated event PostBeginPlay()
 {
+	local Vector ObstacleLocation;
 	Super.PostBeginPlay();
 	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
-	//@FIXME - This can cause some huuuuuge performance drops. Disabled for now.
-//	Obstacle = Spawn(class'NavMeshObstacle');
-//	Obstacle.SetEnabled(TRUE);
+	
+	if(Role == Role_Authority && Location.Z == 128)
+	{
+		Obstacle = Spawn(class'DynamicNavMeshObstacle');
+		ObstacleLocation = Location;
+		ObstacleLocation.Z -= 128;
+		Obstacle.SetLocation(ObstacleLocation);
+		Obstacle.SetAsSquare(128);
+		Obstacle.RegisterObstacle();
+	}
+}
+
+simulated event Destroyed()
+{
+	if(Role == Role_Authority && Obstacle != None)
+	{
+		Obstacle.UnRegisterObstacle();
+		Obstacle.Destroy();
+	}
 }
 
 static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
@@ -235,7 +252,9 @@ auto simulated state Stable
 	{
 		if(PreviousStateName == 'Unstable')
 		{
+			`log("Now stable!");
 			bReplicateMovement = true;
+			ClearTimer('DroppedSpace');
 			StopFall();
 		}
 	}
@@ -253,11 +272,13 @@ simulated state Unstable
 		// SetRelativeLocation here to be sure?
 		//SetFullLocation(Location, false);
 		SetGridLocation();
-		if(!OwnerPRI.Tower.NodeTree.FindNewParent(Self))
+		`log("GridLocation Z:"@GridLocation.Z);
+		if(GridLocation.Z == 0)
 		{
-			SetTimer(TimeToDrop(), false, 'DroppedSpace');
+			GotoState('InActive');
+			bFalling = false;
 		}
-		else
+		if(OwnerPRI.Tower.NodeTree.FindNewParent(Self))
 		{
 			`log("Found parent:"@Base);
 			GotoState('Stable');
@@ -271,7 +292,7 @@ simulated state Unstable
 		bReplicateMovement = false;
 		BlocksFallen = 0;
 		StartZ = Location.Z;
-		SetTimer(TimeToDrop(), false, 'DroppedSpace');
+		SetTimer(TimeToDrop(), true, 'DroppedSpace');
 	}
 	simulated event Tick(float DeltaTime)
 	{
@@ -288,6 +309,22 @@ simulated state Unstable
 	}
 };
 
+simulated state InActive
+{
+	event BeginState(name PreviousStateName)
+	{
+		ClearTimer('DroppedSpace');
+	}
+Begin:
+	if(OwnerPRI.Tower.NodeTree.FindNewParent(Self))
+	{
+		`log("Found parent:"@Base);
+		GotoState('Stable');
+	}
+	`log("Ping");
+	Sleep(5);
+	Goto('Begin');
+};
 
 
 function float TimeToDrop()

@@ -15,11 +15,13 @@ struct RemoveTicket
 };
 
 var TowerSaveSystem SaveSystem;
+var TowerMusicManager MusicManager;
 
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	SaveSystem = new class'TowerSaveSystem';
+	SaveSystem = new class'Tower.TowerSaveSystem';
+	MusicManager = Spawn(class'Tower.TowerMusicManager');
 //	SaveSystem.TestInt = 123456;
 //	SaveSystem.TransTestInt = 345678;
 //	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
@@ -35,6 +37,11 @@ function InitPlayerReplicationInfo()
 	{
 		TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI = TowerPlayerReplicationInfo(PlayerReplicationInfo);
 	}
+}
+
+state DebugEnemySpectating
+{
+
 }
 
 /**
@@ -211,7 +218,6 @@ exec function DebugTestManyBlocks(bool bAsComponents, optional bool bUseAAMesh)
 		}
 	}
 }
-
 
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {

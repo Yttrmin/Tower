@@ -213,12 +213,20 @@ function TraceForBlock(out Vector2D Mouse, out TowerPlaceable Block, out Vector 
 //		HUDMovie.GetMouseCoordinates(Mouse, true);
 		LocalPlayer(PlayerOwner.Player).DeProject(Mouse, WorldOrigin, WorldDir);
 	}
+	/*`log(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
+		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);
+	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo));
 	if(TowerPlaceable(HitInfo.HitComponent) != None)
 	{
 		Block = HitInfo.HitComponent;
 	}
+}
+
+exec function DebugFlushLines()
+{
+	FlushPersistentDebugLines();
 }
 
 function TowerPlayerReplicationInfo GetTPRI()
