@@ -16,6 +16,8 @@ static function int GetCost(TowerTargetable SelfArchetype);
 //@TODO - Combine interface and component instead?
 function TowerFaction GetOwningFaction();
 
+event Initialize(TowerFormationAI Squad);
+
 //function AddOnDeathDelegate(delegate<OnDeathDelegate> Callback);
 
 //function int GetCost();

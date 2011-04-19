@@ -46,6 +46,8 @@ simulated event PostBeginPlay()
 //	Weapon.StartFire(0);
 }
 
+event Initialize(TowerFormationAI Squad);
+
 function TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
 	if ( Health > 0 )
