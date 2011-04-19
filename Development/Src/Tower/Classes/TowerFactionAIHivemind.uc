@@ -1,10 +1,18 @@
 class TowerFactionAIHivemind extends Object;
 
 var array<PlaceableInfo> Placeables;
+//@TODO - Doesn't handle multiplayer.
+var TowerAIObjective RootBlock;
 
 event Initialize()
 {
 	`log("HIVEMIND CREATED");
+}
+
+event OnRootBlockSpawn(TowerBlockRoot Root)
+{
+	RootBlock = Root.Spawn(class'TowerAIObjective',,, Root.Location);
+	RootBlock.Target = Root;
 }
 
 function SaveToDisk()

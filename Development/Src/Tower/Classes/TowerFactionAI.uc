@@ -65,6 +65,8 @@ struct FormationUsage
 	var() const bool bScriptSpecific;
 	/** If TRUE, this formation can only be spawned once per round. */
 	var() const bool bSingleUse;
+	var() const bool bHasInfantry;
+	var() const bool bHasVehicles;
 	/** If TRUE, this formation is effective against infantry. */
 	var() const bool bAntiInfantry;
 	/** If TRUE, this formation is effective against vehicles. */
@@ -133,7 +135,8 @@ struct Formation
 struct FormationSpawnInfo
 {
 	var int FormationIndex;
-	var NavigationPoint SpawnPoint;
+	var TowerSpawnPoint SpawnPoint;
+	var TowerAIObjective Target;
 };
 
 /** Strategy the AI uses during the current round. */ 
@@ -206,10 +209,21 @@ var array<NavigationPoint> InfantryDestinations;
 
 var array<TowerSpawnPoint> SpawnPoints;
 
-event ReceiveSpawnPoints(out array<TowerSpawnPoint> NewSpawnPoints)
+event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 {
 	ScriptTrace();
 	`warn("ReceiveSpawnPoints called on"@self@"outside of InActive!");
+}
+
+function BeginCoolDown()
+{
+	bCoolDown = true;
+	SetTimer(2, false, 'ResetCoolDown');
+}
+
+function ResetCoolDown()
+{
+	bCoolDown = false;
 }
 
 auto state InActive
@@ -225,9 +239,9 @@ auto state InActive
 		bCanFight = True;
 		GotoState('Active');
 	}
-	event ReceiveSpawnPoints(out array<TowerSpawnPoint> NewSpawnPoints)
+	event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 	{
-		NewSpawnPoints = SpawnPoints;
+		SpawnPoints = NewSpawnPoints;
 	}
 	function int SortSpawnPoints(TowerSpawnPoint A, TowerSpawnPoint B)
 	{
@@ -270,6 +284,43 @@ state Active
 		// Actually, you know, determine a strategy.
 		GotoState('CollectData');
 	}
+
+	function bool SpawnFormation(int Index, TowerSpawnPoint SpawnPoint, TowerAIObjective Target)
+	{
+		local int i;
+		local Vector FormationLocation;
+		local int FormationCost;
+		local TowerFormationAI Squad;
+		local bool bAbort;
+		local TowerTargetable Targetable;
+		FormationLocation = SpawnPoint.Location;
+		// Handle when all points are occupied?
+		if(!bCoolDown && HasBudget(FormationCost))
+		{
+			for(i = 0; i < Formations[Index].TroopInfo.Length && !bAbort; i++)
+			{
+				if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
+				{
+					Targetable = SpawnUnit(UnitList.InfantryArchetypes[0], FormationLocation, Formations[Index].TroopInfo[i]);
+					if(Targetable == None)
+					{
+						bAbort = true;
+					}
+					else
+					{
+						Targetable.Initialize(Squad);
+					}
+				}
+			}
+			if(!bAbort)
+			{
+				BeginCoolDown();
+				return true;
+			}
+		}
+		return false;
+	}
+
 }
 
 state CollectData extends Active
@@ -277,21 +328,68 @@ state CollectData extends Active
 	event BeginState(Name PreviousStateName)
 	{
 		QueueFormations();
-		SetTimer(20, false, 'DoneCollecting');
+		SetTimer(45, false, 'DoneCollecting');
 	}
 
 	event Think()
 	{
-		if(TargetTower == None)
+		SpawnFromQueue();
+	}
+
+	function SpawnFromQueue()
+	{
+		if(OrderQueue.Length > 0)
 		{
-			`log("GRAB NEW ONE");
-			GetNewTarget();
+			if(SpawnFormation(OrderQueue[0].FormationIndex, OrderQueue[0].SpawnPoint, OrderQueue[0].Target))
+			{
+				OrderQueue.Remove(0, 1);
+			}
 		}
 	}
 
 	function QueueFormations()
 	{
+		local int Budget;
+		local bool bDoneBudgeting;
+		local FormationSpawnInfo Formation;
+		local int FormationIndex;
+		Budget = TroopBudget/3;
 
+		while(Budget > 0 && !bDoneBudgeting)
+		{
+			if(OrderQueue.Length > 15)
+			{
+				bDoneBudgeting = true;
+			}
+			FormationIndex = Rand(Formations.Length);
+			Formation.SpawnPoint = GetSpawnPoint(FormationIndex);
+			Formation.Target = Hivemind.RootBlock;
+			Formation.FormationIndex = FormationIndex;
+			OrderQueue.AddItem(Formation);
+		}
+	}
+
+	function TowerSpawnPoint GetSpawnPoint(int i)
+	{
+		local TowerSpawnPoint Point;
+		local bool bFailed;
+		local array<TowerSpawnPoint> PotentialPoints;
+		foreach SpawnPoints(Point)
+		{
+			if(Formations[i].FormationUsageFlags.bHasInfantry == true)
+			{
+				bFailed = !Point.bCanSpawnInfantry;
+			}
+			if(Formations[i].FormationUsageFlags.bHasVehicles == true && !bFailed)
+			{
+				bFailed = !Point.bCanSpawnVehicle;
+			}
+			if(!bFailed)
+			{
+				PotentialPoints.AddItem(Point);
+			}
+		}
+		return PotentialPoints[Rand(PotentialPoints.Length-1)];
 	}
 
 	function DoneCollecting()
@@ -436,6 +534,14 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Canvas.CurX = 0;
 	Canvas.CurY = 80;
 	Canvas.DrawText("State:"@GetStateName());
+
+	//@TODO - Let each state draw its own stuff.
+	if(GetStateName() == 'CollectData')
+	{
+		Canvas.CurX = 0;
+		Canvas.CurY = 95;
+		Canvas.DrawText("Orders Queued:"@OrderQueue.Length);
+	}
 }
 
 function CalculateAllCosts()
@@ -481,25 +587,6 @@ function TowerSpawnPoint GetSpawnPoint()
 	return None;
 }
 
-function SpawnFormation(int Index, TowerSpawnPoint SpawnPoint)
-{
-	local int i;
-	local Vector FormationLocation;
-	local int FormationCost;
-	FormationLocation = SpawnPoint.Location;
-	
-	if(HasBudget(FormationCost))
-	{
-		for(i = 0; i < Formations[Index].TroopInfo.Length; i++)
-		{
-			if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
-			{
-				SpawnUnit(UnitList.InfantryArchetypes[0], FormationLocation, Formations[Index].TroopInfo[i]);
-			}
-		}
-	}
-}
-
 event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, out vector FormationLocation, const TroopInfo UnitTroopInfo)
 {
 	local int Cost;
@@ -508,6 +595,7 @@ event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, out vector Format
 
 	Cost = UnitArchetype.GetCost(UnitArchetype);
 
+	//@TODO - Don't check budget.
 	if(HasBudget(Cost))
 	{
 		SpawnLocation = FormationLocation + UnitTroopInfo.RelativeLocation;
@@ -536,6 +624,7 @@ function CheckActivity()
 
 //function TowerSpawnPoint GetSpawnPoint()
 
+//@DELETEME
 event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 {
 	local TowerSpawnPoint SpawnPoint;
@@ -557,6 +646,7 @@ event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 	return true;
 }
 
+//@DELETEME
 event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype)
 {
 

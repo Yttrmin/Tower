@@ -8,6 +8,6 @@ DefaultProperties
 {
 	Begin Object Class=SkeletalMeshComponent Name=SkeletalMeshComponent0
 	End Object
-
+	Components.Add(SkeletalMeshComponent0)
 	Mesh=SkeletalMeshComponent0
 }

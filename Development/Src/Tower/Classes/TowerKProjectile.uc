@@ -4,7 +4,7 @@ TowerKProjectile
 Base class for any sort of projectiles that are affected by physics (e.g. cannonball, rocks, etc).
 */
 class TowerKProjectile extends KActorSpawnable
-	implements(TowerTargetable)
+	//implements(TowerTargetable)
 	/*abstract*/;
 
 var int LaunchForce;
@@ -21,6 +21,8 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	Projectile.OwningFaction = NewOwningFaction;
 	return Projectile;
 }
+
+//event Initialize(UDKSquadAI Squad);
 
 static function int GetCost(TowerTargetable SelfArchetype)
 {

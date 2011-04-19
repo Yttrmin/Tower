@@ -197,9 +197,9 @@ function CheckForMods()
 function PopulateSpawnPointArrays()
 {
 	local TowerSpawnPoint Point;
-	Point.Faction = GetPointFactionLocation(Point.Location);
 	foreach WorldInfo.AllNavigationPoints(class'TowerSpawnPoint', Point)
 	{
+		Point.Faction = GetPointFactionLocation(Point.Location);
 		SpawnPoints.AddItem(Point);
 	}
 }
@@ -321,11 +321,11 @@ function AddFactionAIs()
 	local array<TowerSpawnPoint> FactionSpawnPoints;
 	local TowerSpawnPoint Point;
 	local byte AssignedFaction;
-	AssignedFaction = 1;
+	AssignedFaction = FL_NegX;
 	for(i = 0; i < 1/*4*/; i++)
 	{
 		// Empty the array each iteration so we don't give the Faction points it doesn't own.
-		SpawnPoints.Remove(0, SpawnPoints.Length);
+		FactionSpawnPoints.Remove(0, SpawnPoints.Length);
 		// Fill an array of spawn points for the AI.
 		foreach SpawnPoints(Point)
 		{
@@ -334,6 +334,7 @@ function AddFactionAIs()
 				FactionSpawnPoints.AddItem(Point);
 			}
 		}
+		`log("SpawnPoints for faction:"@FactionSpawnPoints.Length);
 		FactionAIs.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
 		FactionAIs[FactionAIs.Length-1].Hivemind = Hivemind;
 		FactionAIs[FactionAIs.Length-1].Faction = FactionLocation(AssignedFaction);
@@ -419,6 +420,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	GridLocation.X = 8*(NumPlayers-1);
 	Root = AddPlaceable(TPRI.Tower, GameMods[0].ModPlaceables[0], None, GridLocation);
 	TPRI.Tower.Root = TowerBlockRoot(Root);
+	Hivemind.OnRootBlockSpawn(TowerBlockRoot(Root));
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
