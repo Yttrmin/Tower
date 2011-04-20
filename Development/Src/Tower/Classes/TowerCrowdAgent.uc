@@ -46,7 +46,7 @@ simulated event PostBeginPlay()
 //	Weapon.StartFire(0);
 }
 
-event Initialize(TowerFormationAI Squad);
+event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember);
 
 function TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {

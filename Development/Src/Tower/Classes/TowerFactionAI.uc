@@ -292,8 +292,10 @@ state Active
 		local int FormationCost;
 		local TowerFormationAI Squad;
 		local bool bAbort;
-		local TowerTargetable Targetable;
+		local TowerTargetable Targetable, PreviousTargetable;
 		FormationLocation = SpawnPoint.Location;
+		Squad = Spawn(class'TowerFormationAI');
+		Squad.SquadObjective = Hivemind.RootBlock;
 		// Handle when all points are occupied?
 		if(!bCoolDown && HasBudget(FormationCost))
 		{
@@ -308,14 +310,24 @@ state Active
 					}
 					else
 					{
-						Targetable.Initialize(Squad);
+						Targetable.Initialize(Squad, TowerEnemyPawn(PreviousTargetable));
+						if(i == 0)
+						{
+							Squad.SquadLeader = TowerEnemyController(TowerEnemyPawn(Targetable).Controller);
+						}
+						PreviousTargetable = Targetable;
 					}
 				}
 			}
 			if(!bAbort)
 			{
+				Squad.Initialized();
 				BeginCoolDown();
 				return true;
+			}
+			else
+			{
+				Squad.Destroy();
 			}
 		}
 		return false;
@@ -351,7 +363,7 @@ state CollectData extends Active
 	{
 		local int Budget;
 		local bool bDoneBudgeting;
-		local FormationSpawnInfo Formation;
+		local FormationSpawnInfo NewFormation;
 		local int FormationIndex;
 		Budget = TroopBudget/3;
 
@@ -362,10 +374,10 @@ state CollectData extends Active
 				bDoneBudgeting = true;
 			}
 			FormationIndex = Rand(Formations.Length);
-			Formation.SpawnPoint = GetSpawnPoint(FormationIndex);
-			Formation.Target = Hivemind.RootBlock;
-			Formation.FormationIndex = FormationIndex;
-			OrderQueue.AddItem(Formation);
+			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
+			NewFormation.Target = Hivemind.RootBlock;
+			NewFormation.FormationIndex = FormationIndex;
+			OrderQueue.AddItem(NewFormation);
 		}
 	}
 

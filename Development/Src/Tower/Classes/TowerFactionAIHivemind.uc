@@ -11,7 +11,11 @@ event Initialize()
 
 event OnRootBlockSpawn(TowerBlockRoot Root)
 {
-	RootBlock = Root.Spawn(class'TowerAIObjective',,, Root.Location);
+	local Vector NewLocation;
+	NewLocation = Root.Location;
+	NewLocation.X = -400;
+	//@TODO - Spawn this in the block, create points for people to actually run to.
+	RootBlock = Root.Spawn(class'TowerAIObjective',,, NewLocation);
 	RootBlock.Target = Root;
 }
 
