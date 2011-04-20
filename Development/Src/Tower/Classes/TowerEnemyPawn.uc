@@ -9,12 +9,24 @@ class TowerEnemyPawn extends TowerPawn
 var() const int Cost;
 var() editconst TowerFaction OwnerFaction;
 
-event Initialize(TowerFormationAI Squad)
+var protectedwrite TowerWeaponAttachment WeaponAttachment;
+
+event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 {
 	Super.PostBeginPlay();
 	Controller = Spawn(ControllerClass);
 	Controller.Possess(self, false);
 	TowerEnemyController(Controller).Squad = Squad;
+
+	Weapon = Spawn(class'Tower.TowerWeapon_Rifle', self);
+//	Weapon.Activate();
+	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);
+	WeaponAttachment.AttachTo(Self);
+
+	if(PreviousSquadMember != None)
+	{
+		TowerEnemyController(PreviousSquadMember.Controller).NextSquadMember = TowerEnemyController(Controller);
+	}
 }
 
 static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,

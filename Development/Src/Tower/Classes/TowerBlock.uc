@@ -301,6 +301,11 @@ simulated state Unstable
 		NewLocation.X = Location.X;
 		NewLocation.Y = Location.Y;
 		NewLocation.Z = Location.Z - (DropRate * DeltaTime);
+
+		/*SetCollision(false, false, true);
+		SetPhysics(PHYS_Falling);
+		Velocity.Z = 128;*/
+
 		SetLocation(NewLocation);
 	}
 	function bool CanDrop()
