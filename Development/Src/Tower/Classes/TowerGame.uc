@@ -50,7 +50,7 @@ event PostBeginPlay()
 	CrowdSpawner = new class'TowerCrowdSpawner';
 //	TowerGameViewportClient(class'Engine'.static.GetEngine().GameViewport).
 	class'Engine'.static.StopMovie(true);
-
+	`log(RTransform(Rot(0,16384,0), Rot(0,32768,0)));
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	`log("ZMod:"@ZMod@ZMod.ModName);
 //	ZMod.TestCallMe();

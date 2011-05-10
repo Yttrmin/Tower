@@ -1,6 +1,12 @@
-class TowerAIObjective extends UDKGameObjective;
+class TowerAIObjective extends UDKGameObjective
+	dependson(TowerGame);
 
 var TowerPlaceable Target;
+
+function TowerShootPoint GetShootPoint(FactionLocation Faction)
+{
+	return None;
+}
 
 DefaultProperties
 {
