@@ -64,7 +64,10 @@ event OnMouseClick(int Button)
 	{
 		TraceForBlock(Mouse, TracedPlaceable, HitNormal);
 		//@TODO - Ask to make sure they want to remove the block.
-		TowerPlayerController(PlayerOwner).RemovePlaceable(TracedPlaceable);
+		if(TracedPlaceable != None)
+		{
+			TowerPlayerController(PlayerOwner).RemovePlaceable(TracedPlaceable);
+		}
 	}
 }
 

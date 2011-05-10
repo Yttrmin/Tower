@@ -13,7 +13,7 @@ var protectedwrite TowerWeaponAttachment WeaponAttachment;
 
 event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 {
-	Super.PostBeginPlay();
+//	Super.PostBeginPlay();
 	Controller = Spawn(ControllerClass);
 	Controller.Possess(self, false);
 	TowerEnemyController(Controller).Squad = Squad;
@@ -22,7 +22,6 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 //	Weapon.Activate();
 	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);
 	WeaponAttachment.AttachTo(Self);
-
 	if(PreviousSquadMember != None)
 	{
 		TowerEnemyController(PreviousSquadMember.Controller).NextSquadMember = TowerEnemyController(Controller);
@@ -33,7 +32,7 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	TowerFaction NewOwningFaction)
 {
 	local TowerEnemyPawn Pawn;
-	Pawn = NewOwningFaction.Spawn(class'TowerEnemyPawn',,,SpawnLocation,,TowerEnemyPawn(TargetableArchetype));
+	Pawn = NewOwningFaction.Spawn(class'TowerEnemyPawn',,,SpawnLocation,,TowerEnemyPawn(TargetableArchetype), true);
 	if(Pawn != None)
 	{
 		Pawn.OwnerFaction = NewOwningFaction;
@@ -66,5 +65,7 @@ function TowerFaction GetOwningFaction();
 
 DefaultProperties
 {
+	bCanJump=false
+	bJumpCapable=false
 	ControllerClass=class'Tower.TowerEnemyController'
 }

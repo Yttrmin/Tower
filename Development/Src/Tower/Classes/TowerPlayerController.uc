@@ -321,6 +321,7 @@ function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModP
 	return Mod.ModPlaceables[ModPlaceableIndex];
 }
 
+/** Called from TowerHUD::OnMouseClick if a valid TowerPlaceable is selected for removal. */
 simulated function RemovePlaceable(TowerPlaceable Placeable)
 {
 	`log("RemovePlaceable:"@Placeable);
@@ -333,11 +334,6 @@ simulated function RemovePlaceable(TowerPlaceable Placeable)
 	else if(Placeable.IsA('TowerModule'))
 	{
 		RemoveModule(TowerModule(Placeable));
-	}
-	else
-	{
-		`log("Unknown Placeable!");
-		ScriptTrace();
 	}
 }
 

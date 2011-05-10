@@ -45,7 +45,9 @@ Begin:
 // Other squad members' state.
 state Following
 {
-
+Begin:
+	MoveToward(Marker, Squad.SquadObjective);
+	goto 'Begin';
 };
 
 event bool GeneratePathTo(Actor Goal, optional float WithinDistance, optional bool bAllowPartialPath)
