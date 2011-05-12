@@ -12,4 +12,9 @@ DefaultProperties
 {
 	bStatic=false
 	bNoDelete=false
+
+	Begin Object Class=StaticMeshComponent Name=MarkerMesh
+		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
+	End Object
+	Components.Add(MarkerMesh)
 }

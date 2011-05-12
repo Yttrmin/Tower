@@ -17,7 +17,6 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	Controller = Spawn(ControllerClass);
 	Controller.Possess(self, false);
 	TowerEnemyController(Controller).Squad = Squad;
-
 	Weapon = Spawn(class'Tower.TowerWeapon_Rifle', self);
 //	Weapon.Activate();
 	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);

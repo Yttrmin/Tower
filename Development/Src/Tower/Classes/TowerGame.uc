@@ -17,7 +17,6 @@ enum FactionLocation
 	FL_NegY
 };
 
-var array<Tower> PlayerTowers;
 var array<TowerFactionAI> FactionAIs;
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;

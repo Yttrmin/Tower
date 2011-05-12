@@ -16,12 +16,13 @@ auto state Idle
 state Leading
 {
 Begin:
-	`log("Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
+//	`log("Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
 		`log("Moving straight towards it!");
-		MoveToward(Squad.SquadObjective, Squad.SquadObjective);
+		MoveToward(Squad.SquadObjective, Squad.SquadObjective, 512);
+//		Pawn.Acceleration = Vect(0,0,0);
 	}
 	else if(GeneratePathTo(Squad.SquadObjective, 500))
 	{
@@ -40,6 +41,7 @@ Begin:
 		`log(Self@"can't path at all! Idling!");
 		GotoState('Idle');
 	}
+	goto 'Begin';
 };
 
 // Other squad members' state.
