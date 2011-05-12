@@ -1,9 +1,10 @@
 /**
 TowerFactionAI
 
-Controls the various factions, deciding on what troops and such to spawn, as well as where and when.
+Base class for controlling the various factions, deciding on what troops and such to spawn, as well as where and when.
 Each faction gets its own AI. Exist server-side only.
 Note anytime "Troops" is used it includes missiles and such, not just infantry.
+The interface of this class will be released for modding!
 */
 class TowerFactionAI extends TowerFaction 
 	ClassGroup(Tower)
@@ -130,7 +131,7 @@ struct Formation
 {
 	var() const array<TroopInfo> TroopInfo;
 	/** Name of this formation. Solely used for human identification. */
-	var() const editoronly name Name;
+	var() const /*editoronly*/ name Name;
 	var() const editoronly string Description;
 	var() const FormationUsage FormationUsageFlags;
 
@@ -225,12 +226,17 @@ event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 function BeginCoolDown()
 {
 	bCoolDown = true;
-	SetTimer(2, false, 'ResetCoolDown');
+	SetTimer(2, true, 'CooledDown');
 }
 
 function ResetCoolDown()
 {
 	bCoolDown = false;
+}
+
+event CooledDown()
+{
+	
 }
 
 auto state InActive
@@ -306,7 +312,8 @@ state Active
 		Squad = Spawn(class'TowerFormationAI');
 		Squad.SquadObjective = Hivemind.RootBlock;
 		// Handle when all points are occupied?
-		if(!bCoolDown && HasBudget(FormationCost))
+		`log("Spawning formation:"@Formations[Index].Name);
+		if(HasBudget(FormationCost))
 		{
 			LeaderIndex = SpawnFormationLeader(Squad, SpawnPoint, Index);
 			if(LeaderIndex == -1)
@@ -315,7 +322,7 @@ state Active
 				return false;
 			}
 			PreviousTargetable = TowerEnemyPawn(Squad.SquadLeader.Pawn);
-			for(i = 0; i < Formations[Index].TroopInfo.Length && !bAbort; i++)
+			for(i = 0; i < Formations[Index].TroopInfo.Length-1 && !bAbort; i++)
 			{
 				if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
 				{
@@ -337,7 +344,7 @@ state Active
 			if(!bAbort)
 			{
 				Squad.Initialized();
-				BeginCoolDown();
+				//BeginCoolDown();
 				return true;
 			}
 			else
@@ -364,7 +371,7 @@ state Active
 				`warn("Failed to spawn Leader!", Leader == None);
 				LeaderIndex = i;
 				Squad.SquadLeader = TowerEnemyController(TowerEnemyPawn(Leader).Controller);
-				`log("SL:"@Squad.SquadLeader@Leader);
+				//`log("SL:"@Squad.SquadLeader@Leader);
 				return i;
 			}
 		}
@@ -397,10 +404,16 @@ state CollectData extends Active
 	event BeginState(Name PreviousStateName)
 	{
 		QueueFormations();
+		BeginCoolDown();
 		SetTimer(45, false, 'DoneCollecting');
 	}
 
 	event Think()
+	{
+		
+	}
+
+	event CooledDown()
 	{
 		SpawnFromQueue();
 	}
@@ -431,7 +444,7 @@ state CollectData extends Active
 			{
 				bDoneBudgeting = true;
 			}
-			FormationIndex = Rand(Formations.Length);
+			FormationIndex = 0;
 			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
 			NewFormation.Target = Hivemind.RootBlock;
 			NewFormation.FormationIndex = FormationIndex;
@@ -554,8 +567,8 @@ function Vector GetSpawnLocation(const TroopInfo Troop, const out Vector OriginL
 			- Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
 		Coordinates.Y = (OriginLocation.Y + Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.X - OriginLocation.X)
 			+ Cos(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
-		`log("Rotation:"@OriginRotation.Yaw@"degrees:"@OriginRotation.Yaw*UnrRotToDeg@"sin:"@Sin(OriginRotation.Yaw*UnrRotToRad)
-			@"Cos:"@Cos(OriginRotation.Yaw*UnrRotToRad)@"coordinates:"@Coordinates@"OriginLoc"@OriginLocation@"OriginRot"@OriginRotation);
+		//`log("Rotation:"@OriginRotation.Yaw@"degrees:"@OriginRotation.Yaw*UnrRotToDeg@"sin:"@Sin(OriginRotation.Yaw*UnrRotToRad)
+		//	@"Cos:"@Cos(OriginRotation.Yaw*UnrRotToRad)@"coordinates:"@Coordinates@"OriginLoc"@OriginLocation@"OriginRot"@OriginRotation);
 		return Coordinates;
 	}
 
@@ -685,7 +698,7 @@ event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint S
 	if(HasBudget(Cost))
 	{
 		SpawnLocation = GetSpawnLocation(UnitTroopInfo, SpawnPoint.Location, SpawnPoint.Rotation);
-		`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
+	//	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
 		return UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
 	}
 	else
@@ -714,6 +727,7 @@ function CheckActivity()
 //@DELETEME
 event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 {
+	/*
 	local TowerSpawnPoint SpawnPoint;
 	local TowerKProjRock Proj;
 	local TowerBlock Block, TargetBlock;
@@ -729,8 +743,8 @@ event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
 	`log("SHOT PROJECTILE, COOL DOWN");
 	SetTimer(0.5, false, 'CooledDown');
 	bCoolDown = TRUE;
-	
-	return true;
+	*/
+	return false;
 }
 
 //@DELETEME
@@ -747,11 +761,6 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 
 event OnVIPDeath(TowerCrowdAgent VIP)
 {
-}
-
-event CooledDown()
-{
-	bCoolDown = FALSE;
 }
 
 function bool HasBudget(int Amount)
