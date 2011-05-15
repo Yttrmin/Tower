@@ -16,6 +16,7 @@ auto state Idle
 state Leading
 {
 Begin:
+	SetTimer(1, true, 'CheckFiring');
 //	`log("Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
@@ -48,9 +49,16 @@ Begin:
 state Following
 {
 Begin:
+	SetTimer(1, true, 'CheckFiring');
+	Pawn.SetPhysics(PHYS_Walking);
 	MoveToward(Marker, Squad.SquadObjective);
 	goto 'Begin';
 };
+
+event CheckFiring()
+{
+	Pawn.BotFire(false);
+}
 
 event bool GeneratePathTo(Actor Goal, optional float WithinDistance, optional bool bAllowPartialPath)
 {
