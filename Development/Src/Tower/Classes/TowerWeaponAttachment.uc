@@ -40,7 +40,6 @@ DefaultProperties
 //		Animations=MeshSequenceA
 		CastShadow=true
 		bCastDynamicShadow=true
-		MotionBlurScale=0.0
 		bAllowAmbientOcclusion=false
 		bPerBoneMotionBlur=true
 	End Object

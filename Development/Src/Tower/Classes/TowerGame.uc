@@ -404,7 +404,6 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
 	local TowerPlaceable Root;
-	local TowerBlockRoot BlockRoot;
 	local IVector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	//@BUG

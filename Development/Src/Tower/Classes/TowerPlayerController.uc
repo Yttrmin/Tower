@@ -269,7 +269,6 @@ reliable server function ServerSendRemoveTicket(RemoveTicket Ticket)
 simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local Vector SpawnLocation;
-	local TowerModule Module;
 	local TowerPlaceable PlaceableModule;
 	local Vector VectorGridLocation;
 	VectorGridLocation = ToVect(GridLocation);

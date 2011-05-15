@@ -322,9 +322,9 @@ state Active
 				return false;
 			}
 			PreviousTargetable = TowerEnemyPawn(Squad.SquadLeader.Pawn);
-			for(i = 0; i < Formations[Index].TroopInfo.Length-1 && !bAbort; i++)
+			for(i = 0; i < Formations[Index].TroopInfo.Length && !bAbort; i++)
 			{
-				if(Formations[Index].TroopInfo[i].Type == TT_Infantry)
+				if(!Formations[Index].TroopInfo[i].TroopBehaviorFlags.bLeader && Formations[Index].TroopInfo[i].Type == TT_Infantry)
 				{
 					Targetable = SpawnUnit(UnitList.InfantryArchetypes[0], SpawnPoint, Formations[Index].TroopInfo[i]);
 					if(Targetable == None)
@@ -444,7 +444,7 @@ state CollectData extends Active
 			{
 				bDoneBudgeting = true;
 			}
-			FormationIndex = 0;
+			FormationIndex = 2;
 			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
 			NewFormation.Target = Hivemind.RootBlock;
 			NewFormation.FormationIndex = FormationIndex;

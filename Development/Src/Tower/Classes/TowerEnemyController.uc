@@ -20,7 +20,7 @@ Begin:
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
-		`log("Moving straight towards it!");
+//		`log("Moving straight towards it!");
 		MoveToward(Squad.SquadObjective, Squad.SquadObjective, 512);
 //		Pawn.Acceleration = Vect(0,0,0);
 	}
