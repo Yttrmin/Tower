@@ -219,6 +219,21 @@ exec function DebugTestManyBlocks(bool bAsComponents, optional bool bUseAAMesh)
 	}
 }
 
+//@DEBUG
+// 
+exec function DebugMarkerUnitDistance()
+{
+	local TowerFormationAI Formation;
+	local TowerEnemyController Unit;
+	foreach DynamicActors(class'TowerFormationAI', Formation)
+	{
+		for(Unit = Formation.SquadLeader.NextSquadMember; Unit != None; Unit = Unit.NextSquadMember)
+		{
+			`log("Formation:"$Formation@"Unit:"$Unit@"is"@VSize(Unit.Location - Unit.Marker.Location)@"units away from its marker.");
+		}
+	}
+}
+
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local AddTicket Ticket;

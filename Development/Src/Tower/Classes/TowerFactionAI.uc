@@ -399,159 +399,6 @@ state Active
 	}
 }
 
-state CollectData extends Active
-{
-	event BeginState(Name PreviousStateName)
-	{
-		QueueFormations();
-		BeginCoolDown();
-		SetTimer(45, false, 'DoneCollecting');
-	}
-
-	event Think()
-	{
-		
-	}
-
-	event CooledDown()
-	{
-		SpawnFromQueue();
-	}
-
-	function SpawnFromQueue()
-	{
-		if(OrderQueue.Length > 0)
-		{
-			if(SpawnFormation(OrderQueue[0].FormationIndex, OrderQueue[0].SpawnPoint, OrderQueue[0].Target))
-			{
-				OrderQueue.Remove(0, 1);
-			}
-
-		}
-	}
-
-	function QueueFormations()
-	{
-		local int Budget;
-		local bool bDoneBudgeting;
-		local FormationSpawnInfo NewFormation;
-		local int FormationIndex;
-		Budget = TroopBudget/3;
-
-		while(Budget > 0 && !bDoneBudgeting)
-		{
-			if(OrderQueue.Length > 15)
-			{
-				bDoneBudgeting = true;
-			}
-			FormationIndex = 2;
-			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
-			NewFormation.Target = Hivemind.RootBlock;
-			NewFormation.FormationIndex = FormationIndex;
-			OrderQueue.AddItem(NewFormation);
-		}
-	}
-
-	function TowerSpawnPoint GetSpawnPoint(int i)
-	{
-		local TowerSpawnPoint Point;
-		local bool bFailed;
-		local array<TowerSpawnPoint> PotentialPoints;
-		foreach SpawnPoints(Point)
-		{
-			if(Formations[i].FormationUsageFlags.bHasInfantry == true)
-			{
-				bFailed = !Point.bCanSpawnInfantry;
-			}
-			if(Formations[i].FormationUsageFlags.bHasVehicles == true && !bFailed)
-			{
-				bFailed = !Point.bCanSpawnVehicle;
-			}
-			if(!bFailed)
-			{
-				PotentialPoints.AddItem(Point);
-			}
-		}
-		return PotentialPoints[Rand(PotentialPoints.Length-1)];
-	}
-
-	function DoneCollecting()
-	{
-		local PlaceableTargetInfo Info;
-		local int i;
-		// Sort by most killed and by type.
-		Killers.sort(SortKillers);
-		for(i = 0; i < Killers.Length; i++)
-		{
-			CreatePlaceableTargetInfo(Killers[i], Info);
-			Targets.AddItem(Info);
-		}
-		GotoState('Counter');
-	}
-
-	function CreatePlaceableTargetInfo(PlaceableKillInfo KillInfo, out PlaceableTargetInfo TargetInfo)
-	{
-		TargetInfo.Placeable = KillInfo.Placeable;
-		TargetInfo.ArchetypeIndex = Hivemind.Placeables.Find('PlaceableArchetype', KillInfo.Placeable.ObjectArchetype);
-		if(TargetInfo.ArchetypeIndex == -1)
-		{
-			TargetInfo.ArchetypeIndex = AddPlaceableInfoFromKillInfo(KillInfo);
-		}
-	}
-
-	function int AddPlaceableInfoFromKillInfo(PlaceableKillInfo Info)
-	{
-		local PlaceableInfo NewInfo;
-		NewInfo.PlaceableArchetype = Info.Placeable.ObjectArchetype;
-		// Assign flags!
-		Hivemind.Placeables.AddItem(NewInfo);
-		return Hivemind.Placeables.Length-1;
-	}
-
-	function int SortKillers(out PlaceableKillInfo P1, out PlaceableKillInfo P2)
-	{
-		local int P1Count, P2Count;
-		P1Count = P1.InfantryKillCount + P1.ProjectileKillCount + P1.VehicleKillCount;
-		P2Count = P2.InfantryKillCount + P2.ProjectileKillCount + P2.VehicleKillCount;
-		if(P1Count > P2Count)
-		{
-			return 1;
-		}
-		else if(P1Count < P2Count)
-		{
-			return -1;
-		}
-		else
-		{
-			return 0;
-		}
-	}
-
-	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
-	{
-		local int Index;
-		if(TargetableKiller != None)
-		{
-		//	Index = Killers.find('PlaceableArchetype', Targetable
-		}
-		else if(PlaceableKiller != None)
-		{
-			Index = Killers.find('Placeable', PlaceableKiller);
-			if(Index != -1)
-			{
-				AppendToKillersArray(Index, Targetable);
-			}
-			else
-			{
-				Killers.Add(1);
-				Index = Killers.Length-1;
-				Killers[Index].Placeable = PlaceableKiller;
-				AppendToKillersArray(Index, Targetable);
-			}
-		}
-	}
-}
-
 function Vector GetSpawnLocation(const TroopInfo Troop, const out Vector OriginLocation, const out Rotator OriginRotation)
 	{
 		/*
@@ -587,12 +434,6 @@ function AppendToKillersArray(int Index, TowerTargetable KilledTargetable)
 		Killers[Index].ProjectileKillCount++;
 	}
 }
-
-state Counter extends Active
-{
-
-}
-
 
 event PostBeginPlay()
 {
@@ -675,15 +516,27 @@ function GetNewTarget()
 	}
 }
 
-function TowerSpawnPoint GetSpawnPoint()
+final function TowerSpawnPoint GetSpawnPoint(int FormationIndex)
 {
-	local TowerSpawnPoint SpawnPoint;
-	//@TODO - Actually do.
-	/*foreach TowerGame(WorldInfo.Game).ProjectilePoints(SpawnPoint)
+	local TowerSpawnPoint Point;
+	local bool bFailed;
+	local array<TowerSpawnPoint> PotentialPoints;
+	foreach SpawnPoints(Point)
 	{
-		return SpawnPoint;
-	}*/
-	return None;
+		if(Formations[FormationIndex].FormationUsageFlags.bHasInfantry == true)
+		{
+			bFailed = !Point.bCanSpawnInfantry;
+		}
+		if(Formations[FormationIndex].FormationUsageFlags.bHasVehicles == true && !bFailed)
+		{
+			bFailed = !Point.bCanSpawnVehicle;
+		}
+		if(!bFailed)
+		{
+			PotentialPoints.AddItem(Point);
+		}
+	}
+	return PotentialPoints[Rand(PotentialPoints.Length-1)];
 }
 
 event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint SpawnPoint, const TroopInfo UnitTroopInfo)

@@ -25,7 +25,7 @@ simulated function Projectile ProjectileFire()
 		AimDir = Vector(GetAdjustedAim( Owner.Location ));
 
 		// this is the location where the projectile is spawned.
-		TowerCrowdAgent(Owner).WeaponAttachment.Mesh.GetSocketWorldLocationAndRotation('MussleFlashSocket', RealStartLoc);
+		TowerEnemyPawn(Owner).WeaponAttachment.Mesh.GetSocketWorldLocationAndRotation('MussleFlashSocket', RealStartLoc);
 		//RealStartLoc = Owner.Location;//GetPhysicalFireStartLoc(AimDir);
 
 		if( StartTrace != RealStartLoc )
