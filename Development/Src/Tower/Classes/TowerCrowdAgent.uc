@@ -209,7 +209,6 @@ DefaultProperties
 	End Object
 	
 	RotateToTargetSpeed=60000.0
-	FollowPathStrength=600.0
 	MaxWalkingSpeed=200.0
 
 	bUpdateSimulatedPosition=false
