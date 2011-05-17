@@ -21,13 +21,13 @@ simulated function Projectile ProjectileFire()
 	if( Role == ROLE_Authority )
 	{
 		// This is where we would start an instant trace. (what CalcWeaponFire uses)
-//		StartTrace = Owner.Location;//Vect(0,0,0);//Instigator.GetWeaponStartTraceLocation();
-		AimDir = Vector(GetAdjustedAim( Owner.Location ));
+		StartTrace = TowerEnemyPawn(Owner).GetWeaponStartTraceLocation();//Owner.Location;//Vect(0,0,0);//Instigator.GetWeaponStartTraceLocation();
+		AimDir = Vector(Instigator.Rotation);//Vector(GetAdjustedAim( StartTrace ));
 
 		// this is the location where the projectile is spawned.
 		TowerEnemyPawn(Owner).WeaponAttachment.Mesh.GetSocketWorldLocationAndRotation('MussleFlashSocket', RealStartLoc);
-		//RealStartLoc = Owner.Location;//GetPhysicalFireStartLoc(AimDir);
-
+		//RealStartLoc = GetPhysicalFireStartLoc(AimDir);
+		// Instigator exists!
 		if( StartTrace != RealStartLoc )
 		{
 			// if projectile is spawned at different location of crosshair,
@@ -38,7 +38,6 @@ simulated function Projectile ProjectileFire()
 			// Then we realign projectile aim direction to match where the crosshair did hit.
 			AimDir = Normal(TestImpact.HitLocation - RealStartLoc);
 		}
-
 		// Spawn projectile
 		SpawnedProjectile = Spawn(GetProjectileClass(), Self,, RealStartLoc);
 		if( SpawnedProjectile != None && !SpawnedProjectile.bDeleteMe )
@@ -72,6 +71,12 @@ simulated function StartFire(byte FireModeNum)
 		// Start fire locally
 		BeginFire(FireModeNum);
 	}
+}
+
+function HolderDied()
+{
+	`log("Holder died!");
+	Super.HolderDied();
 }
 
 DefaultProperties

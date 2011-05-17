@@ -107,7 +107,7 @@ exec function ClickUp(int ButtonID)
 
 exec function ToggleBuildMenu(bool Toggle)
 {
-	`log("TOGGLEBUILDMENU:"@Toggle);
+//	`log("TOGGLEBUILDMENU:"@Toggle);
 	if(Toggle)
 	{
 		TowerHUD(MyHUD).ExpandBuildMenu();

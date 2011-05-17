@@ -15,6 +15,9 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	placeable
 	abstract;
 
+var() int Health;
+var() int HealthMax;
+
 var const int DropRate;
 var int BlocksFallen;
 var int StartZ;
@@ -233,6 +236,33 @@ simulated function OnEnterRange(TowerTargetable Targetable)
 
 }
 
+/** apply some amount of damage to this actor
+ * @param DamageAmount the base damage to apply
+ * @param EventInstigator the Controller responsible for the damage
+ * @param HitLocation world location where the hit occurred
+ * @param Momentum force caused by this hit
+ * @param DamageType class describing the damage that was done
+ * @param HitInfo additional info about where the hit occurred
+ * @param DamageCauser the Actor that directly caused the damage (i.e. the Projectile that exploded, the Weapon that fired, etc)
+ */
+event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
+{
+	`log("Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
+	Max(0, Damage);
+	Super.TakeDamage(Damage, EventInstigator, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
+	Health -= Damage;
+	if(Health <= 0)
+	{
+		Died(EventInstigator, DamageType, HitLocation);
+	}
+}
+
+/** Called when this block reaches 0 health. */
+event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
+{
+	OwnerPRI.Tower.RemovePlaceable(self);
+}
+
 auto simulated state Stable
 {
 	function StopFall()
@@ -385,6 +415,8 @@ DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
 	bAddToPlaceablesList=TRUE
+	Health=100
+	HealthMax=100
 
 	CustomTimeDilation=1
 

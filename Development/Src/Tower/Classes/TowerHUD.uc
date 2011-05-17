@@ -27,14 +27,55 @@ event PostBeginPlay()
 	}
 }
 
+/**
+ * The Main Draw loop for the hud.  Gets called before any messaging.  Should be subclassed
+ */
+function DrawHUD()
+{
+	local int i;
+	local vector ViewPoint;
+	local rotator ViewRotation;
+
+	local Vector HitNormal;
+	local TowerBlock IterateBlock;
+	local TowerPlaceable TracedPlaceable;
+	local Tower Tower;
+
+	TraceForBlock(TracedPlaceable, HitNormal);
+	Tower = TowerPlayerController(PlayerOwner).GetTower();
+	if(Tower != None && Tower.NodeTree != None && Tower.NodeTree.bDebugDrawHierarchy)
+	{
+		Tower.NodeTree.
+		DrawDebugRelationship(Canvas, Tower.NodeTree.Root);
+		foreach Tower.NodeTree.OrphanNodeRoots(IterateBlock)
+		{
+			Tower.NodeTree.
+			DrawDebugRelationship(Canvas, IterateBlock);
+		}
+	}
+	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedPlaceable || HUDMovie.bInMenu))
+	{
+		LastHighlightedBlock.UnHighlight();
+	}
+	if(TracedPlaceable != None && !HUDMovie.bInMenu)
+	{
+		TracedPlaceable.Highlight();
+		LastHighlightedBlock = TracedPlaceable;
+	}
+	
+	PlayerOwner.GetPlayerViewpoint(ViewPoint, ViewRotation);
+	for(i = 0; i < PostRenderedActors.Length; i++)
+	{
+		PostRenderedActors[i].NativePostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
+	}
+}
+
 event OnMouseClick(int Button)
 {
-	local Vector2D Mouse;
 	local TowerPlaceable TracedPlaceable;
 	local Vector HitNormal;
 	local IVector FinalGridLocation;
 	// Left mouse button.
-	HUDMovie.GetMouseCoordinates(Mouse, true);
 	if(Button == 0)
 	{
 		if(HUDMovie.bInMenu)
@@ -43,7 +84,7 @@ event OnMouseClick(int Button)
 		}
 		else
 		{
-			TraceForBlock(Mouse, TracedPlaceable, HitNormal);
+			TraceForBlock(TracedPlaceable, HitNormal);
 			if(TracedPlaceable != None)
 			{
 				FinalGridLocation = TracedPlaceable.GetGridLocation() + HitNormal;
@@ -62,7 +103,7 @@ event OnMouseClick(int Button)
 	// Right mouse button.
 	else if(Button == 1)
 	{
-		TraceForBlock(Mouse, TracedPlaceable, HitNormal);
+		TraceForBlock(TracedPlaceable, HitNormal);
 		//@TODO - Ask to make sure they want to remove the block.
 		if(TracedPlaceable != None)
 		{
@@ -156,71 +197,19 @@ function IgnoreMouseMovement()
 	TowerPlayerInput(TowerPlayerController(Owner).PlayerInput).OnMouseMove = None;
 }
 
-/** Only time where Canvas is valid. */
-event PostRender()
-{
-	// Variables for calling NativePostRenderFor().
-	local int i;
-	local Vector CamLocation;
-	local Rotator CamRotation;
-
-	local Vector HitNormal;
-	local Vector2D Mouse;
-	local TowerBlock IterateBlock;
-	local TowerPlaceable TracedPlaceable;
-	Super.PostRender();
-	HUDMovie.GetMouseCoordinates(Mouse, false);
-	TraceForBlock(Mouse, TracedPlaceable, HitNormal);
-	if(TowerPlayerController(PlayerOwner).GetTower() != None &&
-		TowerPlayerController(PlayerOwner).GetTower().NodeTree != None &&
-		TowerPlayerController(PlayerOwner).GetTower().NodeTree.bDebugDrawHierarchy)
-	{
-		TowerPlayerController(PlayerOwner).GetTower().NodeTree.
-		DrawDebugRelationship(Canvas, TowerPlayerController(PlayerOwner).GetTower().NodeTree.Root);
-		foreach TowerPlayerController(PlayerOwner).GetTower().NodeTree.OrphanNodeRoots(IterateBlock)
-		{
-			TowerPlayerController(PlayerOwner).GetTower().NodeTree.
-			DrawDebugRelationship(Canvas, IterateBlock);
-		}
-	}
-	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedPlaceable || HUDMovie.bInMenu))
-	{
-		LastHighlightedBlock.UnHighlight();
-	}
-	if(TracedPlaceable != None && !HUDMovie.bInMenu)
-	{
-		TracedPlaceable.Highlight();
-		LastHighlightedBlock = TracedPlaceable;
-	}
-
-	PlayerOwner.GetPlayerViewpoint(CamLocation, CamRotation);
-	for(i = 0; i < PostRenderedActors.Length; i++)
-	{
-		PostRenderedActors[i].NativePostRenderFor(PlayerOwner, Canvas, CamLocation, Vector(CamRotation));
-	}
-}
-
 /** TraceForPlaceable? */
-function TraceForBlock(out Vector2D Mouse, out TowerPlaceable Block, out Vector HitNormal)
+function TraceForBlock(out TowerPlaceable Block, out Vector HitNormal)
 {
 	local Vector WorldOrigin, WorldDir;
 	local Vector HitLocation;
 	local TraceHitInfo HitInfo;
-	if(Canvas != None)
-	{
-//		HUDMovie.GetMouseCoordinates(Mouse, false);
-		Canvas.DeProject(Mouse, WorldOrigin, WorldDir);
-	}
-	else
-	{
-//		HUDMovie.GetMouseCoordinates(Mouse, true);
-		LocalPlayer(PlayerOwner.Player).DeProject(Mouse, WorldOrigin, WorldDir);
-	}
+	WorldOrigin = PlayerOwner.Location;
+	WorldDir = Vector(PlayerOwner.Rotation);
 	/*`log(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
-		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);
-	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);*/
+		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo));
+//	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
 	if(TowerPlaceable(HitInfo.HitComponent) != None)
 	{
 		Block = HitInfo.HitComponent;

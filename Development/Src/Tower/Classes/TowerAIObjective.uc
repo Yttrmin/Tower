@@ -1,11 +1,27 @@
+/**
+TowerAIObjective
+
+Used to mark a TowerPlaceable target for AI, and stores points where units should go to get a good shot at the target.
+*/
 class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);
 
-var TowerPlaceable Target;
+var privatewrite TowerPlaceable Target;
 
-function TowerShootPoint GetShootPoint(FactionLocation Faction)
+final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
 	return None;
+}
+
+// Convenience function to work around some potential bug with interface casting.
+final function Actor GetTargetActor()
+{
+	return Actor(Target);
+}
+
+final function SetTarget(TowerPlaceable NewTarget)
+{
+	Target = NewTarget;
 }
 
 DefaultProperties

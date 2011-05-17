@@ -22,7 +22,7 @@ Begin:
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
 //		`log("Moving straight towards it!");
-		MoveToward(Squad.SquadObjective, Squad.SquadObjective, 512);
+		MoveToward(Squad.SquadObjective, GetSquadObjective().GetTargetActor(), 512);
 //		Pawn.Acceleration = Vect(0,0,0);
 	}
 	else if(GeneratePathTo(Squad.SquadObjective, 500))
@@ -51,7 +51,7 @@ state Following
 Begin:
 	SetTimer(1, true, 'CheckFiring');
 	Pawn.SetPhysics(PHYS_Walking);
-	MoveToward(Marker, Squad.SquadObjective);
+	MoveToward(Marker, GetSquadObjective().GetTargetActor());
 	goto 'Begin';
 };
 
@@ -72,6 +72,11 @@ event bool GeneratePathTo(Actor Goal, optional float WithinDistance, optional bo
 	class'NavMeshPath_Toward'.static.TowardGoal( NavigationHandle, Goal );
 	class'NavMeshGoal_At'.static.AtActor( NavigationHandle, Goal, WithinDistance, bAllowPartialPath );
 	return NavigationHandle.FindPath();
+}
+
+final function TowerAIObjective GetSquadObjective()
+{
+	return TowerAIObjective(Squad.SquadObjective);
 }
 
 function SetSquad(TowerFormationAI NewSquad)
