@@ -41,8 +41,8 @@ event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLoca
 	Targetable = TowerTargetable(Other);
 	if(Targetable != None)
 	{
-		`log("RadarVolume touched!"@"Infantry:"@Targetable.IsInfantry()@"Projectile:"@Targetable.IsProjectile()
-			@"Vehicle:"@Targetable.IsVehicle());
+//		`log("RadarVolume touched!"@"Infantry:"@Targetable.IsInfantry()@"Projectile:"@Targetable.IsProjectile()
+//			@"Vehicle:"@Targetable.IsVehicle());
 		if(Targetable.IsInfantry())
 		{
 			ExecuteCallbacks(TT_Infantry, Targetable);

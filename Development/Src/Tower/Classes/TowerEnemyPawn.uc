@@ -27,6 +27,19 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	}
 }
 
+function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
+{
+	local bool Value;
+	`log(Self@"died. He owned"@Weapon);
+	Value = Super.Died(Killer, DamageType, HitLocation);
+	Destroy();
+	if(Weapon != None)
+	{
+		Weapon.Destroy();
+	}
+	return Value;
+}
+
 static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,
 	TowerFaction NewOwningFaction)
 {
