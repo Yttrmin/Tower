@@ -9,18 +9,7 @@ var protectedwrite SkeletalMeshComponent Mesh;
  */
 simulated function AttachTo(Actor OwnerPawn)
 {
-	local TowerCrowdAgent OwnerAgent;
-	local TowerPawn OwnerTowerPawn;
-	if(TowerCrowdAgent(OwnerPawn) != None)
-	{
-		OwnerAgent = TowerCrowdAgent(OwnerPawn);
-		OwnerAgent.SkeletalMeshComponent.AttachComponentToSocket(Mesh, OwnerAgent.WeaponSocket);
-	}
-	else if(TowerPawn(OwnerPawn) != None)
-	{
-		OwnerTowerPawn = TowerPawn(OwnerPawn);
-		OwnerTowerPawn.Mesh.AttachComponentToSocket(Mesh, OwnerTowerPawn.WeaponSocket);
-	}
+	TowerPawn(OwnerPawn).Mesh.AttachComponentToSocket(Mesh, TowerPawn(OwnerPawn).WeaponSocket);
 }
 
 DefaultProperties

@@ -104,8 +104,9 @@ event OnMouseClick(int Button)
 	else if(Button == 1)
 	{
 		TraceForBlock(TracedPlaceable, HitNormal);
-		//@TODO - Ask to make sure they want to remove the block.
-		if(TracedPlaceable != None)
+		//@TODO - Ask to make sure they want to remove the block?
+		// Don't let the player remove the root block.
+		if(TracedPlaceable != None && TowerBlockRoot(TracedPlaceable) == None)
 		{
 			TowerPlayerController(PlayerOwner).RemovePlaceable(TracedPlaceable);
 		}

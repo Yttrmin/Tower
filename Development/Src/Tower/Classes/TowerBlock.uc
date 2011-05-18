@@ -108,21 +108,25 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 {
 	local TowerBlock Block;
 	local IVector ParentDir;
-	if(Parent != None)
+	// Only let stable blocks add stuff to them, otherwise things get wonky.
+	if(Parent.IsInState('Stable') || PlaceableTemplate.class == class'TowerBlockRoot')
 	{
-		// Get PRI somewhere else since it might be none.
-		Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
-		ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
-		Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
+		if(Parent != None)
+		{
+			// Get PRI somewhere else since it might be none.
+			Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
+			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
+			Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
+		}
+		else
+		{
+			`assert(OwnerTPRI != None);
+			Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
+			ParentDir = IVect(0,0,0);
+			Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
+		}
+		NodeTree.AddNode(Block, Parent);
 	}
-	else
-	{
-		`assert(OwnerTPRI != None);
-		Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
-		ParentDir = IVect(0,0,0);
-		Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
-	}
-	NodeTree.AddNode(Block, Parent);
 	return Block;
 }
 
@@ -198,9 +202,14 @@ function SetFullLocation(Vector NewLocation, bool bRelative,
 
 final function SetGridLocation()
 {
-	GridLocation.X = int(Location.X) / 256;
-	GridLocation.Y = int(Location.Y) / 256;
-	GridLocation.Z = int(Location.Z) / 256;
+	local Vector NewLocation;
+	GridLocation.X = Round(int(Location.X) / 256);
+	GridLocation.Y = Round(int(Location.Y) / 256);
+	GridLocation.Z = Round(int(Location.Z) / 256);
+	NewLocation.X = 256 * (GridLocation.X - TowerBlock(Base).GridLocation.X);
+	NewLocation.Y = 256 * (GridLocation.Y - TowerBlock(Base).GridLocation.Y);
+	NewLocation.Z = 256 * (GridLocation.Z - TowerBlock(Base).GridLocation.Z);
+	SetRelativeLocation(NewLocation);
 }
 
 final simulated function Highlight()
@@ -257,7 +266,8 @@ event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vec
 	}
 }
 
-/** Called when this block reaches 0 health. */
+/** Called when this block reaches 0 health. Just tells the Tower to remove it.
+Should be overridden in a subclass to add any effects and the Super version called to remove it. */
 event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 {
 	OwnerPRI.Tower.RemovePlaceable(self);
@@ -267,14 +277,6 @@ auto simulated state Stable
 {
 	function StopFall()
 	{
-		local Vector NewLocation;
-		// Can't use SetLocation without breaking base.
-		NewLocation = Location;
-		NewLocation.X -= Base.Location.X;
-		NewLocation.Y -= Base.Location.Y;
-		NewLocation.Z = (StartZ - (256*BlocksFallen)) - Base.Location.Z ;
-		SetRelativeLocation(NewLocation);
-		SetGridLocation();
 		ClearTimer('DroppedSpace');
 	}
 
@@ -301,7 +303,7 @@ simulated state Unstable
 		BlocksFallen++;
 		// SetRelativeLocation here to be sure?
 		//SetFullLocation(Location, false);
-		SetGridLocation();
+//		SetGridLocation();
 		`log("GridLocation Z:"@GridLocation.Z);
 		if(GridLocation.Z == 0)
 		{
@@ -319,10 +321,18 @@ simulated state Unstable
 	}
 	event BeginState(name PreviousStateName)
 	{
-		bReplicateMovement = false;
-		BlocksFallen = 0;
-		StartZ = Location.Z;
-		SetTimer(TimeToDrop(), true, 'DroppedSpace');
+		if(GridLocation.Z == 0)
+		{
+			GotoState('InActive');
+			bFalling = false;
+		}
+		else
+		{
+			bReplicateMovement = false;
+			BlocksFallen = 0;
+			StartZ = Location.Z;
+			SetTimer(TimeToDrop(), true, 'DroppedSpace');
+		}
 	}
 	simulated event Tick(float DeltaTime)
 	{
@@ -342,6 +352,11 @@ simulated state Unstable
 	{
 		return true;
 	}
+};
+
+simulated state UnstableParent
+{
+
 };
 
 simulated state InActive
@@ -390,7 +405,13 @@ event OrphanedParent()
 /** Called on TowerBlocks that are orphans but not the root node. */
 event OrphanedChild()
 {
-
+	local TowerBlock Node;
+	`log("OrphanedChild");
+	GotoState('UnstableParent');
+	foreach BasedActors(class'TowerBlock', Node)
+	{
+		Node.OrphanedChild();
+	}
 }
 
 //@TODO - Convert from recursion to iteration!
@@ -399,6 +420,7 @@ event Adopted()
 	local TowerBlock Node;
 	`log("ADOPTED:"@Self);
 	SetGridLocation();
+	GotoState('Stable');
 	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.Adopted();

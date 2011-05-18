@@ -162,12 +162,6 @@ exec function TestStaticSaveLoadGame(String FileName)
 	class'TowerSaveSystem'.static.LoadStaticSave(FileName, self);
 }
 
-exec function RequestUpdateTime()
-{
-	`log("REQUESTED TIME PLEASE ACTUALLY WORK PLEASE!"@WorldInfo.GRI);
-	TowerPlayerReplicationInfo(PlayerReplicationInfo).RequestUpdatedTime();
-}
-
 // Only thing that really matters is lighting! (hopefully!)
 //@TODO - But what about when blocks are falling?!
 /** Creates a bunch of blocks and modules (as components) to test how many MeshComponents we can handle! */
@@ -231,6 +225,16 @@ exec function DebugMarkerUnitDistance()
 		{
 			`log("Formation:"$Formation@"Unit:"$Unit@"is"@VSize(Unit.Location - Unit.Marker.Location)@"units away from its marker.");
 		}
+	}
+}
+
+//@DEBUG
+exec function DebugKillAllLeaders()
+{
+	local TowerFormationAI Formation;
+	foreach DynamicActors(class'TowerFormationAI', Formation)
+	{
+		Formation.SquadLeader.Pawn.Died(None, class'DmgType_Telefragged', Vect(0,0,0));
 	}
 }
 

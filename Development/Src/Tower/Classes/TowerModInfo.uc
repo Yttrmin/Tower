@@ -31,12 +31,6 @@ replication
 		NextMod;
 }
 
-simulated event PostBeginPlay()
-{
-	Super.PostBeginPlay();
-	`log("MOD LOADED OR SOMETHING SIMULATED?"@SELF);
-}
-
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
@@ -71,10 +65,7 @@ final function AddMod(TowerModInfo Mod)
 	ModList.NextMod = Mod;
 }
 
-final function TestCallMe()
-{
-	`log("I WAS CALLLLLLLLLLLLLLLLLLLLLED"@self@bTest@!bTest);
-}
+function Test();
 
 DefaultProperties
 {

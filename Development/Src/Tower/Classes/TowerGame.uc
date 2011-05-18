@@ -70,22 +70,6 @@ event PreExit()
 	`log("Shutting down!");
 }
 
-function OnAuthorizationComplete(bool bSucceeded)
-{
-	`log("Facebook Authorization Complete. Result:"@bSucceeded);
-	class'Engine'.static.GetFacebookIntegration().FacebookRequest("me/friends");
-}
-
-function OnFacebookRequestComplete(string JsonString)
-{
-	`log("OnFacebookRequestComplete:"@JSonString);
-}
-
-function OnWebRequestComplete(string Response)
-{
-	`log("OnWebRequestComplete:"@Response);
-}
-
 event InitGame(string Options, out string ErrorMessage)
 {
 	Super.InitGame(Options, ErrorMessage);
@@ -167,6 +151,7 @@ function CheckForMods()
 //		`log("MOD CLASS:"@ModInfo);
 //		TMI = Spawn(ModInfo);
 		TMI.PreInitialize(i);
+		TMI.Test();
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
 		GameMods.AddItem(TMI);
 		if(i == 0)
@@ -272,11 +257,6 @@ exec function DebugGetFactionLocation(Vector Point)
 	`log(GetEnum(Enum'FactionLocation', GetPointFactionLocation(Point)));
 }
 
-exec function LaunchMissile()
-{
-
-}
-
 exec function StartGame()
 {
 	StartMatch();
@@ -366,8 +346,6 @@ function StartNextRound()
 function SetCoolDownTimer(float NewTime)
 {
 	SetTimer(NewTime, false, 'CoolDownTimerExpired');
-	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = NewTime;
-	TowerGameReplicationInfo(WorldInfo.GRI).SetGameTimer();
 }
 
 event CoolDownTimerExpired()
@@ -380,8 +358,6 @@ function SetGameTimer(float NewTime)
 {
 	`log("Started"@NewTime@"second round.");
 	SetTimer(NewTime, false, 'GameTimerExpired');
-	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = NewTime;
-	TowerGameReplicationInfo(WorldInfo.GRI).SetGameTimer();
 }
 
 event GameTimerExpired()

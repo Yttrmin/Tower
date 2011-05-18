@@ -1,19 +1,20 @@
 class TowerCrowdAgent extends GameCrowdAgentSkeletal
-	implements(TowerTargetable)
+	deprecated
+//	implements(TowerTargetable)
 	HideCategories(Physics,Debug);
 
 //var() array<class<TowerWeapon> > AvailableWeapons;
-
+/*
 var protected TowerWeapon Weapon;
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
-var() protectedwrite const name WeaponSocket;
+var() protectedwrite const name WeaponSocket;*/
 /** If TRUE, this agent will check every 0.5 seconds if it's in TowerMapInfo's RadarVolume, and notify the Root block when it occurs.
 If FALSE, this agent will notify the Root block that it's in range upon spawning, regardless of if it actually is. 
 If you're sure this agent will always be spawned in the RadarVolume (or don't care if it's detected outside it), this should be FALSE. 
 bNotifyInRange must be TRUE for this to have any effect. */
-var() protected const bool bCheckInRange;
+//var() protected const bool bCheckInRange;
 /** If FALSE, this agent will never automatically notify the root block if it's in range, it must be done through script if at all. */
-var() protected const bool bNotifyInRange;
+/*var() protected const bool bNotifyInRange;
 var() protected const int Cost<ClampMin=1>;
 
 var protected repnotify GameCrowdDestination ReplicatedCurrentDestination;
@@ -214,4 +215,4 @@ DefaultProperties
 	bUpdateSimulatedPosition=false
 	bReplicateMovement=false
 	RemoteRole=Role_SimulatedProxy
-}
+}*/

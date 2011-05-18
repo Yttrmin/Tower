@@ -19,6 +19,12 @@ simulated event PostBeginPlay()
 	ServerInitialize();
 }
 
+event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
+{
+	// Game Over?
+//	Super.Died(Killer, DamageType, HitLocation);
+}
+
 function ServerInitialize()
 {
 	if(!TowerMapInfo(WorldInfo.GetMapInfo()).bRootBlockSet)

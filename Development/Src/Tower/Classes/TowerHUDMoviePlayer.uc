@@ -79,11 +79,6 @@ function SetRoundNumber(coerce String Round)
 	SetVariableString("_root.Round.text", Round);
 }
 
-function SetRoundTime(float NewTime)
-{
-	ActionScriptVoid("SetRoundTime");
-}
-
 /** Called by ActionScript when the user clicks a new item in the BuildMenu's PlaceablesList. */
 event OnBuildListChange(int Index)
 {

@@ -49,10 +49,6 @@ final function RemoveNode(TowerBlock NodeToRemove, optional bool bDeleteChildren
 {
 	local TowerBlock Node;
 	local array<TowerBlock> BasedBlocks;
-	if(NodeToRemove == Root)
-	{
-		return;
-	}
 	/** Only TowerBlocks which have absolutely no base get OrphanedParent() called on them. Therefore, make sure
 	our soon-to-be-orphans have no base! */
 	foreach NodeToRemove.BasedActors(class'TowerBlock', Node)

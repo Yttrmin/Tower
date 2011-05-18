@@ -55,6 +55,49 @@ Begin:
 	goto 'Begin';
 };
 
+function PawnDied(Pawn inPawn)
+{
+	if(TowerFormationAI(Squad).SquadLeader == self && NextSquadMember != None)
+	{
+		TransferLeadership(NextSquadMember);
+	}
+	if(Marker != None)
+	{
+		// Do we want to keep markers in case we allow units to join formation?
+		Marker.Destroy();
+		RemoveFromSquadList();
+	}
+	Super.PawnDied(inPawn);
+}
+
+function TransferLeadership(TowerEnemyController NewLeader)
+{
+	local TowerEnemyController Member;
+	NewLeader.StopLatentExecution();
+	NewLeader.Marker.Destroy();
+	for(Member = NewLeader.NextSquadMember; Member != None; Member = Member.NextSquadMember)
+	{
+		Member.Marker.SetBase(NewLeader.Pawn);
+	}
+	TowerFormationAI(Squad).SquadLeader = NewLeader;
+	NewLeader.GotoState('Leading');
+}
+
+/** Removes self from the NextSquadMember linked list. */
+function RemoveFromSquadList()
+{
+	local TowerEnemyController Controller;
+	local bool bDone;
+	for(Controller = TowerFormationAI(Squad).SquadLeader; !bDone && Controller != None; Controller = Controller.NextSquadMember)
+	{
+		if(Controller.NextSquadMember == self)
+		{
+			Controller.NextSquadMember = NextSquadMember;
+			bDone = true;
+		}
+	}
+}
+
 event CheckFiring()
 {
 	Pawn.BotFire(false);

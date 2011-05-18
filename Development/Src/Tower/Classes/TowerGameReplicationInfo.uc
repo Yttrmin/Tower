@@ -9,10 +9,6 @@ var int MaxEnemyCount;
 
 var array<TowerPlaceable> Placeables;
 
-var repnotify float ReplicatedTime;
-
-var repnotify int RemainingEnemies;
-
 var bool bModsLoaded;
 var repnotify int ModCount;
 var repnotify TowerModInfo RootMod;
@@ -22,7 +18,7 @@ var TowerPlayerReplicationInfo ServerTPRI;
 replication
 {
 	if(bNetDirty)
-		Phase, Round, MaxEnemyCount, ReplicatedTime, RemainingEnemies;
+		Phase, Round, MaxEnemyCount;
 	if(bNetInitial)
 		ModCount, RootMod, ServerTPRI;
 }
@@ -40,10 +36,6 @@ simulated event ReplicatedEvent(name VarName)
 	{
 		UpdateRoundCount();
 	}
-	else if(VarName == 'ReplicatedTime')
-	{
-		SetGameTimer();
-	}
 	else if(VarName == 'ModCount')
 	{
 		`log("MOD COUNT REPLICATED:"@ModCount);
@@ -53,11 +45,6 @@ simulated event ReplicatedEvent(name VarName)
 		`log("RootMod replicated!");
 		AreModsLoaded();
 	}
-}
-
-event OnSpawnUnit()
-{
-	RemainingEnemies--;
 }
 
 simulated function bool AreModsLoaded()
@@ -137,13 +124,6 @@ simulated function TowerPlayerController GetPlayerController()
 	{
 		return PC;
 	}
-}
-
-/** Called whenever ReplicatedTime is replicated for clients, when rounds/cool-downs start
-for servers. Updates the player's HUD to display the proper time. */
-simulated event SetGameTimer()
-{
-	TowerHUD(GetPlayerController().myHUD).HUDMovie.SetRoundTime(ReplicatedTime);
 }
 
 /** Called by TowerGame when cool-down period ends. */

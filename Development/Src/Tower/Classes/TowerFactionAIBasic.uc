@@ -54,7 +54,7 @@ state CollectData extends Active
 			{
 				bDoneBudgeting = true;
 			}
-			FormationIndex = 2;
+			FormationIndex = 3;
 			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
 			NewFormation.Target = Hivemind.RootBlock;
 			NewFormation.FormationIndex = FormationIndex;
