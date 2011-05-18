@@ -1,7 +1,8 @@
-class TowerCrowdDestinationSpawnable extends GameCrowdDestination;
+class TowerCrowdDestinationSpawnable extends GameCrowdDestination
+	deprecated;
 
 /** Typically a TowerBlock or TowerModule that agents going here should attack. */
-var Actor Target;
+//var Actor Target;
 
 //var IVector GridLocation;
 

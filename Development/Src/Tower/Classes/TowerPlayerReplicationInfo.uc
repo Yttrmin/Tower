@@ -50,7 +50,6 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SetHighlightColor(HighlightColor);
-	RequestUpdatedTime();
 }
 
 reliable server function SetHighlightColor(LinearColor NewColor)
@@ -59,13 +58,6 @@ reliable server function SetHighlightColor(LinearColor NewColor)
 	NewColor.G *= HighlightFactor;
 	NewColor.B *= HighlightFactor;
 	HighlightColor = NewColor;
-}
-
-reliable server function RequestUpdatedTime()
-{
-	TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime = 
-		TowerGame(WorldInfo.Game).GetRemainingTime();
-	`log("UPDATED TIME! NEW VALUE:"@TowerGameReplicationInfo(WorldInfo.GRI).ReplicatedTime);
 }
 
 simulated function TowerPlayerController GetPlayerController()

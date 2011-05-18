@@ -299,8 +299,7 @@ state Active
 
 	function bool SpawnFormation(int Index, TowerSpawnPoint SpawnPoint, TowerAIObjective Target)
 	{
-		local int i, LeaderIndex;
-		local Vector FormationLocation;
+		local int i;
 		local int FormationCost;
 		local TowerFormationAI Squad;
 		local bool bAbort;
@@ -308,19 +307,16 @@ state Active
 		/** The previous TowerTargetable in the squad's linked list. */
 		local TowerTargetable PreviousTargetable;
 
-		FormationLocation = SpawnPoint.Location;
 		Squad = Spawn(class'TowerFormationAI');
 		Squad.SquadObjective = Hivemind.RootBlock;
 		// Handle when all points are occupied?
 		`log("Spawning formation:"@Formations[Index].Name);
+
+		// Actually calculate this.
+		FormationCost = 0;
 		if(HasBudget(FormationCost))
 		{
-			LeaderIndex = SpawnFormationLeader(Squad, SpawnPoint, Index);
-			if(LeaderIndex == -1)
-			{
-				`warn("No leader found in"@self$"'s"@"formation at index"@Index$"!");
-				return false;
-			}
+			SpawnFormationLeader(Squad, SpawnPoint, Index);
 			PreviousTargetable = TowerEnemyPawn(Squad.SquadLeader.Pawn);
 			for(i = 0; i < Formations[Index].TroopInfo.Length && !bAbort; i++)
 			{
@@ -357,10 +353,9 @@ state Active
 
 	/** Searches given formation index for the leader, spawns it, and assigns Squad::SquadLeader.
 	If a leader isn't found then -1 is returned and Squad::SquadLeader is unchanged. */
-	function int SpawnFormationLeader(TowerFormationAI Squad, TowerSpawnPoint SpawnPoint, int Index)
+	final function SpawnFormationLeader(TowerFormationAI Squad, TowerSpawnPoint SpawnPoint, int Index)
 	{
 		local TowerTargetable Leader;
-		local int LeaderIndex;
 		local int i;
 		for(i = 0; i < Formations[Index].TroopInfo.Length; i++)
 		{
@@ -369,14 +364,13 @@ state Active
 				Leader = SpawnUnit(UnitList.InfantryArchetypes[0], SpawnPoint, Formations[Index].TroopInfo[i]);
 				Leader.Initialize(Squad, None);
 				`warn("Failed to spawn Leader!", Leader == None);
-				LeaderIndex = i;
 				Squad.SquadLeader = TowerEnemyController(TowerEnemyPawn(Leader).Controller);
 				//`log("SL:"@Squad.SquadLeader@Leader);
-				return i;
+				return;
 			}
 		}
 		`warn("No Leader specified at formation index:"@Index$"!"@"Fix this!");
-		return -1;
+		return;
 	}
 
 	function TowerFormationMarker SpawnFollowerMarker(TowerFormationAI Squad, TowerSpawnPoint SpawnPoint,
@@ -384,7 +378,6 @@ state Active
 	{
 		local TowerFormationMarker Marker;
 		local Vector SpawnLocation;
-		local Matrix TransformMatrix;
 		SpawnLocation = GetSpawnLocation((Formations[FormationIndex].TroopInfo[UnitIndex]), SpawnPoint.Location, SpawnPoint.Rotation);
 		Marker = Spawn(class'TowerFormationMarker', Squad.SquadLeader.Pawn,, SpawnLocation);
 		Marker.SetBase(Squad.SquadLeader.Pawn);
@@ -488,10 +481,10 @@ function CalculateAllCosts()
 {
 	local int i;
 	local TowerTargetable CheapestInfantry;
-	for(i = 0; i < UnitList.InfantryArchetypes.Length; i++)
+	CheapestInfantry = UnitList.InfantryArchetypes[i];
+	for(i = 1; i < UnitList.InfantryArchetypes.Length; i++)
 	{
-		if(CheapestInfantry == None || 
-			CheapestInfantry.GetCost(CheapestInfantry) > UnitList.InfantryArchetypes[i].GetCost(UnitList.InfantryArchetypes[i]))
+		if(CheapestInfantry.GetCost(CheapestInfantry) > UnitList.InfantryArchetypes[i].GetCost(UnitList.InfantryArchetypes[i]))
 		{
 			CheapestInfantry = UnitList.InfantryArchetypes[i];
 		}
@@ -542,7 +535,6 @@ final function TowerSpawnPoint GetSpawnPoint(int FormationIndex)
 event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint SpawnPoint, const TroopInfo UnitTroopInfo)
 {
 	local int Cost;
-	local TowerTargetable Unit;
 	local Vector SpawnLocation;
 
 	Cost = UnitArchetype.GetCost(UnitArchetype);
@@ -612,7 +604,7 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 	UnitsOut--;
 }
 
-event OnVIPDeath(TowerCrowdAgent VIP)
+event OnVIPDeath(TowerTargetable VIP)
 {
 }
 
