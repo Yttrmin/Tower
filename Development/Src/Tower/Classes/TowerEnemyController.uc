@@ -59,7 +59,15 @@ function PawnDied(Pawn inPawn)
 {
 	if(TowerFormationAI(Squad).SquadLeader == self && NextSquadMember != None)
 	{
-		TransferLeadership(NextSquadMember);
+		if(NextSquadMember != None)
+		{
+			TransferLeadership(NextSquadMember);
+		}
+	}
+	else
+	{
+		Squad.Destroy();
+		DebugCheckForOrphans();
 	}
 	if(Marker != None)
 	{
@@ -70,16 +78,30 @@ function PawnDied(Pawn inPawn)
 	Super.PawnDied(inPawn);
 }
 
+//@DEBUG - Checks every TowerEnemyController to see if it has a squad. If not, we messed up somewhere!
+function DebugCheckForOrphans()
+{
+	local TowerEnemyController Controller;
+	foreach WorldInfo.AllControllers(class'TowerEnemyController', Controller)
+	{
+		if(Controller.Squad == None && !Controller.bDeleteMe && Controller.Pawn.Health > 0)
+		{
+			`log("Controller has no squad! Squad:"@Controller.Squad@"bDeleteMe:"@Controller.bDeleteMe@"Health:"@Controller.Pawn.Health);
+		}
+	}
+}
+
 function TransferLeadership(TowerEnemyController NewLeader)
 {
 	local TowerEnemyController Member;
 	NewLeader.StopLatentExecution();
 	NewLeader.Marker.Destroy();
+	NewLeader.RemoveFromSquadList();
+	TowerFormationAI(Squad).SquadLeader = NewLeader;
 	for(Member = NewLeader.NextSquadMember; Member != None; Member = Member.NextSquadMember)
 	{
 		Member.Marker.SetBase(NewLeader.Pawn);
 	}
-	TowerFormationAI(Squad).SquadLeader = NewLeader;
 	NewLeader.GotoState('Leading');
 }
 
