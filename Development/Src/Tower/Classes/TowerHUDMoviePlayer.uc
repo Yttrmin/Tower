@@ -79,6 +79,13 @@ function SetRoundNumber(coerce String Round)
 	SetVariableString("_root.Round.text", Round);
 }
 
+function SetKeyBindings()
+{
+	local TowerPlayerInput Input;
+	Input = TowerPlayerInput(TowerPlayerController(HUD.Owner).PlayerInput);
+	SetVariableString("_root.BuildMenu.MenuButton.BindingKey.text", String(Input.GetKeyFromCommand("ToggleBuildMenu True | OnRelease ToggleBuildMenu False")));
+}
+
 /** Called by ActionScript when the user clicks a new item in the BuildMenu's PlaceablesList. */
 event OnBuildListChange(int Index)
 {

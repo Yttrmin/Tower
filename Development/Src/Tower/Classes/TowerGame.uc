@@ -23,7 +23,6 @@ var array<TowerModInfo> GameMods;
 
 var array<TowerModInfo> Mods;
 var config const array<String> ModPackages;
-var TowerCrowdSpawner CrowdSpawner;
 
 var TowerFactionAIHivemind Hivemind;
 
@@ -46,22 +45,10 @@ event PostBeginPlay()
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
-	CrowdSpawner = new class'TowerCrowdSpawner';
 //	TowerGameViewportClient(class'Engine'.static.GetEngine().GameViewport).
 	class'Engine'.static.StopMovie(true);
 	`log(RTransform(Rot(0,16384,0), Rot(0,32768,0)));
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
-//	`log("ZMod:"@ZMod@ZMod.ModName);
-//	ZMod.TestCallMe();
-	/*
-	class'Engine'.static.GetFacebookIntegration().UserID = "1637497802";
-	class'Engine'.static.GetFacebookIntegration().AppID = "195347980485261";
-	class'Engine'.static.GetFacebookIntegration().AddAuthorizationCompleteDelegate(OnAuthorizationComplete);
-	class'Engine'.static.GetFacebookIntegration().AddFacebookRequestCompleteDelegate(OnFacebookRequestComplete);
-	class'Engine'.static.GetFacebookIntegration().AddWebRequestCompleteDelegate(OnWebRequestComplete);
-	class'Engine'.static.GetFacebookIntegration().Init();
-	class'Engine'.static.GetFacebookIntegration().Authorize();*/
-	//1637497802
 //	StartNextRound();
 }
 

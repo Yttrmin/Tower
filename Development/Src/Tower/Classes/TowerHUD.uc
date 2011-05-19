@@ -25,6 +25,7 @@ event PostBeginPlay()
 		HUDMovie.SetRoundNumber(TowerGameReplicationInfo(WorldInfo.GRI).Round);
 		// Set List
 	}
+	HUDMovie.SetKeyBindings();
 }
 
 /**

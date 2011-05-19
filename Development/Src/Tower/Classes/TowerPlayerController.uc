@@ -238,6 +238,23 @@ exec function DebugKillAllLeaders()
 	}
 }
 
+//@DEBUG
+exec function DebugPrintBindings()
+{
+	local KeyBind Bind;
+	foreach PlayerInput.Bindings(Bind)
+	{
+		`log("Name:"@Bind.Name@"Command:"@Bind.Command);
+	}
+}
+
+//@DEBUG - Logs key associated with command. A test of TowerPlayerInput::GetKeyFromCommand().
+exec function DebugGetKeyFromCommand(string Command)
+{
+	Command = Repl(Command, "$", "|");
+	`log("Key:"@String(TowerPlayerInput(PlayerInput).GetKeyFromCommand(Command)));
+}
+
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
 	local AddTicket Ticket;

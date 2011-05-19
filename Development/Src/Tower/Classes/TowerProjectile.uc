@@ -1,16 +1,12 @@
 /**
 TowerProjectile
 
-Base class of projectiles (not a strict definition) that factions launch, such as missiles,
-artilerly shells, etc.
+
 */
-class TowerProjectile extends DynamicSMActor_Spawnable
-	deprecated;
+class TowerProjectile extends UDKProjectile;
 
 //==============
 // Touching
-//@TODO - Don't collide if launched by own faction.
-/*
 simulated singular event Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
 {
 	if ( (Other == None) || Other.bDeleteMe ) // Other just got destroyed in its touch?
@@ -28,4 +24,10 @@ simulated singular event Touch( Actor Other, PrimitiveComponent OtherComp, vecto
 		ProcessTouch(Other, HitLocation, HitNormal);
 		ImpactedActor = None;
 	}
-}*/
+}
+
+simulated function ProcessTouch(Actor Other, Vector HitLocation, Vector HitNormal)
+{
+	if ( Other != Instigator )
+		Explode( HitLocation, HitNormal );
+}
