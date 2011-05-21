@@ -268,6 +268,27 @@ function StartMatch()
 //
 function RestartPlayer(Controller NewPlayer)
 {
+	if (NewPlayer.Pawn == None)
+	{
+		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,Vect(500, 200, 90));
+	}
+	if (NewPlayer.Pawn == None)
+	{
+		`log("failed to spawn player at "/*$StartSpot*/);
+		NewPlayer.GotoState('Dead');
+		if ( PlayerController(NewPlayer) != None )
+		{
+			PlayerController(NewPlayer).ClientGotoState('Dead','Begin');
+		}
+	}
+	else
+	{
+		`log("SPAWNED PLAYER PAWN ALL READY");
+		NewPlayer.Possess(NewPlayer.Pawn, false);
+		NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
+		SetPlayerDefaults(NewPlayer.Pawn);
+		NewPlayer.GotoState('PlayerFlying');
+	}
 	if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
 	{
 		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
@@ -503,7 +524,7 @@ DefaultProperties
 	PlayerControllerClass=class'Tower.TowerPlayerController'
 	PlayerReplicationInfoClass=class'Tower.TowerPlayerReplicationInfo'
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
-	DefaultPawnClass=class'Tower.TowerPawn'
+	DefaultPawnClass=class'Tower.TowerPlayerPawn'
 	HUDType=class'Tower.TowerHUD'
 
 	Borders[0]=(X=-1,Y=1,Z=0)
