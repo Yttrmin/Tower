@@ -39,7 +39,7 @@ simulated function Projectile ProjectileFire()
 			AimDir = Normal(TestImpact.HitLocation - RealStartLoc);
 		}
 		// Spawn projectile
-		SpawnedProjectile = Spawn(GetProjectileClass(), Self,, RealStartLoc);
+		SpawnedProjectile = Spawn(GetProjectileClass(),,, RealStartLoc);
 		if( SpawnedProjectile != None && !SpawnedProjectile.bDeleteMe )
 		{
 			SpawnedProjectile.Init( AimDir );

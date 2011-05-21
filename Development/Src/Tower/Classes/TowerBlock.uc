@@ -256,7 +256,7 @@ simulated function OnEnterRange(TowerTargetable Targetable)
  */
 event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
-	`log("Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
+//	`log("Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
 	Max(0, Damage);
 	Super.TakeDamage(Damage, EventInstigator, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 	Health -= Damage;

@@ -44,6 +44,31 @@ state DebugEnemySpectating
 
 }
 
+//PlayerFlying
+state PlayerFlying
+{	
+	ignores SeePlayer, HearNoise, Bump;
+	function PlayerMove(float DeltaTime)
+	{
+		local vector X,Y,Z;
+
+		GetAxes(Rotation,X,Y,Z);
+
+		Pawn.Acceleration = PlayerInput.aForward*X + PlayerInput.aStrafe*Y + PlayerInput.aUp*vect(0,0,1);
+		Pawn.Acceleration = Pawn.AccelRate * Normal(Pawn.Acceleration);
+
+		if ((Pawn.Acceleration == vect(0,0,0)) )
+			Pawn.Velocity = vect(0,0,0);
+		// Update rotation.
+		UpdateRotation( DeltaTime );
+
+		if ( Role < ROLE_Authority ) // then save this move and replicate it
+			ReplicateMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
+		else
+			ProcessMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
+	}
+}
+
 /**
 Adding TowerModules:
 (Note: TMRI = TowerModuleReplicationInfo, TPRI = TowerPlayerReplicationInfo, TPC = TowerPlayerController)

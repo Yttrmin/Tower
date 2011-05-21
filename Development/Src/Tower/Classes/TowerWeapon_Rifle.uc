@@ -44,4 +44,5 @@ DefaultProperties
 	Spread(0)=10.0
 	WeaponFireTypes(0)=EWFT_Projectile
 	WeaponProjectiles(0)=class'UTGame.UTProj_LinkPlasma'
+//	bAlwaysRelevant=true
 }

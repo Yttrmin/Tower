@@ -57,17 +57,17 @@ Begin:
 
 function PawnDied(Pawn inPawn)
 {
-	if(TowerFormationAI(Squad).SquadLeader == self && NextSquadMember != None)
+	if(TowerFormationAI(Squad).SquadLeader == self)
 	{
 		if(NextSquadMember != None)
 		{
 			TransferLeadership(NextSquadMember);
 		}
-	}
-	else
-	{
-		Squad.Destroy();
-		DebugCheckForOrphans();
+		else
+		{
+			Squad.Destroy();
+			DebugCheckForOrphans();
+		}
 	}
 	if(Marker != None)
 	{
