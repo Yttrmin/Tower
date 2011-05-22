@@ -203,15 +203,16 @@ function IgnoreMouseMovement()
 function TraceForBlock(out TowerPlaceable Block, out Vector HitNormal)
 {
 	local Vector WorldOrigin, WorldDir;
+	local Rotator PlayerDir;
 	local Vector HitLocation;
 	local TraceHitInfo HitInfo;
-	WorldOrigin = PlayerOwner.Location;
-	WorldDir = Vector(PlayerOwner.Rotation);
+	PlayerOwner.GetPlayerViewPoint(WorldOrigin, PlayerDir);
+	WorldDir = Vector(PlayerDir);
 	/*`log(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo));
-//	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
+	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
 	if(TowerPlaceable(HitInfo.HitComponent) != None)
 	{
 		Block = HitInfo.HitComponent;

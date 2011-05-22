@@ -11,18 +11,9 @@ DefaultProperties
 	bBlockActors=false
 	bProjTarget=false
 //	bCollideActors=false
-/*
+
 	Begin Object Name=CollisionCylinder
-		CollideActors=true
-		bAcceptsLights=false
-		bAcceptsDynamicLights=false
-		BlockActors=false
 		BlockZeroExtent=false
-		BlockNonZeroExtent=true
-		BlockRigidBody=false
-		AlwaysLoadOnClient=True
-		AlwaysLoadOnServer=True
-		bDisableAllRigidBody=true
 	End Object
-	*/
+	
 }
