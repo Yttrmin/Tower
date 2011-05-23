@@ -212,7 +212,7 @@ function TraceForBlock(out TowerPlaceable Block, out Vector HitNormal)
 		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo));
-	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
+//	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
 	if(TowerPlaceable(HitInfo.HitComponent) != None)
 	{
 		Block = HitInfo.HitComponent;
