@@ -8,8 +8,15 @@ class TowerEnemyPawn extends TowerPawn
 
 var() const int Cost;
 var() editconst TowerFaction OwnerFaction;
+var() editconst byte TeamIndex;
 
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
+
+replication
+{
+	if(bNetInitial)
+		TeamIndex;
+}
 
 event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 {
@@ -50,6 +57,16 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 		Pawn.OwnerFaction = NewOwningFaction;
 	}
 	return Pawn;
+}
+
+/* epic ===============================================
+* ::StopsProjectile()
+*
+* returns true if Projectiles should call ProcessTouch() when they touch this actor
+*/
+simulated function bool StopsProjectile(Projectile P)
+{
+	return bProjTarget || bBlockActors;//COMPARE TEAM INDEXES || ;
 }
 
 function bool IsProjectile()

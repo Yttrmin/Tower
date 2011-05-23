@@ -1,19 +1,55 @@
 class TowerPlayerPawn extends TowerPawn;
 
-event k2override Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
+var Vector ShoveNormal;
+
+event Bump( Actor Other, PrimitiveComponent OtherComp, vector HitNormal )
 {
 	//@TODO - Don't let players go inside blocks!
-//	`log("PLAYER TOUCHED ======================================"@Velocity@Acceleration);
+	`log("BUMPED:"@Other);
+	if(TowerBlock(Other) == None)
+	{
+		HitNormal = Normal(Other.Location - Location);
+		HitNormal.Z = 0.05 + Min(1, HitNormal.Z * 2);
+		ShoveNormal = HitNormal;
+		Shove(HitNormal);
+	}
+	Super.Bump(Other, OtherComp, HitNormal);
 }
+
+function Shove(out Vector HitNormal)
+{
+	PushState('Shoved');	
+}
+
+state Shoved
+{
+	ignores Shove;
+	event PushedState()
+	{
+		SetTimer(0.25);
+	}
+
+	event Tick(float DeltaTime)
+	{
+		Velocity = -ShoveNormal*1000;
+		Acceleration = -ShoveNormal*1000;
+		Super.Tick(DeltaTIme);
+	}
+
+	event Timer()
+	{
+		Popstate();
+	}
+};
 
 DefaultProperties
 {
-	bBlockActors=false
+	bBlockActors=true
 	bProjTarget=false
 //	bCollideActors=false
 
 	Begin Object Name=CollisionCylinder
 		BlockZeroExtent=false
 	End Object
-	
+	AirSpeed = 600;
 }
