@@ -25,7 +25,7 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	Controller.Possess(self, false);
 	TowerEnemyController(Controller).Squad = Squad;
 	Weapon = Spawn(class'Tower.TowerWeapon_Rifle', self);
-	Weapon.Activate();
+//	Weapon.Activate();
 	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);
 	WeaponAttachment.AttachTo(Self);
 	if(PreviousSquadMember != None)
@@ -59,6 +59,11 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	return Pawn;
 }
 
+simulated event byte ScriptGetTeamNum()
+{
+	return TeamIndex;
+}
+
 /* epic ===============================================
 * ::StopsProjectile()
 *
@@ -66,7 +71,7 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 */
 simulated function bool StopsProjectile(Projectile P)
 {
-	return bProjTarget || bBlockActors;//COMPARE TEAM INDEXES || ;
+	return TowerEnemyPawn(P.Instigator).TeamIndex != TeamIndex && (bProjTarget || bBlockActors);
 }
 
 function bool IsProjectile()

@@ -42,7 +42,7 @@ DefaultProperties
 
 	FireInterval(0)=1
 	Spread(0)=10.0
-	WeaponFireTypes(0)=EWFT_Projectile
+	WeaponFireTypes(0)=EWFT_InstantHit
 	WeaponProjectiles(0)=class'UTGame.UTProj_LinkPlasma'
 //	bAlwaysRelevant=true
 }

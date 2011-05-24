@@ -9,13 +9,22 @@ class TowerFactionAIBasic extends TowerFactionAI;
 
 //@TODO - Move relevant TowerFactionAI stuff into here.
 
+state Active
+{
+	protected function DetermineStrategy()
+	{
+		// Actually, you know, determine a strategy.
+		GotoState('CollectData');
+	}
+}
+
 state CollectData extends Active
 {
 	event BeginState(Name PreviousStateName)
 	{
 		QueueFormations();
 		BeginCoolDown();
-		SetTimer(45, false, 'DoneCollecting');
+//		SetTimer(45, false, 'DoneCollecting');
 	}
 
 	event Think()
@@ -43,17 +52,14 @@ state CollectData extends Active
 	function QueueFormations()
 	{
 		local int Budget;
-		local bool bDoneBudgeting;
+		local int ConsumedBudget;
 		local FormationSpawnInfo NewFormation;
 		local int FormationIndex;
-		Budget = TroopBudget/3;
+		Budget = TroopBudget;
 
-		while(Budget > 0 && !bDoneBudgeting)
+		while(ConsumedBudget + CalculateBaseFormationCost(3) <= Budget)
 		{
-			if(OrderQueue.Length > 15)
-			{
-				bDoneBudgeting = true;
-			}
+			ConsumedBudget += CalculateBaseFormationCost(3);
 			FormationIndex = 3;
 			NewFormation.SpawnPoint = GetSpawnPoint(FormationIndex);
 			NewFormation.Target = Hivemind.RootBlock;

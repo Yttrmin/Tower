@@ -13,6 +13,7 @@ DefaultProperties
     End Object
 
 	Begin Object Class=SkeletalMeshComponent Name=SkeletalMeshComponent0
+		ForcedLodModel=4
 	End Object
 	Components.Add(SkeletalMeshComponent0)
 	Mesh=SkeletalMeshComponent0
