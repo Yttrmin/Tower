@@ -9,15 +9,17 @@ var Vector NextMoveLocation;
 
 auto state Idle
 {
-
+Begin:
+//	SetTickIsDisabled(true);
+//	Pawn.SetTickIsDisabled(true);
 };
 
 // Squad leader's state.
 state Leading
 {
 Begin:
-	SetTimer(1, true, 'CheckFiring');
-//	`log("Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
+	BeginCheckFireTimer();
+	`log(Self@"Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
@@ -42,6 +44,11 @@ Begin:
 		`log(Self@"can't path at all! Idling!");
 		GotoState('Idle');
 	}
+	if(VSizeSq(Squad.SquadObjective.Location - Pawn.Location) <= 2500**2)
+	{
+		`log(Self@"Close enough, idling!");
+		GotoState('Idle');
+	}
 	goto 'Begin';
 };
 
@@ -49,11 +56,22 @@ Begin:
 state Following
 {
 Begin:
-	SetTimer(1, true, 'CheckFiring');
+	BeginCheckFireTimer();
 	Pawn.SetPhysics(PHYS_Walking);
+	goto 'Move';
+Move:
 	MoveToward(Marker, GetSquadObjective().GetTargetActor());
-	goto 'Begin';
+	if(TowerFormationAI(Squad).SquadLeader.IsInState('Idle'))
+	{
+		GotoState('Idle');
+	}
+	goto 'Move';
 };
+
+function BeginCheckFireTimer()
+{
+//	SetTimer(1 + (Rand(-1) + Rand(1)), true, 'CheckFiring');
+}
 
 function PawnDied(Pawn inPawn)
 {
@@ -125,7 +143,7 @@ event CheckFiring()
 	Pawn.BotFire(false);
 }
 
-event bool GeneratePathTo(Actor Goal, optional float WithinDistance, optional bool bAllowPartialPath)
+final event bool GeneratePathTo(Actor Goal, optional float WithinDistance, optional bool bAllowPartialPath)
 {
 	if(NavigationHandle == None)
 	{
@@ -147,4 +165,9 @@ final function TowerAIObjective GetSquadObjective()
 function SetSquad(TowerFormationAI NewSquad)
 {
 	Squad = NewSquad;
+}
+
+DefaultProperties
+{
+	TickGroup=TG_DuringAsyncWork
 }

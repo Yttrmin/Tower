@@ -1,0 +1,1 @@
+class TowerFactionHuman extends TowerFaction;

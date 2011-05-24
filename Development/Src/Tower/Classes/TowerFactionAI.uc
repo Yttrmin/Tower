@@ -159,11 +159,8 @@ enum Strategy
 	S_Spam_Projectile
 };
 
-var() protected const name FactionName;
-
 var protected Tower TargetTower;
 var() protected TowerFactionInfo FactionInfo;
-var() editconst FactionLocation Faction;
 
 // These exist purely to cut down on the typecasting and function calling every tick.
 var protected TowerGame Game;
@@ -199,6 +196,9 @@ var(InGame) protected editconst bool bCanFight;
 //var(InGame) protected editconst array<> OrderQueue;
 
 var(InGame) protected editconst int UnitsOut;
+
+// Infantry archetype with lowest cost.
+var protected TowerTargetable CheapestInfantry;
 
 var TowerFactionAIHivemind Hivemind;
 
@@ -248,8 +248,10 @@ auto state InActive
 	event RoundStarted(const int AwardedBudget)
 	{
 		TroopBudget = AwardedBudget;
+		`log(Self@"Round started! Budget:"@TroopBudget);
 		bCanFight = True;
 		GotoState('Active');
+		ScriptTrace();
 	}
 	event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 	{
@@ -291,11 +293,7 @@ state Active
 		GotoState('InActive');
 	}
 
-	protected function DetermineStrategy()
-	{
-		// Actually, you know, determine a strategy.
-		GotoState('CollectData');
-	}
+	protected function DetermineStrategy();
 
 	function bool SpawnFormation(int Index, TowerSpawnPoint SpawnPoint, TowerAIObjective Target)
 	{
@@ -313,16 +311,17 @@ state Active
 		`log("Spawning formation:"@Formations[Index].Name);
 
 		// Actually calculate this.
-		FormationCost = 0;
+		FormationCost = CalculateBaseFormationCost(Index);
 		if(HasBudget(FormationCost))
 		{
+			ConsumeBudget(FormationCost);
 			SpawnFormationLeader(Squad, SpawnPoint, Index);
 			PreviousTargetable = TowerEnemyPawn(Squad.SquadLeader.Pawn);
 			for(i = 0; i < Formations[Index].TroopInfo.Length && !bAbort; i++)
 			{
 				if(!Formations[Index].TroopInfo[i].TroopBehaviorFlags.bLeader && Formations[Index].TroopInfo[i].Type == TT_Infantry)
 				{
-					Targetable = SpawnUnit(UnitList.InfantryArchetypes[0], SpawnPoint, Formations[Index].TroopInfo[i]);
+					Targetable = SpawnUnit(CheapestInfantry, SpawnPoint, Formations[Index].TroopInfo[i]);
 					if(Targetable == None)
 					{
 						bAbort = true;
@@ -330,7 +329,6 @@ state Active
 					else
 					{
 						Targetable.Initialize(Squad, TowerEnemyPawn(PreviousTargetable));
-						
 						TowerEnemyController(TowerEnemyPawn(Targetable).Controller).Marker 
 							= SpawnFollowerMarker(Squad, SpawnPoint, Index, i);
 						PreviousTargetable = Targetable;
@@ -348,6 +346,7 @@ state Active
 				Squad.Destroy();
 			}
 		}
+		`log("Spawn formation failed. Budget:"@TroopBudget);
 		return false;
 	}
 
@@ -382,6 +381,21 @@ state Active
 		Marker = Spawn(class'TowerFormationMarker', Squad.SquadLeader.Pawn,, SpawnLocation);
 		Marker.SetBase(Squad.SquadLeader.Pawn);
 		return Marker;
+	}
+
+	protected function int CalculateBaseFormationCost(int FormationIndex)
+	{
+		local int Cost;
+		local int i;
+		for(i = 0; i < Formations[FormationIndex].TroopInfo.Length; i++)
+		{
+			if(Formations[FormationIndex].TroopInfo[i].Type == TT_Infantry)
+			{
+				Cost += CheapestInfantry.GetCost(CheapestInfantry);
+			}
+		}
+		`log("CalculateBaseFormationCost:"@FormationIndex);
+		return Cost;
 	}
 
 	function CalculateUnitSpawnLocationRotation(TowerSpawnPoint SpawnPoint, out Vector SpawnLocation, 
@@ -480,7 +494,6 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 function CalculateAllCosts()
 {
 	local int i;
-	local TowerTargetable CheapestInfantry;
 	CheapestInfantry = UnitList.InfantryArchetypes[i];
 	for(i = 1; i < UnitList.InfantryArchetypes.Length; i++)
 	{
@@ -534,23 +547,14 @@ final function TowerSpawnPoint GetSpawnPoint(int FormationIndex)
 
 event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint SpawnPoint, const TroopInfo UnitTroopInfo)
 {
-	local int Cost;
 	local Vector SpawnLocation;
+	local TowerTargetable Targetable;
 
-	Cost = UnitArchetype.GetCost(UnitArchetype);
-
-	//@TODO - Don't check budget.
-	if(HasBudget(Cost))
-	{
-		SpawnLocation = GetSpawnLocation(UnitTroopInfo, SpawnPoint.Location, SpawnPoint.Rotation);
-	//	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
-		return UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
-	}
-	else
-	{
-		CheckActivity();
-		return None;
-	}
+	SpawnLocation = GetSpawnLocation(UnitTroopInfo, SpawnPoint.Location, SpawnPoint.Rotation);
+//	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
+	Targetable = UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
+	TowerEnemyPawn(Targetable).TeamIndex = TeamIndex;
+	return Targetable;
 }
 
 function int GetUnitCost(TowerTargetable UnitArchetype)
@@ -569,35 +573,6 @@ function CheckActivity()
 
 //function TowerSpawnPoint GetSpawnPoint()
 
-//@DELETEME
-event bool LaunchProjectile(TowerProjectile ProjectileArchetype)
-{
-	/*
-	local TowerSpawnPoint SpawnPoint;
-	local TowerKProjRock Proj;
-	local TowerBlock Block, TargetBlock;
-	SpawnPoint = GetSpawnPoint();
-	Proj = Spawn(class'TowerKProjRock',,, SpawnPoint.Location);
-	foreach DynamicActors(class'TowerBlock', Block)
-	{
-		TargetBlock = Block;
-		break;
-	}
-//	`log(0.5*ASin((1039.829009434*VSize(Vect(-1756,1755,78) - Proj.Location))/5000));
-	Proj.Launch(TargetBlock.Location);
-	`log("SHOT PROJECTILE, COOL DOWN");
-	SetTimer(0.5, false, 'CooledDown');
-	bCoolDown = TRUE;
-	*/
-	return false;
-}
-
-//@DELETEME
-event bool LaunchKProjectile(TowerKProjectile KProjectileArchetype)
-{
-
-}
-
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
 {
 	//@TODO - Collect information about deaths so we can figure out what to counter.
@@ -610,10 +585,17 @@ event OnVIPDeath(TowerTargetable VIP)
 
 function bool HasBudget(int Amount)
 {
+	if(Amount > TroopBudget)
+	{
+		return FALSE;
+	}
 	return TRUE;
 }
 
-function ConsumeBudget(int Amount);
+function ConsumeBudget(int Amount)
+{
+	TroopBudget = Max(0, TroopBudget - Amount);
+}
 
 DefaultProperties
 {

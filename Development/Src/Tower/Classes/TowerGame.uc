@@ -14,10 +14,12 @@ enum FactionLocation
 	FL_PosX,
 	FL_NegX,
 	FL_PosY,
-	FL_NegY
+	FL_NegY,
+	FL_All
 };
 
-var array<TowerFactionAI> FactionAIs;
+var array<TowerFaction> Factions;
+var byte FactionCount;
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;
 
@@ -254,7 +256,8 @@ function StartMatch()
 //	local int i;
 	`log("StartMatch!");
 	Super.StartMatch();
-	AddFactionAIs();
+	AddFactionHuman(0);
+	AddFactionAI(5, GameMods[0].ModFactionAIs[0], FL_NegX);
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
 //	for(i = 0; i < 200; i++)
@@ -302,6 +305,7 @@ exec function SkipRound()
 	GameTimerExpired(); 
 }
 
+//@DEPRECATED
 function AddFactionAIs()
 {
 	local int i;
@@ -322,13 +326,42 @@ function AddFactionAIs()
 			}
 		}
 		`log("SpawnPoints for faction:"@FactionSpawnPoints.Length);
-		FactionAIs.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
-		FactionAIs[FactionAIs.Length-1].Hivemind = Hivemind;
-		FactionAIs[FactionAIs.Length-1].Faction = FactionLocation(AssignedFaction);
-		FactionAIs[FactionAIs.Length-1].ReceiveSpawnPoints(FactionSpawnPoints);
+		Factions.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
+		TowerFactionAI(Factions[Factions.Length-1]).Hivemind = Hivemind;
+		Factions[Factions.Length-1].Faction = FactionLocation(AssignedFaction);
+		TowerFactionAI(Factions[Factions.Length-1]).ReceiveSpawnPoints(FactionSpawnPoints);
 		AssignedFaction++;
-		`log("Spawned AI?:"@FactionAIs[0]);
+		`log("Spawned AI?:"@Factions[0]);
 	}
+}
+
+function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
+{
+	local array<TowerSpawnPoint> FactionSpawnPoints;
+	local TowerSpawnPoint Point;
+	// Fill an array of spawn points for the AI.
+	foreach SpawnPoints(Point)
+	{
+		if(Point.Faction == Faction)
+		{
+			FactionSpawnPoints.AddItem(Point);
+		}
+	}
+	Factions[TeamIndex] = Spawn(Archetype.class,,,,,Archetype);
+	Factions[TeamIndex].TeamIndex = TeamIndex;
+	TowerFactionAI(Factions[TeamIndex]).Hivemind = HiveMind;
+	TowerFactionAI(Factions[TeamIndex]).Faction = FactionLocation(Faction);
+	TowerFactionAI(Factions[TeamIndex]).ReceiveSpawnPoints(FactionSpawnPoints);
+	FactionCount++;
+	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
+}
+
+function AddFactionHuman(int TeamIndex)
+{
+	Factions[TeamIndex] = Spawn(class'TowerFactionHuman');
+	Factions[TeamIndex].TeamIndex = TeamIndex;
+	FactionCount++;
+	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
 }
 
 /** Very first part of a game, and happens between every round. */
@@ -340,14 +373,17 @@ function StartCoolDown()
 
 function StartNextRound()
 {
-	local TowerFactionAI Faction;
+	local TowerFaction Faction;
 	local int BudgetPerFaction;
 	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
 	//SetGameTimer(120);
-	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionAIs.Length;
-	foreach FactionAIs(Faction)
+	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionCount;
+	foreach Factions(Faction)
 	{
-		Faction.RoundStarted(BudgetPerFaction);
+		if(TowerFactionAI(Faction) != None)
+		{
+			TowerFactionAI(Faction).RoundStarted(BudgetPerFaction);
+		}
 	}
 }
 
