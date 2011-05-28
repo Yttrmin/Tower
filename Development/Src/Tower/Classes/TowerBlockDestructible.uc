@@ -2,7 +2,8 @@
 	TowerBlockDestructible:
 =============================================================================*/
 class TowerBlockDestructible extends ApexDestructibleActorSpawnable
-	implements(TowerPlaceable);
+	deprecated;
+	//implements(TowerPlaceable);
 
 /**  */
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 

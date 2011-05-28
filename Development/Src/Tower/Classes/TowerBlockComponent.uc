@@ -7,7 +7,8 @@ block of that branch would be made into a TowerBlock, and its children would be 
 We'll see how this plays out in the future! 
 */
 class TowerBlockComponent extends ActorComponent
-	implements(TowerPlaceable);
+	deprecated;
+	//implements(TowerPlaceable);
 
 var IVector GridLocation, ParentDirection;
 

@@ -430,7 +430,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// For whatever reason PlayerController won't collide with children, so we're breaking
 	// the ownership chain right here. There's probably a flag for child collision but
 	// I can't find it.
-	TPRI.Tower = Spawn(class'Tower');
+	TPRI.Tower = Spawn(class'Tower', self);
 	TPRI.Tower.OwnerPRI = TPRI;
 //	TPRI.Tower.Initialize(TPRI);
 	// Need to make this dependent on player count in future.
