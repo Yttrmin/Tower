@@ -251,7 +251,6 @@ auto state InActive
 		`log(Self@"Round started! Budget:"@TroopBudget);
 		bCanFight = True;
 		GotoState('Active');
-		ScriptTrace();
 	}
 	event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 	{

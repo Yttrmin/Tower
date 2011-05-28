@@ -57,7 +57,11 @@ simulated function Projectile ProjectileFire()
   */
 simulated static function bool PassThrough(Actor HitActor, Actor SelfActor)
 {
-	return (!HitActor.bBlockActors && HitActor.ScriptGetTeamNum() != SelfActor.Instigator.ScriptGetTeamNum() && 
+	if(HitActor.ScriptGetTeamNum() == SelfActor.Instigator.ScriptGetTeamNum())
+	{
+		return true;
+	}
+	return (!HitActor.bBlockActors && 
 		(HitActor.IsA('Trigger') || HitActor.IsA('TriggerVolume')))
 		|| HitActor.IsA('InteractiveFoliageActor');
 }
@@ -78,19 +82,19 @@ simulated function InstantFire()
 	local ImpactInfo		RealImpact;
 
 	// define range to use for CalcWeaponFire()
-	StartTrace = Instigator.GetWeaponStartTraceLocation();
-	EndTrace = StartTrace + vector(GetAdjustedAim(StartTrace)) * GetTraceRange();
+	StartTrace = TowerEnemyPawn(Owner).GetWeaponStartTraceLocation();
+	EndTrace = StartTrace + Vector(Instigator.Rotation) * GetTraceRange();
 
 	// Perform shot
 	RealImpact = CalcWeaponFire(StartTrace, EndTrace, ImpactList);
 
 	if (Role == ROLE_Authority)
 	{
-/*		FlushPersistentDebugLines();
+		FlushPersistentDebugLines();
 		DrawDebugSphere( StartTrace, 10, 10, 0, 255, 0 );
 		DrawDebugSphere( EndTrace, 10, 10, 255, 0, 0 );
 		DrawDebugSphere( RealImpact.HitLocation, 10, 10, 0, 0, 255 );
-		`log( self@GetFuncName()@Instigator@RealImpact.HitLocation@RealImpact.HitActor );*/
+/*		`log( self@GetFuncName()@Instigator@RealImpact.HitLocation@RealImpact.HitActor );*/
 
 		// Set flash location to trigger client side effects.
 		// if HitActor == None, then HitLocation represents the end of the trace (maxrange)
@@ -103,7 +107,14 @@ simulated function InstantFire()
 	// Process all Instant Hits on local player and server (gives damage, spawns any effects).
 	for (Idx = 0; Idx < ImpactList.Length; Idx++)
 	{
-		ProcessInstantHit(CurrentFireMode, ImpactList[Idx]);
+		if(TowerEnemyPawn(ImpactList[Idx].HitActor) != None && TowerEnemyPawn(Instigator).OnSameFaction(TowerEnemyPawn(ImpactList[IDx].HitActor)))
+		{
+			
+		}
+		else
+		{
+			ProcessInstantHit(CurrentFireMode, ImpactList[Idx]);
+		}
 	}
 }
 
@@ -172,7 +183,7 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 				HitActor.SetCollision(false, false);
 
 				// recurse another trace
-				CalcWeaponFire(HitLocation, EndTrace, ImpactList, Extent);
+				CurrentImpact = CalcWeaponFire(HitLocation, EndTrace, ImpactList, Extent);
 			}
 			else
 			{
@@ -205,7 +216,7 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 			}
 		}
 	}
-
+	`log(Self@"CalcWeaponFired returning"@CurrentImpact.HitActor);
 	return CurrentImpact;
 }
 

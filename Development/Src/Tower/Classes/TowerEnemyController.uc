@@ -70,7 +70,7 @@ Move:
 
 function BeginCheckFireTimer()
 {
-//	SetTimer(1 + (Rand(-1) + Rand(1)), true, 'CheckFiring');
+	SetTimer(1 + (Rand(-1) + Rand(1)), true, 'CheckFiring');
 }
 
 function PawnDied(Pawn inPawn)
@@ -169,5 +169,5 @@ function SetSquad(TowerFormationAI NewSquad)
 
 DefaultProperties
 {
-	TickGroup=TG_DuringAsyncWork
+	
 }

@@ -32,8 +32,7 @@ Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other pu
 var protectedwrite editconst IVector ParentDirection;
 /** Block's position on the grid. */
 var protectedwrite editconst IVector GridLocation;
-var() const editconst int XSize, YSize, ZSize;
-var protectedwrite deprecated bool bRootBlock;
+var(Unused) const editconst int XSize, YSize, ZSize;
 
 var protected MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
@@ -48,6 +47,7 @@ var int ModIndex, ModPlaceablesIndex;
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
+/** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
 var() const bool bAddToPlaceablesList;
 var() const bool bUseApexDestructible;
 var() const editconst editinline MeshComponent MeshComponents[2];
@@ -108,6 +108,7 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 {
 	local TowerBlock Block;
 	local IVector ParentDir;
+	local Rotator NewRotation;
 	// Only let stable blocks add stuff to them, otherwise things get wonky.
 	if(Parent.IsInState('Stable') || PlaceableTemplate.class == class'TowerBlockRoot')
 	{
@@ -116,6 +117,26 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 			// Get PRI somewhere else since it might be none.
 			Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
+			`log(Block@"AttachPlaceable. ParentDir:"@Normal(Parent.Location - SpawnLocation));
+			if(round(ParentDir.Z) == 0)
+			{
+				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
+				NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
+				NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
+			}
+			else if(round(ParentDir.Z) == -1)
+			{
+//				NewRotation.Roll = -180 * DegToUnrRot;
+			}
+			else if(round(ParentDir.Z) == 1)
+			{
+				NewRotation.Roll = 180 * DegToUnrRot;
+			}
+			else
+			{
+				NewRotation = Block.Rotation;
+			}
+			Block.SetRelativeRotation(NewRotation);
 			Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
 		}
 		else
@@ -359,6 +380,11 @@ simulated state UnstableParent
 
 };
 
+simulated state Building
+{
+
+};
+
 simulated state InActive
 {
 	event BeginState(name PreviousStateName)
@@ -449,7 +475,6 @@ DefaultProperties
 	bAlwaysRelevant = true
 	bCollideActors=true
 	bBlockActors=TRUE
-	bRootBlock = false
 	XSize = 0
 	YSize = 0
 	ZSize = 0
