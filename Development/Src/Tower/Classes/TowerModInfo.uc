@@ -65,6 +65,14 @@ final function AddMod(TowerModInfo Mod)
 	ModList.NextMod = Mod;
 }
 
+event GameSaved();
+
+event GameLoaded();
+
+event GameQuickSaved();
+
+event GameQuickLoaded();
+
 function Test();
 
 DefaultProperties

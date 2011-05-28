@@ -1,5 +1,4 @@
-class TowerHUD extends HUD
-	dependson(TowerModule);
+class TowerHUD extends HUD;
 
 var TowerHUDMoviePlayer HUDMovie;
 var TowerPlaceable LastHighlightedBlock;
@@ -93,11 +92,7 @@ event OnMouseClick(int Button)
 //				FinalGridLocation.Y = Round(FinalGridLocation.Y);
 //				FinalGridLocation.Z = Round(FinalGridLocation.Z);
 //				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
-				if(TowerModule(TracedPlaceable) == None)
-				{
-					//@FIXME
-					TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TowerBlock(TracedPlaceable), FinalGridLocation);
-				}
+				TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TowerBlock(TracedPlaceable), FinalGridLocation);
 			}
 		}
 	}
@@ -121,14 +116,9 @@ function SetupPlaceablesList()
 	local int i;
 	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(IteratedPlaceable, i)
 	{
-		if(TowerBlock(IteratedPlaceable) != None && TowerBlock(IteratedPlaceable).bAddToPlaceablesList)
+		if(TowerBlock(IteratedPlaceable).bAddToPlaceablesList)
 		{
 			HUDMovie.PlaceableStrings.AddItem(TowerBlock(IteratedPlaceable).DisplayName);
-			HUDMovie.PlaceableIndex.AddItem(i);
-		}
-		else if(TowerModule(IteratedPlaceable) != None && TowerModule(IteratedPlaceable).bAddToPlaceablesList)
-		{
-			HUDMovie.PlaceableStrings.AddItem(TowerModule(IteratedPlaceable).DisplayName);
 			HUDMovie.PlaceableIndex.AddItem(i);
 		}
 	}

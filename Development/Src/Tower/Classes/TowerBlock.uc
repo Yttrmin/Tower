@@ -9,7 +9,7 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	config(Tower)
 	HideCategories(Movement,Attachment,Collision,Physics,Advanced,Object)
 	AutoExpandCategories(TowerBlock)
-	dependson(TowerModule, TowerGame)
+	dependson(TowerGame)
 	ClassGroup(Tower)
 	implements(TowerPlaceable)
 	placeable

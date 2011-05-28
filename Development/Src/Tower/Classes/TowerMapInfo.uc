@@ -45,21 +45,9 @@ simulated function SetPreview(TowerPlaceable Placeable)
 //	PreviewBlock.StaticMeshComponent.SetStaticMesh(Placeable.GetPlaceableStaticMesh());
 //	PreviewBlock.StaticMeshComponent.SetMaterial(0, Placeable.GetPlaceableMaterial(0));
 //	Placeable.AttachPlaceable(None);
-	
-	if(Placeable.IsA('TowerBlock'))
-	{
-		PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,0));
-		PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerBlock(Placeable).StaticMeshComponent.StaticMesh);
-		PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerBlock(Placeable).StaticMeshComponent.GetMaterial(0));
-	}
-	else if(Placeable.IsA('TowerModule'))
-	{
-		//@TODO - Set this up for module previewing!
-		PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,-128));
-		PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerModule(Placeable).StaticMesh);
-		PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerModule(Placeable).GetMaterial(0));
-	}
-	
+	PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,0));
+	PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerBlock(Placeable).StaticMeshComponent.StaticMesh);
+	PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerBlock(Placeable).StaticMeshComponent.GetMaterial(0));
 }
 
 DefaultProperties

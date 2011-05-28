@@ -1,19 +1,6 @@
 class TowerPlayerController extends GamePlayerController
 	config(Tower);
 
-struct AddTicket
-{
-	var int ModIndex, ModPlaceableIndex;
-	var IVector GridLocation;
-	var TowerBlock Parent;
-};
-
-struct RemoveTicket
-{
-	var TowerBlock Parent;
-	var int Index;
-};
-
 var TowerSaveSystem SaveSystem;
 var TowerMusicManager MusicManager;
 
@@ -282,19 +269,10 @@ exec function DebugGetKeyFromCommand(string Command)
 
 function AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
 {
-	local AddTicket Ticket;
 	local int ModIndex, ModPlaceableIndex;
-	if(!Placeable.IsReplicable())
-	{
-		GenerateAddTicket(Ticket, Placeable, Parent, GridLocation);
-		ServerSendAddTicket(Ticket);
-	}
-	else
-	{
-		ConvertPlaceableToIndexes(Placeable, ModIndex, ModPlaceableIndex);
-		ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
-		//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
-	}
+	ConvertPlaceableToIndexes(Placeable, ModIndex, ModPlaceableIndex);
+	ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
+	//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 }
 
 reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent, IVector GridLocation)
@@ -302,43 +280,7 @@ reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex,
 	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(ModIndex, ModPlaceableIndex), Parent, GridLocation);
 }
 
-reliable server function ServerSendAddTicket(AddTicket Ticket)
-{
-	//@TODO - Make this better and less copy-paste.
-	local TowerPlaceable Placeable;
-//	`log("Received AddTicket:"@Ticket.ModIndex@Ticket.ModPlaceableIndex@Ticket.GridLocation@Ticket.Parent);
-	Placeable = TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(Ticket.ModIndex, Ticket.ModPlaceableIndex),
-		Ticket.Parent, Ticket.GridLocation);
-	if(Placeable != None)
-	{
-		TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.ServerAddModule(TowerModule(Placeable));
-//		ClientHandleTicket(Ticket.TicketID, TRUE);
-	}
-	else
-	{
-//		ClientHandleTicket(Ticket.TicketID, FALSE);
-	}
-}
-
-reliable server function ServerSendRemoveTicket(RemoveTicket Ticket)
-{
-	//@TODO - Check exists.
-	ServerRemovePlaceable(GetModuleFromTicket(Ticket));
-	TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.ServerRemoveModule(Ticket.Index);
-}
-
-simulated function TowerModule AddLocalPlaceable(TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
-{
-	local Vector SpawnLocation;
-	local TowerPlaceable PlaceableModule;
-	local Vector VectorGridLocation;
-	VectorGridLocation = ToVect(GridLocation);
-	SpawnLocation = class'TowerGame'.static.GridLocationToVector(VectorGridLocation);
-	PlaceableModule = Placeable.AttachPlaceable(Placeable, Parent, GetTower().NodeTree, SpawnLocation, GridLocation);
-	return TowerModule(PlaceableModule);
-}
-
-simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int ModIndex, out int ModPlaceableIndex)
+simulated final function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int ModIndex, out int ModPlaceableIndex)
 {
 	local TowerModInfo Mod;
 	for(Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod; Mod != None; Mod = Mod.NextMod)
@@ -350,23 +292,6 @@ simulated function ConvertPlaceableToIndexes(TowerPlaceable Placeable, out int M
 		}
 		ModIndex++;
 	}
-}
-
-simulated function GenerateAddTicket(out AddTicket OutTicket, TowerPlaceable Placeable, TowerBlock Parent, out IVector GridLocation)
-{
-	OutTicket.GridLocation = GridLocation;
-	OutTicket.Parent = Parent;
-	
-	ConvertPlaceableToIndexes(Placeable, OutTicket.ModIndex, OutTicket.ModPlaceableIndex);
-//	PendingTickets.AddItem(OutTicket);
-}
-
-function TowerModule GetModuleFromTicket(out RemoveTicket Ticket)
-{
-	//@WORKAROUND
-	local TowerPlaceable ModulePlaceable;
-	ModulePlaceable = TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI.TicketedPlaceables[Ticket.Index];
-	return TowerModule(ModulePlaceable);
 }
 
 function TowerPlaceable ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)
@@ -387,39 +312,13 @@ simulated function RemovePlaceable(TowerPlaceable Placeable)
 	`log("RemovePlaceable:"@Placeable);
 //	Placeable.RemoveSelf();
 	//@TODO - Stupid parenting causing no collions means we have to do crap like this.
-	if(Placeable.IsA('TowerBlock'))
-	{
-		ServerRemoveBlock(TowerBlock(Placeable));
-	}
-	else if(Placeable.IsA('TowerModule'))
-	{
-		RemoveModule(TowerModule(Placeable));
-	}
-}
 
-simulated function RemoveModule(TowerModule Module)
-{
-	local RemoveTicket Ticket;
-	local int Index;
-	Index = GetTPRI().TicketedPlaceables.Find(Module);
-	`log("Removing module"@Module@"at index"@Index$".");
-	if(Index != -1)
-	{
-		Ticket.Parent = TowerBlock(Module.Owner);
-		Ticket.Index = Index;
-		ServerSendRemoveTicket(Ticket);
-	}
+	ServerRemoveBlock(TowerBlock(Placeable));
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
 {
 	ServerRemovePlaceable(Block);
-}
-
-reliable server function ServerRemoveModule(TowerModule Module)
-{
-	`log("ServerRemoveModule:"@Module);
-	ServerRemovePlaceable(Module);
 }
 
 function ServerRemovePlaceable(TowerPlaceable Placeable)
