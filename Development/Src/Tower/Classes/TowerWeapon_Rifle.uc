@@ -10,7 +10,7 @@ simulated state Active
 	simulated event BeginState( Name PreviousStateName )
 	{
 		Super.BeginState(PreviousStateName);
-		StartFire(0);
+		StartFire(1);
 	}
 
 	/** Override BeginFire so that it will enter the firing state right away. */
@@ -44,5 +44,11 @@ DefaultProperties
 	Spread(0)=10.0
 	WeaponFireTypes(0)=EWFT_InstantHit
 	WeaponProjectiles(0)=class'UTGame.UTProj_LinkPlasma'
+
+	WeaponFireTypes(1)=EWFT_InstantHit
+	InstantHitDamage(1)=20
+	InstantHitMomentum(1)=100
+	InstantHitDamageTypes(1)=class'UTDmgType_ShockPrimary'
+	InstantHitDamageTypes(0)=class'UTDmgType_ShockPrimary'
 //	bAlwaysRelevant=true
 }

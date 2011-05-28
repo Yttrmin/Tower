@@ -5,6 +5,8 @@ var repnotify byte Round;
 
 var protectedwrite bool bRoundInProgress;
 
+
+// RENAME ME
 var int MaxEnemyCount;
 
 var array<TowerPlaceable> Placeables;

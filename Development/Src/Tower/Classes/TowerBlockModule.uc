@@ -1,0 +1,2 @@
+class TowerBlockModule extends TowerBlock;
+

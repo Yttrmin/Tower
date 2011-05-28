@@ -25,13 +25,33 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	Controller.Possess(self, false);
 	TowerEnemyController(Controller).Squad = Squad;
 	Weapon = Spawn(class'Tower.TowerWeapon_Rifle', self);
-//	Weapon.Activate();
+	Weapon.Activate();
 	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);
 	WeaponAttachment.AttachTo(Self);
 	if(PreviousSquadMember != None)
 	{
 		TowerEnemyController(PreviousSquadMember.Controller).NextSquadMember = TowerEnemyController(Controller);
 	}
+}
+
+/**
+AI Interface for combat
+**/
+function bool BotFire(bool bFinished)
+{
+	StartFire(0);
+	return true;
+}
+
+event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
+{
+	Super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
+	ScriptTrace();
+}
+
+function bool OnSameFaction(TowerEnemyPawn Other)
+{
+	return Other.ScriptGetTeamNum() == ScriptGetTeamNum();
 }
 
 function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
