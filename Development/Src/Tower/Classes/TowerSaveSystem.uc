@@ -137,13 +137,13 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		else if(i == 1)
 		{
 			TowerGame(Player.WorldInfo.Game).AddPlaceable(Player.GetTower(), 
-				TowerGame(Player.WorldInfo.Game).Mods[LoadBlockInfo.M].ModPlaceables[LoadBlockInfo.I], 
+				TowerGame(Player.WorldInfo.Game).Mods[LoadBlockInfo.M].ModBlocks[LoadBlockInfo.I], 
 				Player.GetTower().NodeTree.Root, LoadBlockInfo.G);
 		}
 		else
 		{
 			TowerGame(Player.WorldInfo.Game).AddPlaceable(Player.GetTower(), 
-				TowerGame(Player.WorldInfo.Game).Mods[LoadBlockInfo.M].ModPlaceables[LoadBlockInfo.I], 
+				TowerGame(Player.WorldInfo.Game).Mods[LoadBlockInfo.M].ModBlocks[LoadBlockInfo.I], 
 				Player.GetTower().GetBlockFromLocationAndDirection(LoadBlockInfo.G, LoadBlockInfo.P), 
 				LoadBlockInfo.G);
 		}

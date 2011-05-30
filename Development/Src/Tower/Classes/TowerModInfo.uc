@@ -16,7 +16,7 @@ var() const string Contact;
 var() const string Description;
 var() const string Version;
 
-var() protectedwrite const array<TowerPlaceable> ModPlaceables;
+var() protectedwrite const array<TowerBlock> ModBlocks;
 
 var() protectedwrite const array<TowerFactionAI> ModFactionAIs;
 

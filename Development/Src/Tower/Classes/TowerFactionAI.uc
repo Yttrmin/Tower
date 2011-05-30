@@ -8,7 +8,7 @@ The interface of this class will be released for modding!
 */
 class TowerFactionAI extends TowerFaction 
 	ClassGroup(Tower)
-	dependson(TowerGame)
+	dependson(TowerGame, TowerFactionAIHivemind)
 //	AutoExpandCategories(TowerFactionAI)
 	HideCategories(Display,Attachment,Collision,Physics,Advanced,Object,Debug)
 	placeable // Please don't actually place me. =(
@@ -29,35 +29,6 @@ Strategies:
 	* MAYBE LATER
 * Some sort of troop behavior struct? Eg, so troops will actually stick around the vehicle they're escorting.
 */
-
-struct PlaceableUsage
-{
-	var bool bStructural;
-	var bool bGunHitscan;
-	var bool bGunProjectile;
-	var bool bShield;
-	var bool bAntiInfantry;
-	var bool bAntiVehicle;
-	var bool bAntiProjectile;
-};
-
-struct PlaceableInfo
-{
-	var TowerPlaceable PlaceableArchetype;
-	var PlaceableUsage Flags;
-};
-
-struct PlaceableKillInfo
-{
-	var TowerPlaceable Placeable;
-	var int InfantryKillCount, ProjectileKillCount, VehicleKillCount;
-};
-
-struct PlaceableTargetInfo
-{
-	var TowerPlaceable Placeable;
-	var int ArchetypeIndex;
-};
 
 /** Series of flags to be used with a Formation. Tells AI what this Formation might be good for. */
 struct FormationUsage
@@ -201,15 +172,6 @@ var(InGame) protected editconst int UnitsOut;
 var protected TowerTargetable CheapestInfantry;
 
 var TowerFactionAIHivemind Hivemind;
-
-//============================================================================================================
-// CollectData-related variables.
-
-var array<PlaceableKillInfo> Killers;
-
-//============================================================================================================
-
-var array<PlaceableTargetInfo> Targets;
 
 var array<FormationSpawnInfo> OrderQueue;
 
@@ -425,22 +387,6 @@ function Vector GetSpawnLocation(const TroopInfo Troop, const out Vector OriginL
 		return Coordinates;
 	}
 
-function AppendToKillersArray(int Index, TowerTargetable KilledTargetable)
-{
-	if(KilledTargetable.IsInfantry())
-	{
-		Killers[Index].InfantryKillCount++;
-	}
-	if(KilledTargetable.IsVehicle())
-	{
-		Killers[Index].VehicleKillCount++;
-	}
-	if(KilledTargetable.IsProjectile())
-	{
-		Killers[Index].ProjectileKillCount++;
-	}
-}
-
 event PostBeginPlay()
 {
 	local PlayerController PC;
@@ -572,7 +518,7 @@ function CheckActivity()
 
 //function TowerSpawnPoint GetSpawnPoint()
 
-event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
 {
 	//@TODO - Collect information about deaths so we can figure out what to counter.
 	UnitsOut--;

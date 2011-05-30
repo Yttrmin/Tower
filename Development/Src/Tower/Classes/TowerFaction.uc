@@ -5,4 +5,4 @@ var() protectedwrite const name FactionName;
 
 var() editconst FactionLocation Faction;
 
-event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller);
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller);

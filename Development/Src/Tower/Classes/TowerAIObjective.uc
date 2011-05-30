@@ -6,7 +6,7 @@ Used to mark a TowerPlaceable target for AI, and stores points where units shoul
 class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);
 
-var privatewrite TowerPlaceable Target;
+var privatewrite TowerBlock Target;
 
 final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
@@ -16,10 +16,10 @@ final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 // Convenience function to work around some potential bug with interface casting.
 final function Actor GetTargetActor()
 {
-	return Actor(Target);
+	return Target;
 }
 
-final function SetTarget(TowerPlaceable NewTarget)
+final function SetTarget(TowerBlock NewTarget)
 {
 	Target = NewTarget;
 }

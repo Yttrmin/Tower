@@ -40,14 +40,17 @@ function DeactivateHUDPreview()
 	}
 }
 
-simulated function SetPreview(TowerPlaceable Placeable)
+/** Setup the PreviewBlock to match the TowerBlock passed in.
+Called from TowerHUDMoviePlayer::OnBuildListChange().
+Block is a TowerBlock archetype. */
+simulated function SetPreview(TowerBlock Block)
 {
 //	PreviewBlock.StaticMeshComponent.SetStaticMesh(Placeable.GetPlaceableStaticMesh());
 //	PreviewBlock.StaticMeshComponent.SetMaterial(0, Placeable.GetPlaceableMaterial(0));
 //	Placeable.AttachPlaceable(None);
 	PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,0));
-	PreviewBlock.StaticMeshComponent.SetStaticMesh(TowerBlock(Placeable).StaticMeshComponent.StaticMesh);
-	PreviewBlock.StaticMeshComponent.SetMaterial(0, TowerBlock(Placeable).StaticMeshComponent.GetMaterial(0));
+	PreviewBlock.StaticMeshComponent.SetStaticMesh(Block.StaticMeshComponent.StaticMesh);
+	PreviewBlock.StaticMeshComponent.SetMaterial(0, Block.StaticMeshComponent.GetMaterial(0));
 }
 
 DefaultProperties

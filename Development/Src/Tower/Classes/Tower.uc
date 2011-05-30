@@ -41,22 +41,22 @@ reliable server function AddTree()
 	NodeTree = new class'TowerTree';
 }
 
-function TowerPlaceable AddPlaceable(TowerPlaceable Placeable, TowerBlock Parent,
+function TowerBlock AddPlaceable(TowerBlock BlockArchetype, TowerBlock Parent,
 	out Vector SpawnLocation, out IVector GridLocation)
 {
-	local TowerPlaceable NewPlaceable;
-	NewPlaceable = Placeable.AttachPlaceable(Placeable, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	local TowerBlock NewBlock;
+	NewBlock = BlockArchetype.AttachPlaceable(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
 	// Tell AI about this?
-	return NewPlaceable;
+	return NewBlock;
 }
 
-event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
 {
 }
 
-function bool RemovePlaceable(TowerPlaceable Placeable)
+function bool RemovePlaceable(TowerBlock Block)
 {
-	Placeable.RemovePlaceable(Placeable, NodeTree);
+	Block.RemovePlaceable(Block, NodeTree);
 	return true;
 //	NodeTree.RemoveNode(Placeable);
 }
