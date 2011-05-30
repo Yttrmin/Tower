@@ -11,7 +11,6 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	AutoExpandCategories(TowerBlock)
 	dependson(TowerGame)
 	ClassGroup(Tower)
-	implements(TowerPlaceable)
 	placeable
 	abstract;
 
@@ -102,7 +101,7 @@ simulated event Destroyed()
 	}
 }
 
-static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
+static function TowerBlock AttachPlaceable(TowerBlock BlockArchetype,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
 	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
@@ -110,12 +109,12 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	local IVector ParentDir;
 	local Rotator NewRotation;
 	// Only let stable blocks add stuff to them, otherwise things get wonky.
-	if(Parent.IsInState('Stable') || PlaceableTemplate.class == class'TowerBlockRoot')
+	if(Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
 	{
 		if(Parent != None)
 		{
 			// Get PRI somewhere else since it might be none.
-			Block = Parent.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
+			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,TRUE);
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 			`log(Block@"AttachPlaceable. ParentDir:"@Normal(Parent.Location - SpawnLocation));
 			if(round(ParentDir.Z) == 0)
@@ -142,7 +141,7 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 		else
 		{
 			`assert(OwnerTPRI != None);
-			Block = OwnerTPRI.Spawn(TowerBlock(PlaceableTemplate).class, Parent,, SpawnLocation,,TowerBlock(PlaceableTemplate),TRUE);
+			Block = OwnerTPRI.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,TRUE);
 			ParentDir = IVect(0,0,0);
 			Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
 		}
@@ -151,9 +150,9 @@ static function TowerPlaceable AttachPlaceable(TowerPlaceable PlaceableTemplate,
 	return Block;
 }
 
-static function RemovePlaceable(TowerPlaceable Placeable, out TowerTree NodeTree)
+static function RemovePlaceable(TowerBlock Block, out TowerTree NodeTree)
 {
-	NodeTree.RemoveNode(TowerBlock(Placeable));
+	NodeTree.RemoveNode(Block);
 }
 
 function StaticMesh GetPlaceableStaticMesh()

@@ -9,7 +9,7 @@ var protectedwrite bool bRoundInProgress;
 // RENAME ME
 var int MaxEnemyCount;
 
-var array<TowerPlaceable> Placeables;
+var array<TowerBlock> Blocks;
 
 var bool bModsLoaded;
 var repnotify int ModCount;
@@ -94,10 +94,10 @@ simulated function bool AreModsLoaded()
 
 simulated function LoadMod(TowerModInfo Mod)
 {
-	local TowerPlaceable Placeable;
-	foreach Mod.ModPlaceables(Placeable)
+	local TowerBlock Block;
+	foreach Mod.ModBlocks(Block)
 	{
-		Placeables.AddItem(Placeable);
+		Blocks.AddItem(Block);
 	}
 	Mod.bLoaded = TRUE;
 }

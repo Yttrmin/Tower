@@ -90,9 +90,10 @@ function SetKeyBindings()
 event OnBuildListChange(int Index)
 {
 	`log("New Index:"@Index);
+	//@TODO - Convery indices to placeable.
 	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(
-		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
-	HUD.SetPlaceable(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Placeables[PlaceableIndex[Index]]);
+		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[PlaceableIndex[Index]]);
+	HUD.SetPlaceBlock(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[PlaceableIndex[Index]]);
 }
 
 event OnMouseMove(float DeltaX, float DeltaY)

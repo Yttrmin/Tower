@@ -1,9 +1,9 @@
 class TowerHUD extends HUD;
 
 var TowerHUDMoviePlayer HUDMovie;
-var TowerPlaceable LastHighlightedBlock;
+var TowerBlock LastHighlightedBlock;
 
-var private TowerPlaceable Placeable;
+var private TowerBlock PlaceBlock;
 
 event PreBeginPlay()
 {
@@ -38,10 +38,10 @@ function DrawHUD()
 
 	local Vector HitNormal;
 	local TowerBlock IterateBlock;
-	local TowerPlaceable TracedPlaceable;
+	local TowerBlock TracedBlock;
 	local Tower Tower;
 
-	TraceForBlock(TracedPlaceable, HitNormal);
+	TraceForBlock(TracedBlock, HitNormal);
 	Tower = TowerPlayerController(PlayerOwner).GetTower();
 	if(Tower != None && Tower.NodeTree != None && Tower.NodeTree.bDebugDrawHierarchy)
 	{
@@ -53,14 +53,14 @@ function DrawHUD()
 			DrawDebugRelationship(Canvas, IterateBlock);
 		}
 	}
-	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedPlaceable || HUDMovie.bInMenu))
+	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedBlock || HUDMovie.bInMenu))
 	{
 		LastHighlightedBlock.UnHighlight();
 	}
-	if(TracedPlaceable != None && !HUDMovie.bInMenu)
+	if(TracedBlock != None && !HUDMovie.bInMenu)
 	{
-		TracedPlaceable.Highlight();
-		LastHighlightedBlock = TracedPlaceable;
+		TracedBlock.Highlight();
+		LastHighlightedBlock = TracedBlock;
 	}
 	
 	PlayerOwner.GetPlayerViewpoint(ViewPoint, ViewRotation);
@@ -72,7 +72,7 @@ function DrawHUD()
 
 event OnMouseClick(int Button)
 {
-	local TowerPlaceable TracedPlaceable;
+	local TowerBlock TracedBlock;
 	local Vector HitNormal;
 	local IVector FinalGridLocation;
 	// Left mouse button.
@@ -84,27 +84,27 @@ event OnMouseClick(int Button)
 		}
 		else
 		{
-			TraceForBlock(TracedPlaceable, HitNormal);
-			if(TracedPlaceable != None)
+			TraceForBlock(TracedBlock, HitNormal);
+			if(TracedBlock != None)
 			{
-				FinalGridLocation = TracedPlaceable.GetGridLocation() + HitNormal;
+				FinalGridLocation = TracedBlock.GetGridLocation() + HitNormal;
 //				FinalGridLocation.X = Round(FinalGridLocation.X);
 //				FinalGridLocation.Y = Round(FinalGridLocation.Y);
 //				FinalGridLocation.Z = Round(FinalGridLocation.Z);
 //				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
-				TowerPlayerController(PlayerOwner).AddPlaceable(Placeable, TowerBlock(TracedPlaceable), FinalGridLocation);
+				TowerPlayerController(PlayerOwner).AddPlaceable(PlaceBlock, TracedBlock, FinalGridLocation);
 			}
 		}
 	}
 	// Right mouse button.
 	else if(Button == 1)
 	{
-		TraceForBlock(TracedPlaceable, HitNormal);
+		TraceForBlock(TracedBlock, HitNormal);
 		//@TODO - Ask to make sure they want to remove the block?
 		// Don't let the player remove the root block.
-		if(TracedPlaceable != None && TowerBlockRoot(TracedPlaceable) == None)
+		if(TracedBlock != None && TowerBlockRoot(TracedBlock) == None)
 		{
-			TowerPlayerController(PlayerOwner).RemovePlaceable(TracedPlaceable);
+			TowerPlayerController(PlayerOwner).RemovePlaceable(TracedBlock);
 		}
 	}
 }
@@ -112,13 +112,13 @@ event OnMouseClick(int Button)
 function SetupPlaceablesList()
 {
 	//@TODO - Order list.
-	local TowerPlaceable IteratedPlaceable;
+	local TowerBlock IteratedBlock;
 	local int i;
-	foreach TowerGameReplicationInfo(WorldInfo.GRI).Placeables(IteratedPlaceable, i)
+	foreach TowerGameReplicationInfo(WorldInfo.GRI).Blocks(IteratedBlock, i)
 	{
-		if(TowerBlock(IteratedPlaceable).bAddToPlaceablesList)
+		if(IteratedBlock.bAddToPlaceablesList)
 		{
-			HUDMovie.PlaceableStrings.AddItem(TowerBlock(IteratedPlaceable).DisplayName);
+			HUDMovie.PlaceableStrings.AddItem(IteratedBlock.DisplayName);
 			HUDMovie.PlaceableIndex.AddItem(i);
 		}
 	}
@@ -156,10 +156,10 @@ function Place()
 
 }
 
-/** Sets the TowerPlaceable that the game will attempt to place when the user clicks on a block. */
-function SetPlaceable(TowerPlaceable NewPlaceable)
+/** Sets the TowerBlock that the game will attempt to place when the user clicks on a block. */
+function SetPlaceBlock(TowerBlock NewBlock)
 {
-	Self.Placeable = NewPlaceable;
+	Self.PlaceBlock = NewBlock;
 }
 
 function ExpandBuildMenu()
@@ -189,24 +189,19 @@ function IgnoreMouseMovement()
 	TowerPlayerInput(TowerPlayerController(Owner).PlayerInput).OnMouseMove = None;
 }
 
-/** TraceForPlaceable? */
-function TraceForBlock(out TowerPlaceable Block, out Vector HitNormal)
+/** */
+function TraceForBlock(out TowerBlock Block, out Vector HitNormal)
 {
 	local Vector WorldOrigin, WorldDir;
 	local Rotator PlayerDir;
 	local Vector HitLocation;
-	local TraceHitInfo HitInfo;
 	PlayerOwner.GetPlayerViewPoint(WorldOrigin, PlayerDir);
 	WorldDir = Vector(PlayerDir);
 	/*`log(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
-		(WorldOrigin+WorldDir), TRUE,, HitInfo));
+		(WorldOrigin+WorldDir), TRUE));
 //	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
-	if(TowerPlaceable(HitInfo.HitComponent) != None)
-	{
-		Block = HitInfo.HitComponent;
-	}
 }
 
 exec function DebugFlushLines()

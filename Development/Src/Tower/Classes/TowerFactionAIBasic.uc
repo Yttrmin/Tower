@@ -9,6 +9,27 @@ class TowerFactionAIBasic extends TowerFactionAI;
 
 //@TODO - Move relevant TowerFactionAI stuff into here.
 
+struct BlockKillInfo
+{
+	var TowerBlock Block;
+	var int InfantryKillCount, ProjectileKillCount, VehicleKillCount;
+};
+
+struct BlockTargetInfo
+{
+	var TowerBlock Block;
+	var int ArchetypeIndex;
+};
+
+//============================================================================================================
+// CollectData-related variables.
+
+var array<BlockKillInfo> Killers;
+
+var array<BlockTargetInfo> Targets;
+
+//============================================================================================================
+
 state Active
 {
 	protected function DetermineStrategy()
@@ -70,7 +91,7 @@ state CollectData extends Active
 
 	function DoneCollecting()
 	{
-		local PlaceableTargetInfo Info;
+		local BlockTargetInfo Info;
 		local int i;
 		// Sort by most killed and by type.
 		Killers.sort(SortKillers);
@@ -82,26 +103,26 @@ state CollectData extends Active
 		GotoState('Counter');
 	}
 
-	function CreatePlaceableTargetInfo(PlaceableKillInfo KillInfo, out PlaceableTargetInfo TargetInfo)
+	function CreatePlaceableTargetInfo(BlockKillInfo KillInfo, out BlockTargetInfo TargetInfo)
 	{
-		TargetInfo.Placeable = KillInfo.Placeable;
-		TargetInfo.ArchetypeIndex = Hivemind.Placeables.Find('PlaceableArchetype', KillInfo.Placeable.ObjectArchetype);
+		TargetInfo.Block = KillInfo.Block;
+		TargetInfo.ArchetypeIndex = Hivemind.Blocks.Find('BlockArchetype', TowerBlock(KillInfo.Block.ObjectArchetype));
 		if(TargetInfo.ArchetypeIndex == -1)
 		{
 			TargetInfo.ArchetypeIndex = AddPlaceableInfoFromKillInfo(KillInfo);
 		}
 	}
 
-	function int AddPlaceableInfoFromKillInfo(PlaceableKillInfo Info)
+	function int AddPlaceableInfoFromKillInfo(BlockKillInfo Info)
 	{
-		local PlaceableInfo NewInfo;
-		NewInfo.PlaceableArchetype = Info.Placeable.ObjectArchetype;
+		local AIBlockInfo NewInfo;
+		NewInfo.BlockArchetype = TowerBlock(Info.Block.ObjectArchetype);
 		// Assign flags!
-		Hivemind.Placeables.AddItem(NewInfo);
-		return Hivemind.Placeables.Length-1;
+		Hivemind.Blocks.AddItem(NewInfo);
+		return Hivemind.Blocks.Length-1;
 	}
 
-	function int SortKillers(out PlaceableKillInfo P1, out PlaceableKillInfo P2)
+	function int SortKillers(out BlockKillInfo P1, out BlockKillInfo P2)
 	{
 		local int P1Count, P2Count;
 		P1Count = P1.InfantryKillCount + P1.ProjectileKillCount + P1.VehicleKillCount;
@@ -120,16 +141,16 @@ state CollectData extends Active
 		}
 	}
 
-	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerPlaceable PlaceableKiller)
+	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
 	{
 		local int Index;
 		if(TargetableKiller != None)
 		{
 		//	Index = Killers.find('PlaceableArchetype', Targetable
 		}
-		else if(PlaceableKiller != None)
+		else if(BlockKiller != None)
 		{
-			Index = Killers.find('Placeable', PlaceableKiller);
+			Index = Killers.find('Block', BlockKiller);
 			if(Index != -1)
 			{
 				AppendToKillersArray(Index, Targetable);
@@ -138,9 +159,25 @@ state CollectData extends Active
 			{
 				Killers.Add(1);
 				Index = Killers.Length-1;
-				Killers[Index].Placeable = PlaceableKiller;
+				Killers[Index].Block = BlockKiller;
 				AppendToKillersArray(Index, Targetable);
 			}
+		}
+	}
+
+	function AppendToKillersArray(int Index, TowerTargetable KilledTargetable)
+	{
+		if(KilledTargetable.IsInfantry())
+		{
+			Killers[Index].InfantryKillCount++;
+		}
+		if(KilledTargetable.IsVehicle())
+		{
+			Killers[Index].VehicleKillCount++;
+		}
+		if(KilledTargetable.IsProjectile())
+		{
+			Killers[Index].ProjectileKillCount++;
 		}
 	}
 }

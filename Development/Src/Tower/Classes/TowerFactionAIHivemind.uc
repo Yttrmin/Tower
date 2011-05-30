@@ -1,6 +1,23 @@
 class TowerFactionAIHivemind extends Object;
 
-var array<PlaceableInfo> Placeables;
+struct BlockUsage
+{
+	var bool bStructural;
+	var bool bGunHitscan;
+	var bool bGunProjectile;
+	var bool bShield;
+	var bool bAntiInfantry;
+	var bool bAntiVehicle;
+	var bool bAntiProjectile;
+};
+
+struct AIBlockInfo
+{
+	var TowerBlock BlockArchetype;
+	var BlockUsage Flags;
+};
+
+var array<AIBlockInfo> Blocks;
 //@TODO - Doesn't handle multiplayer.
 var TowerAIObjective RootBlock;
 

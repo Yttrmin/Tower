@@ -423,7 +423,7 @@ event FactionInactive(TowerFactionAI Faction)
 function AddTower(TowerPlayerController Player,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
-	local TowerPlaceable Root;
+	local TowerBlock Root;
 	local IVector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	//@BUG
@@ -436,7 +436,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
-	Root = AddPlaceable(TPRI.Tower, GameMods[0].ModPlaceables[0], None, GridLocation);
+	Root = AddPlaceable(TPRI.Tower, GameMods[0].ModBlocks[0], None, GridLocation);
 	TPRI.Tower.Root = TowerBlockRoot(Root);
 	Hivemind.OnRootBlockSpawn(TowerBlockRoot(Root));
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
@@ -451,7 +451,7 @@ function SetTowerName(Tower Tower, string NewTowerName)
 	Tower.TowerName = NewTowerName;
 }
 
-function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, TowerBlock Parent, 
+function TowerBlock AddPlaceable(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
 	out IVector GridLocation)
 {
 	local Vector SpawnLocation;
@@ -460,10 +460,10 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 	SpawnLocation = GridLocationToVector(VectorGridLocation);
 	// Pivot point in middle, bump up.
 //	SpawnLocation.Z += 128;
-	`assert(Placeable != None);
+	`assert(BlockArchetype != None);
 	if(CanAddBlock(VectorGridLocation))
 	{
-		return Tower.AddPlaceable(Placeable, Parent, SpawnLocation, GridLocation);
+		return Tower.AddPlaceable(BlockArchetype, Parent, SpawnLocation, GridLocation);
 	}
 	else
 	{
@@ -471,9 +471,9 @@ function TowerPlaceable AddPlaceable(Tower Tower, TowerPlaceable Placeable, Towe
 	}
 }
 
-function RemovePlaceable(Tower Tower, TowerPlaceable Placeable)
+function RemovePlaceable(Tower Tower, TowerBlock Block)
 {
-	Tower.RemovePlaceable(Placeable);
+	Tower.RemovePlaceable(Block);
 }
 
 function bool CanAddBlock(out Vector GridLocation)
