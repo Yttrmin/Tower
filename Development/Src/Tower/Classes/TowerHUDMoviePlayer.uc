@@ -9,9 +9,9 @@ class TowerHUDMoviePlayer extends GFxMoviePlayer;
 var TowerHUD HUD;
 var float MouseX, MouseY;
 
-var GFxScrollingList PlaceablesList;
-var array<int> PlaceableIndex;
-var array<string> PlaceableStrings;
+var GFxScrollingList BuildList;
+var array<int> BuildIndexes;
+var array<string> BuildStrings;
 
 var protectedwrite bool bInMenu;
 
@@ -19,8 +19,8 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 {
 	if(WidgetName == 'PlaceablesList')
 	{
-		PlaceablesList = GFxScrollingList(Widget);
-		PlaceablesList.HUDMovie = Self;
+		BuildList = GFxScrollingList(Widget);
+		BuildList.HUDMovie = Self;
 		return TRUE;
 	}
 	return FALSE;
@@ -91,9 +91,10 @@ event OnBuildListChange(int Index)
 {
 	`log("New Index:"@Index);
 	//@TODO - Convery indices to placeable.
+	//@BUG - Out of bounds.
 	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(
-		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[PlaceableIndex[Index]]);
-	HUD.SetPlaceBlock(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[PlaceableIndex[Index]]);
+		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]]);
+	HUD.SetPlaceBlock(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]]);
 }
 
 event OnMouseMove(float DeltaX, float DeltaY)
@@ -110,13 +111,13 @@ function MoveCursor()
 {
 	SetVariableNumber("_root.MouseCursor._x", MouseX); 
 	SetVariableNumber("_root.MouseCursor._y", MouseY);
-	if(PlaceablesList.HitTest(MouseX, MouseY))
+	if(BuildList.HitTest(MouseX, MouseY))
 	{
-		PlaceablesList.MousedOn();
+		BuildList.MousedOn();
 	}
-	else if(PlaceablesList.bMousedOnPreviousFrame)
+	else if(BuildList.bMousedOnPreviousFrame)
 	{
-		PlaceablesList.MousedOff();
+		BuildList.MousedOff();
 	}
 }
 

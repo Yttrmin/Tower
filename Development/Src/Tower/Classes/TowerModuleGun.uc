@@ -1,6 +1,32 @@
 class TowerModuleGun extends TowerBlockModule;
 
 var SkelControlLookAt Barrel;
+var TowerTargetable Target;
+
+simulated event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	SetTimer(3, true, 'Think');
+}
+
+event Think()
+{
+	if(Target == None || Actor(Target).bDeleteMe)
+	{
+		GetNewTarget();
+	}
+	Shoot(Normal(Actor(Target).Location - Location));
+}
+
+function GetNewTarget()
+{
+	local TowerEnemyPawn Targetable;
+	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Targetable)
+	{
+		Target = Targetable;
+		return;
+	}
+}
 
 /** called after initializing the AnimTree for the given SkeletalMeshComponent that has this Actor as its Owner
  * this is a good place to cache references to skeletal controllers, etc that the Actor modifies
@@ -17,15 +43,16 @@ function Shoot(Vector Direction)
 	local Actor HitActor;
 
 	ShotOrigin = Location;
-	ShotOrigin.Z += 128;
-	HitActor = Owner.Trace(HitLocation, HitNormal, ShotOrigin+Direction*10000, ShotOrigin, true);
+//	ShotOrigin.Z += 128;
+	HitActor = Trace(HitLocation, HitNormal, ShotOrigin+Direction*10000, ShotOrigin, true);
 	
-	Owner.DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
+	DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
 	
 	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
 	if(HitActor != None)
 	{
 		// Call TakeDamage();
+		HitActor.TakeDamage(20, None, HitLocation, HitLocation, class'UTDmgType_ShockPrimary',,Self);
 		//HitActor.Destroy();
 	}
 }

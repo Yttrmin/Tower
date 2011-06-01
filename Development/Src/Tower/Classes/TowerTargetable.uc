@@ -1,3 +1,9 @@
+/**
+TowerTargetable
+
+Interface to represent things like infantry, vehicles, and projectiles that the player's tower can target.
+It's assumed that all classes implementing this are extended from Actor.
+*/
 interface TowerTargetable;
 
 //delegate OnDeathDelegate();

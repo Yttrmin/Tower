@@ -47,7 +47,7 @@ simulated function SetPreview(TowerBlock Block)
 {
 //	PreviewBlock.StaticMeshComponent.SetStaticMesh(Placeable.GetPlaceableStaticMesh());
 //	PreviewBlock.StaticMeshComponent.SetMaterial(0, Placeable.GetPlaceableMaterial(0));
-//	Placeable.AttachPlaceable(None);
+//	Placeable.AttachBlock(None);
 	PreviewBlock.StaticMeshComponent.SetTranslation(Vect(0,0,0));
 	PreviewBlock.StaticMeshComponent.SetStaticMesh(Block.StaticMeshComponent.StaticMesh);
 	PreviewBlock.StaticMeshComponent.SetMaterial(0, Block.StaticMeshComponent.GetMaterial(0));

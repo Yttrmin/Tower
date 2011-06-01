@@ -1,7 +1,7 @@
 /**
 TowerAIObjective
 
-Used to mark a TowerPlaceable target for AI, and stores points where units should go to get a good shot at the target.
+Used to mark a TowerBlock target for AI, and stores points where units should go to get a good shot at the target.
 */
 class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);

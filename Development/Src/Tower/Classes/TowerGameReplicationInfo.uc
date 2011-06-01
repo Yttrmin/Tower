@@ -74,7 +74,7 @@ simulated function bool AreModsLoaded()
 			// All mods received!
 			bModsLoaded = TRUE;
 			`log("ALL MODS REPLICATED!");
-			ConstructPlaceablesList();
+			ConstructBuildList();
 			return TRUE;
 		}
 		else
@@ -102,14 +102,14 @@ simulated function LoadMod(TowerModInfo Mod)
 	Mod.bLoaded = TRUE;
 }
 
-simulated function ConstructPlaceablesList()
+simulated function ConstructBuildList()
 {
 	local TowerPlayerController PC;
-	`log("Constructing placeables list!");
+	`log("Constructing build list!");
 	foreach LocalPlayerControllers(class'TowerPlayerController', PC)
 	{
 		`log("FOUND A PLAYER TRING THING");
-		TowerHUD(PC.myHUD).SetupPlaceablesList();
+		TowerHUD(PC.myHUD).SetupBuildList();
 	}
 }
 

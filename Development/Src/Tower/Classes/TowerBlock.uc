@@ -18,8 +18,6 @@ var() int Health;
 var() int HealthMax;
 
 var const int DropRate;
-var int BlocksFallen;
-var int StartZ;
 
 var repnotify bool bFalling;
 
@@ -31,7 +29,6 @@ Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other pu
 var protectedwrite editconst IVector ParentDirection;
 /** Block's position on the grid. */
 var protectedwrite editconst IVector GridLocation;
-var(Unused) const editconst int XSize, YSize, ZSize;
 
 var protected MaterialInstanceConstant MaterialInstance;
 var const LinearColor Black;
@@ -39,17 +36,12 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
-/** Block's MeshComponent. Will be either StaticMeshComponent or ApexStaticDestructibleComponent. */
-var private MeshComponent MeshComponent;
-
-var int ModIndex, ModPlaceablesIndex;
+var int ModIndex, ModBlockIndex;
 
 /** User-friendly name. Used for things like the build menu. */
 var() const String DisplayName;
 /** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
-var() const bool bAddToPlaceablesList;
-var() const bool bUseApexDestructible;
-var() const editconst editinline MeshComponent MeshComponents[2];
+var() const bool bAddToBuildList;
 
 replication
 {
@@ -57,6 +49,16 @@ replication
 		bFalling;
 	if(bNetInitial)
 		GridLocation, OwnerPRI;
+}
+
+simulated function StaticMesh GetStaticMesh()
+{
+	return StaticMeshComponent.StaticMesh;
+}
+
+simulated function SkeletalMesh GetSkeletalMesh()
+{
+	return None;
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -101,7 +103,7 @@ simulated event Destroyed()
 	}
 }
 
-static function TowerBlock AttachPlaceable(TowerBlock BlockArchetype,
+static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
 	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
@@ -116,7 +118,7 @@ static function TowerBlock AttachPlaceable(TowerBlock BlockArchetype,
 			// Get PRI somewhere else since it might be none.
 			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,TRUE);
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
-			`log(Block@"AttachPlaceable. ParentDir:"@Normal(Parent.Location - SpawnLocation));
+			`log(Block@"AttachBlock. ParentDir:"@Normal(Parent.Location - SpawnLocation));
 			if(round(ParentDir.Z) == 0)
 			{
 				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
@@ -150,19 +152,9 @@ static function TowerBlock AttachPlaceable(TowerBlock BlockArchetype,
 	return Block;
 }
 
-static function RemovePlaceable(TowerBlock Block, out TowerTree NodeTree)
+static function RemoveBlock(TowerBlock Block, out TowerTree NodeTree)
 {
 	NodeTree.RemoveNode(Block);
-}
-
-function StaticMesh GetPlaceableStaticMesh()
-{
-	return StaticMeshComponent.StaticMesh;
-}
-
-function MaterialInterface GetPlaceableMaterial(int Index)
-{
-	return StaticMeshComponent.GetMaterial(Index);
 }
 
 simulated function IVector GetGridLocation()
@@ -176,23 +168,7 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
-	InitializeMeshComponent();
 //	SetOwner(OwnerPRI);
-}
-
-function InitializeMeshComponent()
-{
-	local MeshComponent NewMeshComponent;
-	if(bEnableApexDestructibles && TowerBlock(ObjectArchetype).bUseApexDestructible)
-	{
-		NewMeshComponent = new class'ApexStaticDestructibleComponent' (MeshComponents[1]);
-	}
-	else
-	{
-		NewMeshComponent = new class'StaticMeshComponent' (MeshComponents[0]);
-	}
-	MeshComponent = NewMeshComponent;
-	AttachComponent(MeshComponent);
 }
 
 final function TowerBlock GetParent()
@@ -253,8 +229,8 @@ static final function bool IsReplicable()
 	return TRUE;
 }
 
-/** This would be extremely useful if not for collision issues between the PlayerController and TowerBlocks. */
-reliable server function RemoveSelf()
+/** */
+reliable server function Remove()
 {
 	`log(Self@"Says to remove self!");
 }
@@ -272,9 +248,11 @@ simulated function OnEnterRange(TowerTargetable Targetable)
  * @param Momentum force caused by this hit
  * @param DamageType class describing the damage that was done
  * @param HitInfo additional info about where the hit occurred
- * @param DamageCauser the Actor that directly caused the damage (i.e. the Projectile that exploded, the Weapon that fired, etc)
+ * @param DamageCauser the Actor that directly caused the damage (i.e. the Projectile that exploded, 
+ the Weapon that fired, etc)
  */
-event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
+event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vector Momentum, 
+class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
 //	`log("Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
 	Max(0, Damage);
@@ -290,7 +268,7 @@ event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vec
 Should be overridden in a subclass to add any effects and the Super version called to remove it. */
 event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 {
-	OwnerPRI.Tower.RemovePlaceable(self);
+	OwnerPRI.Tower.RemoveBlock(self);
 }
 
 auto simulated state Stable
@@ -320,7 +298,6 @@ simulated state Unstable
 	event DroppedSpace()
 	{
 		`log("Dropped space");
-		BlocksFallen++;
 		// SetRelativeLocation here to be sure?
 		//SetFullLocation(Location, false);
 //		SetGridLocation();
@@ -349,8 +326,6 @@ simulated state Unstable
 		else
 		{
 			bReplicateMovement = false;
-			BlocksFallen = 0;
-			StartZ = Location.Z;
 			SetTimer(TimeToDrop(), true, 'DroppedSpace');
 		}
 	}
@@ -461,7 +436,7 @@ event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent Ot
 DefaultProperties
 {
 	DisplayName="GIVE ME A NAME"
-	bAddToPlaceablesList=TRUE
+	bAddToBuildList=TRUE
 	Health=100
 	HealthMax=100
 
@@ -474,9 +449,6 @@ DefaultProperties
 	bAlwaysRelevant = true
 	bCollideActors=true
 	bBlockActors=TRUE
-	XSize = 0
-	YSize = 0
-	ZSize = 0
 
 	Begin Object Name=MyLightEnvironment
 		bDynamic=FALSE
