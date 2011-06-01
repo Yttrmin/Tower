@@ -41,11 +41,11 @@ reliable server function AddTree()
 	NodeTree = new class'TowerTree';
 }
 
-function TowerBlock AddPlaceable(TowerBlock BlockArchetype, TowerBlock Parent,
+function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	out Vector SpawnLocation, out IVector GridLocation)
 {
 	local TowerBlock NewBlock;
-	NewBlock = BlockArchetype.AttachPlaceable(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	NewBlock = BlockArchetype.AttachBlock(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
 	// Tell AI about this?
 	return NewBlock;
 }
@@ -54,9 +54,9 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 {
 }
 
-function bool RemovePlaceable(TowerBlock Block)
+function bool RemoveBlock(TowerBlock Block)
 {
-	Block.RemovePlaceable(Block, NodeTree);
+	Block.RemoveBlock(Block, NodeTree);
 	return true;
 //	NodeTree.RemoveNode(Placeable);
 }
@@ -79,21 +79,6 @@ function TowerBlock GetBlockFromLocationAndDirection(out IVector GridLocation, o
 	Block = NodeTree.Root.Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
 //	`log(Block);
 	return TowerBlock(Block);
-}
-
-function bool RemoveBlock(TowerBlock Block)
-{
-	local TowerBlock IterateBlock;
-	DebugBlocks.RemoveItem(Block);
-	NodeTree.RemoveNode(Block);
-	//@DEBUG
-	FlushDebugStrings();
-	foreach DebugBlocks(IterateBlock)
-	{
-		DrawDebugString(Vect(-128,-128,0), IterateBlock.Name, IterateBlock);
-	}
-	//@DEBUG
-	return true;
 }
 
 function bool CheckForParent(TowerBlock Block)

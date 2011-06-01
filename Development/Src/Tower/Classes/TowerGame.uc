@@ -114,6 +114,10 @@ event PostLogin(PlayerController NewPlayer)
 	Super.PostLogin(NewPlayer);
 	//@TODO - Maybe not make this automatic?
 	AddTower(TowerPlayerController(NewPlayer));
+	if(!MatchIsInProgress())
+	{
+		StartMatch();
+	}
 }
 
 //Mods.AddItem(TowerModInfo(DynamicLoadObject("TowerMod.ModInfo", class'TowerModInfo', false)));
@@ -436,7 +440,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
-	Root = AddPlaceable(TPRI.Tower, GameMods[0].ModBlocks[0], None, GridLocation);
+	Root = AddBlock(TPRI.Tower, GameMods[0].ModBlocks[0], None, GridLocation);
 	TPRI.Tower.Root = TowerBlockRoot(Root);
 	Hivemind.OnRootBlockSpawn(TowerBlockRoot(Root));
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
@@ -451,7 +455,7 @@ function SetTowerName(Tower Tower, string NewTowerName)
 	Tower.TowerName = NewTowerName;
 }
 
-function TowerBlock AddPlaceable(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
+function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
 	out IVector GridLocation)
 {
 	local Vector SpawnLocation;
@@ -463,7 +467,7 @@ function TowerBlock AddPlaceable(Tower Tower, TowerBlock BlockArchetype, TowerBl
 	`assert(BlockArchetype != None);
 	if(CanAddBlock(VectorGridLocation))
 	{
-		return Tower.AddPlaceable(BlockArchetype, Parent, SpawnLocation, GridLocation);
+		return Tower.AddBlock(BlockArchetype, Parent, SpawnLocation, GridLocation);
 	}
 	else
 	{
@@ -471,9 +475,9 @@ function TowerBlock AddPlaceable(Tower Tower, TowerBlock BlockArchetype, TowerBl
 	}
 }
 
-function RemovePlaceable(Tower Tower, TowerBlock Block)
+function RemoveBlock(Tower Tower, TowerBlock Block)
 {
-	Tower.RemovePlaceable(Block);
+	Tower.RemoveBlock(Block);
 }
 
 function bool CanAddBlock(out Vector GridLocation)

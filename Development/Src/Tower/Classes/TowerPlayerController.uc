@@ -267,26 +267,26 @@ exec function DebugGetKeyFromCommand(string Command)
 	`log("Key:"@String(TowerPlayerInput(PlayerInput).GetKeyFromCommand(Command)));
 }
 
-function AddPlaceable(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
+function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
-	local int ModIndex, ModPlaceableIndex;
-	ConvertPlaceableToIndexes(BlockArchetype, ModIndex, ModPlaceableIndex);
-	ServerAddPlaceable(ModIndex, ModPlaceableIndex, Parent, GridLocation);
+	local int ModIndex, ModBlockIndex;
+	ConvertBlockToIndexes(BlockArchetype, ModIndex, ModBlockIndex);
+	ServerAddBlock(ModIndex, ModBlockIndex, Parent, GridLocation);
 	//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 }
 
-reliable server function ServerAddPlaceable(int ModIndex, int ModPlaceableIndex, TowerBlock Parent, IVector GridLocation)
+reliable server function ServerAddBlock(int ModIndex, int ModBlockIndex, TowerBlock Parent, IVector GridLocation)
 {
-	TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), ConvertIndexesToPlaceable(ModIndex, ModPlaceableIndex), Parent, GridLocation);
+	TowerGame(WorldInfo.Game).AddBlock(GetTower(), ConvertIndexesToBlock(ModIndex, ModBlockIndex), Parent, GridLocation);
 }
 
-simulated final function ConvertPlaceableToIndexes(TowerBlock BlockArchetype, out int ModIndex, out int ModPlaceableIndex)
+simulated final function ConvertBlockToIndexes(TowerBlock BlockArchetype, out int ModIndex, out int ModBlockIndex)
 {
 	local TowerModInfo Mod;
 	for(Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod; Mod != None; Mod = Mod.NextMod)
 	{
-		ModPlaceableIndex = Mod.ModBlocks.find(BlockArchetype);
-		if(ModPlaceableIndex != -1)
+		ModBlockIndex = Mod.ModBlocks.find(BlockArchetype);
+		if(ModBlockIndex != -1)
 		{
 			return;
 		}
@@ -294,7 +294,7 @@ simulated final function ConvertPlaceableToIndexes(TowerBlock BlockArchetype, ou
 	}
 }
 
-function TowerBlock ConvertIndexesToPlaceable(out int ModIndex, out int ModPlaceableIndex)
+function TowerBlock ConvertIndexesToBlock(out int ModIndex, out int ModBlockIndex)
 {
 	local TowerModInfo Mod;
 	Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod;
@@ -303,11 +303,11 @@ function TowerBlock ConvertIndexesToPlaceable(out int ModIndex, out int ModPlace
 		Mod = Mod.NextMod;
 		ModIndex--;
 	}
-	return Mod.ModBlocks[ModPlaceableIndex];
+	return Mod.ModBlocks[ModBlockIndex];
 }
 
 /** Called from TowerHUD::OnMouseClick if a valid TowerPlaceable is selected for removal. */
-simulated function RemovePlaceable(TowerBlock Block)
+simulated function RemoveBlock(TowerBlock Block)
 {
 	`log("RemovePlaceable:"@Block);
 //	Placeable.RemoveSelf();
@@ -318,13 +318,8 @@ simulated function RemovePlaceable(TowerBlock Block)
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
 {
-	ServerRemovePlaceable(Block);
-}
-
-function ServerRemovePlaceable(TowerBlock Block)
-{
 	`log("ServerRemovePlaceable:"@Block);
-	TowerGame(WorldInfo.Game).RemovePlaceable(GetTower(), Block);
+	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
 }
 
 reliable server function ServerRemoveAllBlocks()

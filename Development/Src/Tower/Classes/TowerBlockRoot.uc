@@ -123,9 +123,6 @@ function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)
 DefaultProperties
 {
 	DisplayName="Root Block"
-	XSize = 256
-	YSize = 256
-	ZSize = 256
 	Begin Object Name=StaticMeshComponent0
 	    StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
 		Materials(0)=Material'TowerBlocks.DebugBlockMaterial'

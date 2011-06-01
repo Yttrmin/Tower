@@ -56,6 +56,7 @@ function DrawHUD()
 	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedBlock || HUDMovie.bInMenu))
 	{
 		LastHighlightedBlock.UnHighlight();
+		LastHighlightedBlock = None;
 	}
 	if(TracedBlock != None && !HUDMovie.bInMenu)
 	{
@@ -80,7 +81,7 @@ event OnMouseClick(int Button)
 	{
 		if(HUDMovie.bInMenu)
 		{
-			HUDMovie.PlaceablesList.onMousePress();
+			HUDMovie.BuildList.onMousePress();
 		}
 		else
 		{
@@ -92,7 +93,7 @@ event OnMouseClick(int Button)
 //				FinalGridLocation.Y = Round(FinalGridLocation.Y);
 //				FinalGridLocation.Z = Round(FinalGridLocation.Z);
 //				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
-				TowerPlayerController(PlayerOwner).AddPlaceable(PlaceBlock, TracedBlock, FinalGridLocation);
+				TowerPlayerController(PlayerOwner).AddBlock(PlaceBlock, TracedBlock, FinalGridLocation);
 			}
 		}
 	}
@@ -104,25 +105,25 @@ event OnMouseClick(int Button)
 		// Don't let the player remove the root block.
 		if(TracedBlock != None && TowerBlockRoot(TracedBlock) == None)
 		{
-			TowerPlayerController(PlayerOwner).RemovePlaceable(TracedBlock);
+			TowerPlayerController(PlayerOwner).RemoveBlock(TracedBlock);
 		}
 	}
 }
 
-function SetupPlaceablesList()
+function SetupBuildList()
 {
 	//@TODO - Order list.
 	local TowerBlock IteratedBlock;
 	local int i;
 	foreach TowerGameReplicationInfo(WorldInfo.GRI).Blocks(IteratedBlock, i)
 	{
-		if(IteratedBlock.bAddToPlaceablesList)
+		if(IteratedBlock.bAddToBuildList)
 		{
-			HUDMovie.PlaceableStrings.AddItem(IteratedBlock.DisplayName);
-			HUDMovie.PlaceableIndex.AddItem(i);
+			HUDMovie.BuildStrings.AddItem(IteratedBlock.DisplayName);
+			HUDMovie.BuildIndexes.AddItem(i);
 		}
 	}
-	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.PlaceableStrings);
+	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.BuildStrings);
 	HUDMovie.OnBuildListChange(1);
 }
 
@@ -130,7 +131,7 @@ event OnMouseRelease(int Button)
 {
 	if(Button == 0)
 	{
-		HUDMovie.PlaceablesList.onMouseRelease();
+		HUDMovie.BuildList.onMouseRelease();
 	}
 }
 

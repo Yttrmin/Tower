@@ -97,23 +97,23 @@ state CollectData extends Active
 		Killers.sort(SortKillers);
 		for(i = 0; i < Killers.Length; i++)
 		{
-			CreatePlaceableTargetInfo(Killers[i], Info);
+			CreateBlockTargetInfo(Killers[i], Info);
 			Targets.AddItem(Info);
 		}
 		GotoState('Counter');
 	}
 
-	function CreatePlaceableTargetInfo(BlockKillInfo KillInfo, out BlockTargetInfo TargetInfo)
+	function CreateBlockTargetInfo(BlockKillInfo KillInfo, out BlockTargetInfo TargetInfo)
 	{
 		TargetInfo.Block = KillInfo.Block;
 		TargetInfo.ArchetypeIndex = Hivemind.Blocks.Find('BlockArchetype', TowerBlock(KillInfo.Block.ObjectArchetype));
 		if(TargetInfo.ArchetypeIndex == -1)
 		{
-			TargetInfo.ArchetypeIndex = AddPlaceableInfoFromKillInfo(KillInfo);
+			TargetInfo.ArchetypeIndex = AddBlockInfoFromKillInfo(KillInfo);
 		}
 	}
 
-	function int AddPlaceableInfoFromKillInfo(BlockKillInfo Info)
+	function int AddBlockInfoFromKillInfo(BlockKillInfo Info)
 	{
 		local AIBlockInfo NewInfo;
 		NewInfo.BlockArchetype = TowerBlock(Info.Block.ObjectArchetype);

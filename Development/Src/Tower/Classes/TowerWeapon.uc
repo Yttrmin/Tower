@@ -103,7 +103,7 @@ simulated function InstantFire()
 		// would probably have to run a full simulation on remote clients.
 		SetFlashLocation(RealImpact.HitLocation);
 	}
-	`log(Self.Instigator@"shot"@RealImpact.HitActor);
+//	`log(Self.Instigator@"shot"@RealImpact.HitActor);
 	// Process all Instant Hits on local player and server (gives damage, spawns any effects).
 	for (Idx = 0; Idx < ImpactList.Length; Idx++)
 	{
@@ -216,7 +216,7 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 			}
 		}
 	}
-	`log(Self@"CalcWeaponFired returning"@CurrentImpact.HitActor);
+//	`log(Self@"CalcWeaponFired returning"@CurrentImpact.HitActor);
 	return CurrentImpact;
 }
 
