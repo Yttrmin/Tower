@@ -1,6 +1,7 @@
 class TowerTree extends Object
 	config(Tower)
-	dependson(TowerBlock);
+	dependson(TowerBlock)
+	/*Deprecated*/;
 
 struct Chunk
 {

@@ -16,6 +16,7 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 
 var() int Health;
 var() int HealthMax;
+var() int BaseCost;
 
 var const int DropRate;
 
@@ -39,6 +40,7 @@ var private DynamicNavMeshObstacle Obstacle;
 var int ModIndex, ModBlockIndex;
 
 /** User-friendly name. Used for things like the build menu. */
+//@TODO - Why not make this type name?
 var() const String DisplayName;
 /** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
 var() const bool bAddToBuildList;
@@ -116,7 +118,8 @@ static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 		if(Parent != None)
 		{
 			// Get PRI somewhere else since it might be none.
-			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,TRUE);
+			//TODO - Simple bool to check if we can just ignore this rotation stuff.
+			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,FALSE);
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 			`log(Block@"AttachBlock. ParentDir:"@Normal(Parent.Location - SpawnLocation));
 			if(round(ParentDir.Z) == 0)

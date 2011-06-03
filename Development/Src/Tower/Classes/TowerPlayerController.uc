@@ -31,20 +31,55 @@ state DebugEnemySpectating
 
 }
 
-//PlayerFlying
 state PlayerFlying
-{	
-	ignores SeePlayer, HearNoise, Bump;
+{
+	/*function ProcessMove( float DeltaTime, vector newAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+	{
+		if( (Pawn != None) && (Pawn.Acceleration != newAccel) )
+		{
+			Pawn.Acceleration = newAccel;
+		}
+	}*/
+
+	function MoveAutonomous(float DeltaTime, byte CompressedFlags, vector newAccel, rotator DeltaRot)
+	{
+		local EDoubleClickDir DoubleClickMove;
+
+		if ( (Pawn != None) && Pawn.bHardAttach )
+			return;
+
+		DoubleClickMove = SavedMoveClass.static.SetFlags(CompressedFlags, self);
+		HandleWalking();
+
+		if ( bCheatFlying && (Pawn.Acceleration == vect(0,0,0)) )
+			Pawn.Velocity = vect(0,0,0);
+
+		ProcessMove(DeltaTime, newAccel, DoubleClickMove, DeltaRot);
+
+		if ( Pawn != None )
+		{
+			Pawn.AutonomousPhysics(DeltaTime);
+		}
+		else
+		{
+			AutonomousPhysics(DeltaTime);
+		}
+		bDoubleJump = false;
+		//`log("Role "$Role$" moveauto time "$100 * DeltaTime$" ("$WorldInfo.TimeDilation$")");
+	}
+
 	function PlayerMove(float DeltaTime)
 	{
+		Super.PlayerMove(DeltaTime);
+		/*
 		local vector X,Y,Z;
 
 		GetAxes(Rotation,X,Y,Z);
 
-		Pawn.Acceleration = PlayerInput.aForward*X + PlayerInput.aStrafe*Y + PlayerInput.aUp*vect(0,0,1);
+		Pawn.Acceleration = PlayerInput.aForward*X + PlayerInput.aStrafe*Y + PlayerInput.aUp*vect(0,0,1);;
 		Pawn.Acceleration = Pawn.AccelRate * Normal(Pawn.Acceleration);
 
-		if ((Pawn.Acceleration == vect(0,0,0)) )
+		if ( bCheatFlying && (Pawn.Acceleration == vect(0,0,0)) )
 			Pawn.Velocity = vect(0,0,0);
 		// Update rotation.
 		UpdateRotation( DeltaTime );
@@ -53,6 +88,7 @@ state PlayerFlying
 			ReplicateMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
 		else
 			ProcessMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
+		*/
 	}
 }
 
@@ -267,6 +303,26 @@ exec function DebugGetKeyFromCommand(string Command)
 	`log("Key:"@String(TowerPlayerInput(PlayerInput).GetKeyFromCommand(Command)));
 }
 
+exec function DebugSpawnAir(int Amount)
+{
+	local int i;
+	for(i = 0; i < Amount; i++)
+	{
+		Spawn(class'TowerBlockAir',,,,,,true);
+	}
+}
+
+exec function DebugTestIterators()
+{
+	local TowerBlock IteratorBlock;
+	`log("=================================================");
+	foreach OverlappingActors(class'TowerBlock', IteratorBlock, 1024, Vect(0,0,128), false)
+	{
+		`log(IteratorBlock@"iterated!");
+	}
+	`log("=================================================");
+}
+
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
 	local int ModIndex, ModBlockIndex;
@@ -345,6 +401,8 @@ function TowerPlayerReplicationInfo GetTPRI()
 
 DefaultProperties
 {
+	bCheatFlying=true
+
 	InputClass=class'Tower.TowerPlayerInput'
 	CollisionType=COLLIDE_BlockAllButWeapons
 	bCollideActors=true
