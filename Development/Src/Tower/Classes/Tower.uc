@@ -45,7 +45,17 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	out Vector SpawnLocation, out IVector GridLocation)
 {
 	local TowerBlock NewBlock;
+	local Vector AirSpawnLocation;
+	local IVector AirGridLocation;
 	NewBlock = BlockArchetype.AttachBlock(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	if(NewBlock.class != class'TowerBlockAir')
+	{
+		AirGridLocation = NewBlock.GridLocation + Vect(1,0,0);
+		AirSpawnLocation.X = (AirGridLocation.X * 256);
+		AirSpawnLocation.Y = (AirGridLocation.Y * 256);
+		AirSpawnLocation.Z = (AirGridLocation.Z * 256) + 128;
+		NewBlock.AttachBlock(TowerGame(WorldInfo.Game).GameMods[0].ModBlocks[5], NewBlock, NodeTree, AirSpawnLocation, AirGridLocation, OwnerPRI);
+	}
 	// Tell AI about this?
 	return NewBlock;
 }

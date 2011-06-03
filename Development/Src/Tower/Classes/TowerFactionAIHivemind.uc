@@ -1,4 +1,12 @@
-class TowerFactionAIHivemind extends Object;
+/**
+TowerFactionAIHivemind
+
+A class to store and manipulate information useful for all TowerFactionAIs.
+This class is ticked during asynchronous work, so any sort of collision, spawning, location, etc related function
+will fail!
+*/
+class TowerFactionAIHivemind extends Info
+	config(Tower);
 
 struct BlockUsage
 {
@@ -17,14 +25,43 @@ struct AIBlockInfo
 	var BlockUsage Flags;
 };
 
+struct BlockNode
+{
+	var int Cost;
+};
+
+struct BlockInfo
+{
+	var TowerBlock Block;
+	var int Cost;
+};
+
+struct TowerBlockAir extends BlockNode
+{
+	var IVector GridLocation;
+};
+
+var config bool bSaveToDisk;
+
 var array<AIBlockInfo> Blocks;
 //@TODO - Doesn't handle multiplayer.
 var TowerAIObjective RootBlock;
+
+var array<delegate<AsyncTick> > ToTick;
+
+delegate AsyncTick(float DeltaTime);
+
+event Tick(float DeltaTime)
+{
+	Super.Tick(DeltaTime);
+}
 
 event Initialize()
 {
 	`log("HIVEMIND CREATED");
 }
+
+function RegisterForAsyncTick(delegate<AsyncTick> TickDelegate);
 
 event OnRootBlockSpawn(TowerBlockRoot Root)
 {
@@ -36,6 +73,10 @@ event OnRootBlockSpawn(TowerBlockRoot Root)
 	//@TODO - Spawn this in the block, create points for people to actually run to.
 	RootBlock = Root.Spawn(class'TowerAIObjective',,, NewLocation);
 	RootBlock.SetTarget(Root);
+}
+
+event OnBlockSpawn(TowerBlock NewBlock)
+{
 }
 
 function SaveToDisk()
@@ -60,4 +101,9 @@ function LoadFromDisk()
 	{
 		// Loading failed.
 	}
+}
+
+DefaultProperties
+{
+	TickGroup=TG_DuringAsyncWork
 }

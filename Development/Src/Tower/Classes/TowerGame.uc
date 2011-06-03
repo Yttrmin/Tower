@@ -23,7 +23,7 @@ var byte FactionCount;
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 var array<TowerModInfo> GameMods;
 
-var array<TowerModInfo> Mods;
+var deprecated array<TowerModInfo> Mods;
 var config const array<String> ModPackages;
 
 var TowerFactionAIHivemind Hivemind;
@@ -43,7 +43,7 @@ event PostBeginPlay()
 {
 //	local TowerModInfo ZMOd;
 	Super.PostBeginPlay();
-	Hivemind = new class'TowerFactionAIHivemind';
+	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
 	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
