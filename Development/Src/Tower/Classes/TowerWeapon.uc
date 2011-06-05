@@ -89,12 +89,12 @@ simulated function InstantFire()
 	RealImpact = CalcWeaponFire(StartTrace, EndTrace, ImpactList);
 
 	if (Role == ROLE_Authority)
-	{
+	{/*	
 		FlushPersistentDebugLines();
 		DrawDebugSphere( StartTrace, 10, 10, 0, 255, 0 );
 		DrawDebugSphere( EndTrace, 10, 10, 255, 0, 0 );
 		DrawDebugSphere( RealImpact.HitLocation, 10, 10, 0, 0, 255 );
-/*		`log( self@GetFuncName()@Instigator@RealImpact.HitLocation@RealImpact.HitActor );*/
+	`log( self@GetFuncName()@Instigator@RealImpact.HitLocation@RealImpact.HitActor );*/
 
 		// Set flash location to trigger client side effects.
 		// if HitActor == None, then HitLocation represents the end of the trace (maxrange)

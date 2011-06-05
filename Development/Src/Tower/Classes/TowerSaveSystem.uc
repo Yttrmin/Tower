@@ -13,7 +13,7 @@ struct immutable BlockSaveInfo
 	var IVector G, P;
 };
 
-const SAVE_FILE_VERSION = 2;
+const SAVE_FILE_VERSION = 3;
 
 var string SaveTowerName;
 var array<String> ModNames;

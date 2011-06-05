@@ -144,7 +144,7 @@ function CheckForMods()
 //		`log("MOD CLASS:"@ModInfo);
 //		TMI = Spawn(ModInfo);
 		TMI.PreInitialize(i);
-		TMI.Test();
+//		TMI.Test();
 		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
 		GameMods.AddItem(TMI);
 		if(i == 0)
@@ -261,7 +261,7 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, GameMods[0].ModFactionAIs[0], FL_NegX);
+	AddFactionAI(5, GameMods[0].ModFactionAIs[1], FL_NegX);
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
 //	for(i = 0; i < 200; i++)

@@ -16,7 +16,18 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 
 var() int Health;
 var() int HealthMax;
+/** User-friendly name. Used for things like the build menu. */
+//@TODO - Why not make this type name?
+var() const Name DisplayName;
+var() const String Description;
+/** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
+var() const bool bAddToBuildList;
+
+//=========================================================
+// A*-related
 var() int BaseCost;
+var TowerBlock AStarParent;
+//=========================================================
 
 var const int DropRate;
 
@@ -38,12 +49,6 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 var private DynamicNavMeshObstacle Obstacle;
 
 var int ModIndex, ModBlockIndex;
-
-/** User-friendly name. Used for things like the build menu. */
-//@TODO - Why not make this type name?
-var() const String DisplayName;
-/** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
-var() const bool bAddToBuildList;
 
 replication
 {
@@ -121,7 +126,7 @@ static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 			//TODO - Simple bool to check if we can just ignore this rotation stuff.
 			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,FALSE);
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
-			`log(Block@"AttachBlock. ParentDir:"@Normal(Parent.Location - SpawnLocation));
+//			`log(Block@"AttachBlock. ParentDir:"@Normal(Parent.Location - SpawnLocation));
 			if(round(ParentDir.Z) == 0)
 			{
 				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
@@ -442,6 +447,8 @@ DefaultProperties
 	bAddToBuildList=TRUE
 	Health=100
 	HealthMax=100
+
+	BaseCost=10
 
 	CustomTimeDilation=1
 
