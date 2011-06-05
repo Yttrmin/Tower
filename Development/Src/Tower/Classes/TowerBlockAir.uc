@@ -19,4 +19,5 @@ DefaultProperties
 	bAddToBuildList=true //@TODO - Make me false
 	RemoteRole=ROLE_None
 	bProjTarget=false
+	BaseCost=2
 }

@@ -371,9 +371,9 @@ function Vector GetSpawnLocation(const TroopInfo Troop, const out Vector OriginL
 	{
 		/*
 		Out.X = SpawnIn.X + (Math.Cos(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
-                - Math.Sin(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
-            Out.Y = SpawnIn.Y + (Math.Sin(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
-                + Math.Cos(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
+				- Math.Sin(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
+			Out.Y = SpawnIn.Y + (Math.Sin(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
+				+ Math.Cos(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
 		*/
 		local Vector Coordinates;
 		local Vector ModTroopLocation;
@@ -407,9 +407,11 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 //	Canvas.CurX = UnitsOut;
 //	Canvas.DrawText("HI");
 //	UnitsOut++;
-
+	Canvas.SetDrawColor(255,255,255);
+	Canvas.SetPos(0,0);
+	Canvas.CurX = 0;
 	Canvas.CurY = 50;
-	Canvas.DrawText("Faction:"@Self);
+	Canvas.DrawText("Faction:"@Self, false);
 
 	Canvas.CurX = 0;
 	Canvas.CurY = 65;

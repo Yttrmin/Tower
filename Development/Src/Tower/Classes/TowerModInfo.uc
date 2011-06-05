@@ -8,22 +8,22 @@ class TowerModInfo extends ReplicationInfo
 	ClassGroup(Tower)
 	HideCategories(Display,Attachment,Physics,Advanced,Object)
 	AutoExpandCategories(TowerModInfo)
-	placeable; // Or make this placeable as well so it can all be done in UnrealEd?
+	placeable;
 
-var() const string ModName;
-var() const string AuthorName;
-var() const string Contact;
-var() const string Description;
-var() const string Version;
+var() privatewrite const string ModName;
+var() privatewrite const string AuthorName;
+var() privatewrite const string WebSite;
+var() privatewrite const string Contact;
+var() privatewrite const string Description;
+var() privatewrite const string Version;
 
-var() protectedwrite const array<TowerBlock> ModBlocks;
+var() privatewrite const array<TowerBlock> ModBlocks;
 
-var() protectedwrite const array<TowerFactionAI> ModFactionAIs;
+var() privatewrite const array<TowerFactionAI> ModFactionAIs;
 
 var repnotify TowerModInfo NextMod;
 
-var bool bLoaded;
-var bool bTest;
+var deprecated bool bLoaded;
 
 replication
 {
@@ -59,26 +59,32 @@ final function PreInitialize(int ModIndex)
 final function AddMod(TowerModInfo Mod)
 {
 	local TowerModInfo ModList;
-	for(ModList = Self; ModList != None; ModList = ModList.NextMod)
-	{
-	}
+	for(ModList = Self; ModList != None; ModList = ModList.NextMod);
 	ModList.NextMod = Mod;
 }
 
+//==============================================================================
+// Save/Load events.
+// Note that custom blocks are saved and loaded by the game, there's no need to save/load them yourself.
+
+/** Called by TowerGame during a regular save. */
 event GameSaved();
 
+/** Called by TowerGame during a regular load. */
 event GameLoaded();
 
+/** Called by TowerGame during a quick save. */
 event GameQuickSaved();
 
+/** Called by TowerGame during a quick load. */
 event GameQuickLoaded();
-
-function Test();
+//==============================================================================
 
 DefaultProperties
 {
 	ModName="My Mod Name"
 	AuthorName="My Name"
+	WebSite="My Website"
 	Contact="My Email"
 	Description="My Description"
 	Version="1.0"

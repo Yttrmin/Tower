@@ -119,7 +119,7 @@ function SetupBuildList()
 	{
 		if(IteratedBlock.bAddToBuildList)
 		{
-			HUDMovie.BuildStrings.AddItem(IteratedBlock.DisplayName);
+			HUDMovie.BuildStrings.AddItem(String(IteratedBlock.DisplayName));
 			HUDMovie.BuildIndexes.AddItem(i);
 		}
 	}

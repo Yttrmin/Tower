@@ -47,13 +47,18 @@ var array<AIBlockInfo> Blocks;
 //@TODO - Doesn't handle multiplayer.
 var TowerAIObjective RootBlock;
 
-var array<delegate<AsyncTick> > ToTick;
+var privatewrite array<delegate<AsyncTick> > ToTick;
 
 delegate AsyncTick(float DeltaTime);
 
 event Tick(float DeltaTime)
 {
+	local delegate<AsyncTick> TickDelegate;
 	Super.Tick(DeltaTime);
+	foreach ToTick(TickDelegate)
+	{
+		TickDelegate(DeltaTime);
+	}
 }
 
 event Initialize()
@@ -61,7 +66,20 @@ event Initialize()
 	`log("HIVEMIND CREATED");
 }
 
-function RegisterForAsyncTick(delegate<AsyncTick> TickDelegate);
+function RegisterForAsyncTick(delegate<AsyncTick> TickDelegate)
+{
+	ToTick.AddItem(TickDelegate);
+	SetTickIsDisabled(false);
+}
+
+function UnRegisterForAsyncTick(delegate<AsyncTick> TickDelegate)
+{
+	ToTick.RemoveItem(TickDelegate);
+	if(ToTick.Length == 0)
+	{
+		SetTickIsDisabled(true);
+	}
+}
 
 event OnRootBlockSpawn(TowerBlockRoot Root)
 {
