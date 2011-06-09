@@ -11,7 +11,6 @@ var float MouseX, MouseY;
 
 var GFxScrollingList BuildList;
 var array<int> BuildIndexes;
-var array<string> BuildStrings;
 
 var protectedwrite bool bInMenu;
 

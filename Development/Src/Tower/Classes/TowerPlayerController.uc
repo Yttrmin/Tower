@@ -204,12 +204,6 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
-exec function TestStaticSaveLoadGame(String FileName)
-{
-	class'TowerSaveSystem'.static.TestStaticSave(FileName, self);
-	class'TowerSaveSystem'.static.LoadStaticSave(FileName, self);
-}
-
 // Only thing that really matters is lighting! (hopefully!)
 //@TODO - But what about when blocks are falling?!
 /** Creates a bunch of blocks and modules (as components) to test how many MeshComponents we can handle! */
@@ -321,6 +315,16 @@ exec function DebugTestIterators()
 		`log(IteratorBlock@"iterated!");
 	}
 	`log("=================================================");
+}
+
+exec function DebugTestReplicateArchetype()
+{
+	ServerTestReplicateArchetype(TowerGameReplicationInfo(WorldInfo.GRI).RootMod.ModBlocks[0]);
+}
+
+reliable server function ServerTestReplicateArchetype(TowerBlock Block)
+{
+	`log("STRA:"@Block@Block.class@Block.ObjectArchetype);
 }
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)

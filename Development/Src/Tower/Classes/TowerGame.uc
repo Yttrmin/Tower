@@ -18,23 +18,37 @@ enum FactionLocation
 	FL_All
 };
 
+struct ModCheck
+{
+	var String ModName;
+	var byte MajorVersion, MinorVersion;
+};
+
+/** Used to compare to ?Mod= strings passed in during PreLogin(). Can be used after CheckForMods(). */
+var array<ModCheck> LoadedMods;
+
 var array<TowerFaction> Factions;
-var byte FactionCount;
-var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
-var array<TowerModInfo> GameMods;
-
-var deprecated array<TowerModInfo> Mods;
-var config const array<String> ModPackages;
-
 var TowerFactionAIHivemind Hivemind;
-
+var byte FactionCount;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var protected byte RemainingActiveFactions;
+
+var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
+
+var globalconfig const bool bCheckClientMods;
+var globalconfig const array<String> ModPackages;
+/** First element of the TowerModInfo linked list. This is always assumed to be TowerMod! */
+var TowerModInfo RootMod;
+/** Archetype to use for spawning the root blocks of towers. */
+var TowerBlock RootArchetype;
+/** Archetype to use for spawning air surrounding blocks. */
+var TowerBlock AirArchetype;
 
 var const Vector Borders[4];
 
 event PreBeginPlay()
 {
+	`log(Self.default.ModPackages[0]);
 	Super.PreBeginPlay();
 	CheckForMods();
 }
@@ -67,35 +81,49 @@ event InitGame(string Options, out string ErrorMessage)
 event PreLogin(string Options, string Address, out string ErrorMessage)
 {
 	//@TODO - Check mod list in Options.
+	// New -> ModName|Major.Minor;OtherMod|Major.Minor
 	// Tower|0.1;MyMod|1.0
-	local int i;
+	local int ModIndex;
+	local byte MissingMods, OutdatedMods;//, OutdatedButUsableMods;
+	local byte MajorVersion, MinorVersion;
 	local TowerModInfo Mod;
-	local String ModsList;
+	local String ModsList, VersionString;
 	local array<String> ModNames;
 
-	local array<TowerModInfo> MissingMods;
-
+	`log("PreLogin:"@Options@Address@ErrorMessage);
 	ModsList = ParseOption(Options, "Mods");
-	ModNames = SplitString(ModsList);
-	foreach GameMods(Mod)
+	ModNames = SplitString(ModsList, ";");
+
+	for(Mod = Rootmod; Mod != None; Mod = Mod.NextMod)
 	{
-		if(ModNames.Find(Mod.ModName$Mod.Version) == -1)
+		ModIndex = ModNames.Find(Mod.ModName);
+		if(ModIndex == -1)
 		{
-			MissingMods.AddItem(Mod);
+			ErrorMessage $= "Mod missing:"$Mod.ModName@"Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
+			MissingMods++;
+		}
+		else
+		{
+			VersionString = Right(ModNames[ModIndex], InStr(ModNames[ModIndex], "|"));
+			MajorVersion = Byte(Left(VersionString, InStr(VersionString, ".")));
+			MinorVersion = Byte(Right(VersionString, InStr(VersionString, ".")));
+			if(MajorVersion == Mod.MajorVersion)
+			{
+				if(MinorVersion != Mod.MinorVersion)
+				{
+//					OutdatedButUsableMods++;
+				}
+			}
+			else
+			{
+				ErrorMessage $= "Mod outdated:"$Mod.ModName@"Your Version:"$MajorVersion$"."$MinorVersion@"Server Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
+				OutdatedMods++;
+			}
 		}
 	}
-	if(MissingMods.Length > 0)
+	if(MissingMods > 0 || OutdatedMods > 0)
 	{
-		ErrorMessage $= "Missing mods: ";
-		foreach MissingMods(Mod, i)
-		{
-			if(i > 0)
-			{
-				ErrorMessage $= ", ";
-			}
-			ErrorMessage $= Mod.ModName$"("$Mod.Version$")";
-		}
-		ErrorMessage $= ". Can't join server!";
+		ErrorMessage $= "Failed to join server! Missing"@MissingMods@"mods!"@OutdatedMods@"Mods outdated!";
 	}
 	Super.PreLogin(Options, Address, ErrorMessage);
 }
@@ -120,54 +148,52 @@ event PostLogin(PlayerController NewPlayer)
 	}
 }
 
-//Mods.AddItem(TowerModInfo(DynamicLoadObject("TowerMod.ModInfo", class'TowerModInfo', false)));
+/** Modding:
 
-function CheckForMods()
+*/
+
+/** Called from PreBeginPlay. Loads any mods listed in the config file. */
+final function CheckForMods()
 {
 	//@TODO - Convert package name to class name and such.
 	local int i;
-	local TowerModInfo Mod;
-//	local String ReplicatedModList;
+	local ModCheck Check;
+	local TowerModInfo LoadedMod;
 
-	local String TMIClass;
+	local String ModPackage;
 	local String ModInfoPath;
-	local TowerModInfo TMI;
-	`log("LOADING MODS");
-	`log("GameMods:"@GameMods.Length);
-	foreach ModPackages(TMIClass, i)
+	`log("Number of listed mods:"@ModPackages.Length);
+	foreach ModPackages(ModPackage, i)
 	{
-		`log("LOADING MOD:"@TMIClass);
-		ModInfoPath = TMIClass$".ModInfo";
-		TMI = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject(ModInfoPath,class'TowerModInfo',false)));
-//		Spawn(class'TowerBlockDebug',,,,,TowerBlockDebug(DynamicLoadObject("TowerMod.TestBlock",class'TowerBlockDebug',false)));
-		`log("SPANWED"@TMI);
-//		`log("MOD CLASS:"@ModInfo);
-//		TMI = Spawn(ModInfo);
-		TMI.PreInitialize(i);
-//		TMI.Test();
-		`log("MOD INFO:"@TMI@TMI.AuthorName@TMI.Description@TMI.Version);
-		GameMods.AddItem(TMI);
-		if(i == 0)
+		`log("Loading Mod:"@ModPackage);
+		ModInfoPath = ModPackage$".ModInfo";
+		LoadedMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject(ModInfoPath,class'TowerModInfo',false)));
+		LoadedMod.PreInitialize(i);
+		`log("Loaded Mod:"@LoadedMod@LoadedMod.AuthorName@LoadedMod.Description@LoadedMod.MajorVersion@LoadedMod.MinorVersion);
+		if(RootMod == None)
 		{
-			TowerGameReplicationInfo(GameReplicationInfo).RootMod = GameMods[0];
+			RootMod = LoadedMod;
+			TowerGameReplicationInfo(GameReplicationInfo).RootMod = RootMod;
+			RootArchetype = RootMod.ModBlocks[0];
+			AirArchetype = RootMod.ModBlocks[5];
 		}
 		else
 		{
-			TowerGameReplicationInfo(GameReplicationInfo).RootMod.AddMod(GameMods[GameMods.Length-1]);
+			RootMod.AddMod(LoadedMod);
 		}
+//		GameMods.AddItem(TMI);
 	}
-	`log("GameMods:"@GameMods.Length);
-	foreach GameMods(Mod, i)
+	`log("Number of loaded mods:"@RootMod.GetModCount());
+	for(LoadedMod = RootMod; LoadedMod != None; LoadedMod = LoadedMod.NextMod)
 	{
-		if(i > 0)
-		{
-//			ReplicatedModList $= ";";
-		}
-//		ReplicatedModList $= Mod.ModName;
+		Check.ModName = LoadedMod.ModName;
+		Check.MajorVersion = LoadedMod.MajorVersion;
+		Check.MinorVersion = LoadedMod.MinorVersion;
+		LoadedMods.AddItem(Check);
 	}
 //	`log("ReplicatedModList:"@ReplicatedModList);
 //	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
-	TowerGameReplicationInfo(GameReplicationInfo).ModCount = GameMods.Length;
+	TowerGameReplicationInfo(GameReplicationInfo).ModCount = RootMod.GetModCount();
 //	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
 }
 
@@ -261,7 +287,7 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, GameMods[0].ModFactionAIs[1], FL_NegX);
+	AddFactionAI(5, RootMod.ModFactionAIs[1], FL_NegX);
 //	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
 //		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
 //	for(i = 0; i < 200; i++)
@@ -307,36 +333,6 @@ exec function SkipRound()
 {
 	ClearTimer('GameTimerExpired');
 	GameTimerExpired(); 
-}
-
-//@DEPRECATED
-function AddFactionAIs()
-{
-	local int i;
-	local array<TowerSpawnPoint> FactionSpawnPoints;
-	local TowerSpawnPoint Point;
-	local byte AssignedFaction;
-	AssignedFaction = FL_NegX;
-	for(i = 0; i < 1/*4*/; i++)
-	{
-		// Empty the array each iteration so we don't give the Faction points it doesn't own.
-		FactionSpawnPoints.Remove(0, SpawnPoints.Length);
-		// Fill an array of spawn points for the AI.
-		foreach SpawnPoints(Point)
-		{
-			if(Point.Faction == AssignedFaction)
-			{
-				FactionSpawnPoints.AddItem(Point);
-			}
-		}
-		`log("SpawnPoints for faction:"@FactionSpawnPoints.Length);
-		Factions.AddItem(Spawn(GameMods[0].ModFactionAIs[0].class,,,,,GameMods[0].ModFactionAIs[0]));
-		TowerFactionAI(Factions[Factions.Length-1]).Hivemind = Hivemind;
-		Factions[Factions.Length-1].Faction = FactionLocation(AssignedFaction);
-		TowerFactionAI(Factions[Factions.Length-1]).ReceiveSpawnPoints(FactionSpawnPoints);
-		AssignedFaction++;
-		`log("Spawned AI?:"@Factions[0]);
-	}
 }
 
 function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
@@ -440,7 +436,7 @@ function AddTower(TowerPlayerController Player,  optional string TowerName="")
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 8*(NumPlayers-1);
-	Root = AddBlock(TPRI.Tower, GameMods[0].ModBlocks[0], None, GridLocation);
+	Root = AddBlock(TPRI.Tower, RootArchetype, None, GridLocation);
 	TPRI.Tower.Root = TowerBlockRoot(Root);
 	Hivemind.OnRootBlockSpawn(TowerBlockRoot(Root));
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);

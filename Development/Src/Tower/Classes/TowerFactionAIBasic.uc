@@ -72,13 +72,11 @@ state CollectData extends Active
 
 	function QueueFormations()
 	{
-		local int Budget;
 		local int ConsumedBudget;
 		local FormationSpawnInfo NewFormation;
 		local int FormationIndex;
-		Budget = TroopBudget;
 
-		while(ConsumedBudget + CalculateBaseFormationCost(3) <= Budget)
+		while(ConsumedBudget + CalculateBaseFormationCost(3) <= TroopBudget)
 		{
 			ConsumedBudget += CalculateBaseFormationCost(3);
 			FormationIndex = 3;
