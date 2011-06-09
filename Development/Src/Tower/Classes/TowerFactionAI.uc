@@ -118,28 +118,12 @@ struct FormationSpawnInfo
 	var TowerAIObjective Target;
 };
 
-/** Strategy the AI uses during the current round. */ 
-enum Strategy
-{
-	/** Default, used when not at war with anyone and thus not fighting. */
-	S_None,
-	/** The AI has enough information about the enemy and is trying to counter its forces. */
-	S_Counter,
-	/** The AI doesn't know enough about the enemy to counter it. */
-	S_CollectData,
-	S_Spam_Projectile
-};
-
 var protected Tower TargetTower;
 var() protected TowerFactionInfo FactionInfo;
 
 // These exist purely to cut down on the typecasting and function calling every tick.
 var protected TowerGame Game;
 var protected TowerGameReplicationInfo GRI;
-
-/** Current strategy this faction is basing its decisions on. 
-Only has an effect when changed ingame. */
-var(InGame) protected deprecated Strategy CurrentStrategy;
 
 var() protected const array<Formation> Formations;
 
@@ -550,7 +534,6 @@ DefaultProperties
 
 	bPostRenderIfNotVisible=true
 
-	CurrentStrategy=S_None
 	RemoteRole=ROLE_None
 	Begin Object Class=TowerFactionInfo Name=FactionInfo0
 	End Object

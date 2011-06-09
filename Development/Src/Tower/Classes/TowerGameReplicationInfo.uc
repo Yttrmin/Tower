@@ -28,7 +28,6 @@ replication
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	AreModsLoaded();
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -45,50 +44,31 @@ simulated event ReplicatedEvent(name VarName)
 	else if(VarName == 'RootMod')
 	{
 		`log("RootMod replicated!");
-		AreModsLoaded();
+		OnModReplicated(RootMod);
 	}
 }
 
-simulated function bool AreModsLoaded()
+/** Called when a TowerModInfo's NextMod was replicated. */
+simulated function OnModReplicated(TowerModInfo Mod)
 {
-	local int Count;
-	local TowerModInfo Mod;
-	`log("AREMODSLOADED");
-	if(bModsLoaded)
+	if(Role < ROLE_Authority)
 	{
-		return true;
-	}
-	if(ModCount != 0)
-	{
-		for(Mod = RootMod; Mod != None; Mod = Mod.NextMod)
+		if(Mod != None)
 		{
-			if(!Mod.bLoaded)
+			Loadmod(Mod);
+			`log(Mod.ModName@"loaded and ready!");
+		}
+		// We always assume TowerMod exists or will exist, so a ModCount of 0 means the value wasn't replicated yet!
+		if(!bModsLoaded && ModCount > 0)
+		{
+			// Watch out in case RootMod is replicated after another mod (very possible).
+			if(RootMod != None && RootMod.GetModCount() == ModCount)
 			{
-				LoadMod(Mod);
+				`log("All mods are loaded!");
+				bModsLoaded = true;
+				ConstructBuildList();
 			}
-			Count++;
 		}
-		`assert(Count <= ModCount);
-		if(Count == ModCount)
-		{
-			// All mods received!
-			bModsLoaded = TRUE;
-			`log("ALL MODS REPLICATED!");
-			ConstructBuildList();
-			return TRUE;
-		}
-		else
-		{
-			// Haven't received all the mods yet.
-			`log("NOT ALL MODS REPLICATED!");
-			return FALSE;
-		}
-	}
-	else
-	{
-		// ModCount hasn't been replicated yet.
-		`log("MODCOUNT NOT REPLICATED!");
-		return FALSE;
 	}
 }
 
@@ -99,7 +79,6 @@ simulated function LoadMod(TowerModInfo Mod)
 	{
 		Blocks.AddItem(Block);
 	}
-	Mod.bLoaded = TRUE;
 }
 
 simulated function ConstructBuildList()

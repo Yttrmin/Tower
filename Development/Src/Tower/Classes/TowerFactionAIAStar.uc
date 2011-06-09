@@ -40,7 +40,7 @@ May have to defer over multiple ticks if it has an impact on frame rate. */
 //@TODO - Document ASAP!
 final function GeneratePathToRoot()
 {
-	local int BestScore, HeuristicScore, GScore, TentativeCost, i, LowestCostIndex; 
+	local int TentativeCost, i, LowestCostIndex; 
 	local array<TowerBlock> OpenList, ClosedList, AdjacentList;
 	local TowerBlock Start, Finish;
 	// Used when iterating over a block's based actors for TowerBlockAirs.
@@ -223,7 +223,6 @@ final function DebugDrawPath(TowerBlock Start, TowerBlock Finish, Canvas Canvas)
 {
 	local Vector BeginPoint, EndPoint;
 	local int i;
-	local TowerBlock Block;
 	BeginPoint = Canvas.Project(Start.Location+Vect(16,16,16));
 	Canvas.CurX = BeginPoint.X;
 	Canvas.CurY = BeginPoint.Y;
@@ -249,8 +248,8 @@ final function DebugDrawPath(TowerBlock Start, TowerBlock Finish, Canvas Canvas)
 
 final function DebugDrawNames(Canvas Canvas)
 {
-	local Vector BeginPoint, EndPoint;
 	local TowerBlock Block;
+	local Vector BeginPoint;
 	foreach DynamicActors(class'TowerBlock', Block)
 	{
 		BeginPoint = Canvas.Project(Block.Location+Vect(16,16,16));

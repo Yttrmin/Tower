@@ -1,8 +1,9 @@
 /**
 TowerModInfo
 
-Entry point for all mods. Lists all the classes it contains that are children of existing classes,
-making it easily accessible to the main game. The only required class for a mod.
+Entry point for all mods. Essentially serves as an index of everything in this mod,
+making the content easily accessible to the game. The only required class for a mod.
+If you're only adding custom blocks or AI, this should not have to be subclassed.
 */
 class TowerModInfo extends ReplicationInfo
 	ClassGroup(Tower)
@@ -15,15 +16,16 @@ var() privatewrite const string AuthorName;
 var() privatewrite const string WebSite;
 var() privatewrite const string Contact;
 var() privatewrite const string Description;
-var() privatewrite const string Version;
+var() privatewrite deprecated const string Version;
+
+var() privatewrite const byte MajorVersion;
+var() privatewrite const byte MinorVersion;
 
 var() privatewrite const array<TowerBlock> ModBlocks;
 
 var() privatewrite const array<TowerFactionAI> ModFactionAIs;
 
-var repnotify TowerModInfo NextMod;
-
-var deprecated bool bLoaded;
+var privatewrite repnotify TowerModInfo NextMod;
 
 replication
 {
@@ -36,12 +38,9 @@ simulated event ReplicatedEvent(name VarName)
 	Super.ReplicatedEvent(VarName);
 	if(VarName == 'NextMod')
 	{
-		TowerGameReplicationInfo(WorldInfo.GRI).AreModsLoaded();
+		TowerGameReplicationInfo(WorldInfo.GRI).OnModReplicated(NextMod);
 	}
 }
-
-/** Called by TowerGame after all mods are loaded. */
-event ModLoaded(const out array<String> ModList);
 
 final function PreInitialize(int ModIndex)
 {
@@ -56,11 +55,38 @@ final function PreInitialize(int ModIndex)
 	*/
 }
 
+/** Adds a mod to the end of the linked list regardless of this mod's position in it. */
 final function AddMod(TowerModInfo Mod)
 {
-	local TowerModInfo ModList;
-	for(ModList = Self; ModList != None; ModList = ModList.NextMod);
-	ModList.NextMod = Mod;
+	if(NextMod == None)
+	{
+		NextMod = Mod;
+	}
+	else
+	{
+		NextMod.AddMod(Mod);
+	}
+}
+
+/** Should only be called on the RootMod. Returns the number of mods in the linked list. */
+final simulated function int GetModCount(optional int Count=0)
+{
+	Count++;
+	if(NextMod != None)
+	{
+		return NextMod.GetModCount(Count);
+	}
+	else
+	{
+		return Count;
+	}
+}
+
+/** Called after mod is loaded and ready for use. */
+simulated event Initialize()
+{
+	`log(ModName@"has been loaded.");
+	NextMod.Initialize();
 }
 
 //==============================================================================
@@ -84,8 +110,8 @@ DefaultProperties
 {
 	ModName="My Mod Name"
 	AuthorName="My Name"
-	WebSite="My Website"
-	Contact="My Email"
+	WebSite="www.MyWebsite.com"
+	Contact="MyEmail@email.com"
 	Description="My Description"
 	Version="1.0"
 

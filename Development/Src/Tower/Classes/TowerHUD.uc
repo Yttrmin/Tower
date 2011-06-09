@@ -113,17 +113,18 @@ event OnMouseClick(int Button)
 function SetupBuildList()
 {
 	//@TODO - Order list.
+	local array<String> BuildStrings;
 	local TowerBlock IteratedBlock;
 	local int i;
 	foreach TowerGameReplicationInfo(WorldInfo.GRI).Blocks(IteratedBlock, i)
 	{
 		if(IteratedBlock.bAddToBuildList)
 		{
-			HUDMovie.BuildStrings.AddItem(String(IteratedBlock.DisplayName));
+			BuildStrings.AddItem(String(IteratedBlock.DisplayName));
 			HUDMovie.BuildIndexes.AddItem(i);
 		}
 	}
-	HUDMovie.SetVariableStringArray("_root.Placeables", 0, HUDMovie.BuildStrings);
+	HUDMovie.SetVariableStringArray("_root.Placeables", 0, BuildStrings);
 	HUDMovie.OnBuildListChange(1);
 }
 

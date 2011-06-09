@@ -6,16 +6,6 @@ Represents a player's tower, which a player can only have one of. Tower's are es
 class Tower extends TowerFaction
 	dependson(TowerBlock);
 
-enum BlockDirection
-{
-	BD_PosX,
-	BD_NegX,
-	BD_PosY,
-	BD_NegY,
-	BD_PosZ,
-	BD_NegZ
-};
-
 var TowerTree NodeTree;
 var TowerBlockRoot Root;
 
@@ -42,7 +32,6 @@ simulated event ReplicatedEvent(name VarName)
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	TowerGameReplicationInfo(WorldInfo.GRI).AreModsLoaded();
 	AddTree();
 }
 
@@ -78,17 +67,17 @@ function CreateSurroundingAir(TowerBlock Block)
 	local Vector AirSpawnLocation;
 	local IVector AirGridLocation;
 	local TowerBlock IteratorBlock;
-	local array<BlockDirection> EmptyDirections;
-	EmptyDirections[0] = BD_PosX;
-	EmptyDirections[1] = BD_NegX;
+	local array<IVector> EmptyDirections;
+	EmptyDirections[0] = IVect(1,0,0);
+	EmptyDirections[1] = IVect(-1,0,0);
 
-	EmptyDirections[2] = BD_PosY;
-	EmptyDirections[3] = BD_NegY;
+	EmptyDirections[2] = IVect(0,1,0);
+	EmptyDirections[3] = IVect(0,-1,0);
 
-	EmptyDirections[4] = BD_PosZ;
+	EmptyDirections[4] = IVect(0,0,1);
 	if(Block.GridLocation.Z != 0)
 	{
-		EmptyDirections[5] = BD_NegZ;
+		EmptyDirections[5] = IVect(0,0,-1);
 	}
 	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 136,, true)
 	{
@@ -100,75 +89,21 @@ function CreateSurroundingAir(TowerBlock Block)
 	}
 	while(EmptyDirections.Length > 0)
 	{
-		AirSpawnLocation = Block.Location;
-//		AirSpawnLocation.Z +=  128;
-		AirGridLocation = Block.GridLocation;
-		if(EmptyDirections[0] == BD_PosX)
-		{
-			AirSpawnLocation.X += 256;
-			AirGridLocation.X++;
-		}
-		else if(EmptyDirections[0] == BD_NegX)
-		{
-			AirSpawnLocation.X -= 256;
-			AirGridLocation.X--;
-		}
-		else if(EmptyDirections[0] == BD_PosY)
-		{
-			AirSpawnLocation.Y += 256;
-			AirGridLocation.Y++;
-		}
-		else if(EmptyDirections[0] == BD_NegY)
-		{
-			AirSpawnLocation.Y -= 256;
-			AirGridLocation.Y--;
-		}
-		else if(EmptyDirections[0] == BD_PosZ)
-		{
-			AirSpawnLocation.Z += 256;
-			AirGridLocation.Z++;
-		}
-		else if(EmptyDirections[0] == BD_NegZ)
-		{
-			AirSpawnLocation.Z -= 256;
-			AirGridLocation.Z--;
-		}
-		Block.AttachBlock(TowerGame(WorldInfo.Game).GameMods[0].ModBlocks[5], Block, NodeTree, 
+		AirGridLocation = Block.GridLocation + EmptyDirections[0];
+		AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
+		Block.AttachBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, NodeTree, 
 			AirSpawnLocation, AirGridLocation, OwnerPRI);
 		EmptyDirections.Remove(0, 1);
 	}
 }
 
-function BlockDirection GetBlockDirection(TowerBlock Origin, TowerBlock Other)
+function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
 	Difference.X = (Abs(Origin.GridLocation.X) - Abs(Other.GridLocation.X));
 	Difference.Y = (Abs(Origin.GridLocation.Y) - Abs(Other.GridLocation.Y));
 	Difference.Z = (Abs(Origin.GridLocation.Z) - Abs(Other.GridLocation.Z));
-	if(Difference == IVect(1,0,0))
-	{
-		return BD_PosX;
-	}
-	else if(Difference == IVect(-1,0,0))
-	{
-		return BD_NegX;
-	}
-	else if(Difference == IVect(0,1,0))
-	{
-		return BD_PosY;
-	}
-	else if(Difference == IVect(0,-1,0))
-	{
-		return BD_NegY;
-	}
-	else if(Difference == IVect(0,0,1))
-	{
-		return BD_PosZ;
-	}
-	else if(Difference == IVect(0,0,-1))
-	{
-		return BD_NegZ;
-	}
+	return Difference;
 }
 
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)

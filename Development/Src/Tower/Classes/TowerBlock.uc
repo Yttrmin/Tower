@@ -35,6 +35,7 @@ var repnotify bool bFalling;
 
 /** If FALSE, only StaticMeshComponents will be used with TowerBlocks. */
 var private const globalconfig bool bEnableApexDestructibles;
+var private const globalconfig bool bEnableNavMeshObstacleGeneration;
 
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
@@ -90,7 +91,7 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
 	
-	if(Role == Role_Authority && Location.Z == 128)
+	if(bEnableNavMeshObstacleGeneration && Location.Z == 128 && Role == Role_Authority)
 	{
 		Obstacle = Spawn(class'DynamicNavMeshObstacle');
 		ObstacleLocation = Location;
@@ -111,7 +112,7 @@ simulated event Destroyed()
 }
 
 static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
-	TowerBlock Parent, out TowerTree NodeTree, out Vector SpawnLocation,
+	TowerBlock Parent, TowerTree NodeTree, out Vector SpawnLocation,
 	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
 {
 	local TowerBlock Block;
