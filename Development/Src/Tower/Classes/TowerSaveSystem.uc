@@ -24,7 +24,7 @@ struct immutable ModInfo
 const SAVE_FILE_VERSION = 3;
 
 var string SaveTowerName;
-var array<ModInfo> Mods;
+var array<ModInfo> SaveMods;
 var array<BlockSaveInfo> Blocks;
 
 /** Dumps what is pretty close of the current gamestate to disk. Anticipated to produce a very
@@ -58,10 +58,14 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 	local BlockSaveInfo Info;
 	CleanupSaveLoadVariables();
 	SaveTowerName = Player.GetTower().TowerName;
-	PopulateModList(TowerGameReplicationInfo(Player.WorldInfo.GRI));
+	PopulateModList(TowerGameReplicationInfo(Player.WorldInfo.GRI), SaveMods);
 	
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
+		if(Block.class == class'TowerBlockAir')
+		{
+			continue;
+		}
 //		`log("Saving:"@Block.ModIndex@Block.ModBlockInfoIndex);
 		Info.M = Block.ModIndex;
 		Info.I = Block.ModBlockIndex;
@@ -74,7 +78,9 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 }
 
 //@TODO - We have a player by then?
-/** Loads the game using Engine.uc's BasicLoadObject function, serializing this class. PC and iOS. */
+//@SOLVED - Yes, it's called from Login.
+/** Loads the game using Engine.uc's BasicLoadObject function, serializing this class. PC and iOS.
+Called from TowerGame::Login(). Guaranteed to be called on an empty map with towers but no blocks (including root).*/
 final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local int i;
@@ -82,28 +88,53 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	local BlockSaveInfo BlockInfo;
 	local TowerModInfo Mod;
 	local array<TowerModInfo> ModsArray;
-	local TowerBlock BlockArchetype;
+	/** The actual mod index to use. The mod indexes used when saving are used as the indexes in this array. */
+	local array<int> TranslatedMods;
+	local ModInfo Info;
+	local TowerBlock BlockArchetype, Block;
 	local Vector SpawnLocation;
+	local IVector GridLocation;
+	`log("Loading:"@FileName,,'NativeLoad');
 	GRI = TowerGameReplicationInfo(Player.WorldInfo.GRI);
 	CleanupSaveLoadVariables();
-	class'Engine'.static.BasicLoadObject(Self, FileName$".bin", true, SAVE_FILE_VERSION);
+	`log("Loaded"@FileName$".bin?:"@class'Engine'.static.BasicLoadObject(Self, FileName$".bin", true, SAVE_FILE_VERSION),,'NativeLoad');
 	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
+
 	for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
 	{
 		ModsArray.AddItem(Mod);
 	}
+	foreach SaveMods(Info, i)
+	{
+		for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
+		{
+			if(Info.M == Mod.ModName)
+			{
+				TranslatedMods[i] = GRI.RootMod.GetModIndex(Mod);
+			}
+		}
+	}
 	foreach Blocks(BlockInfo, i)
 	{
 		SpawnLocation = ToVect(BlockInfo.G*256);
+		SpawnLocation.Z += 128;
+		GridLocation.X = SpawnLocation.X / 256;
+		GridLocation.Y = SpawnLocation.Y / 256;
+		GridLocation.Z = SpawnLocation.Z / 256;
 		//@TODO - NO MORE TOWERTREE.
-		BlockArchetype = ModsArray[BlockInfo.M].ModBlocks[BlockInfo.I];
-		BlockArchetype.AttachBlock(BlockArchetype, None, None, SpawnLocation,
-			BlockInfo.G, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
+		BlockArchetype = ModsArray[TranslatedMods[BlockInfo.M]].ModBlocks[BlockInfo.I];
+		Block = Player.GetTower().AddBlock(BlockArchetype, None, SpawnLocation, GridLocation, false);
+		Block.Initialize(BlockInfo.G, BlockInfo.P, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
 	}
 	//@TODO - parenting!
+	foreach Player.DynamicActors(class'TowerBlock', Block)
+	{
+		Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+	}
+	Mod.GameLoaded(FileName);
 }
 
-final function PopulateModList(TowerGameReplicationInfo GRI)
+final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> ModArray)
 {
 	local ModInfo Info;
 	local TowerModInfo Mod;
@@ -112,13 +143,22 @@ final function PopulateModList(TowerGameReplicationInfo GRI)
 		Info.M = Mod.ModName;
 		Info.Ma = Mod.MajorVersion;
 		Info.Mi = Mod.MinorVersion;
-		Mods.AddItem(Info);
+		ModArray.AddItem(Info);
+	}
+}
+
+final function PopulateModTranslationList(TowerGameReplicationInfo GRI)
+{
+	local ModInfo Info;
+	foreach SaveMods(Info)
+	{
+
 	}
 }
 
 final function CleanupSaveLoadVariables()
 {
 	Blocks.Remove(0, Blocks.Length);
-	Mods.Remove(0, Mods.Length);
+	SaveMods.Remove(0, SaveMods.Length);
 	SaveTowerName = "MAKE_SURE_I_GET_SET";
 }

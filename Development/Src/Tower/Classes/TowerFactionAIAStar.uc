@@ -25,7 +25,10 @@ var bool bDrewPath;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	SetTimer(10, false, 'Start');
+	if(false)
+	{
+		SetTimer(10, false, 'Start');
+	}
 }
 
 function Start()
@@ -262,7 +265,8 @@ final function DebugDrawNames(Canvas Canvas)
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
 {
 	Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
-	DebugDrawNames(Canvas);
+	//@TODO - Move me somewhere appropriate.
+	//DebugDrawNames(Canvas);
 	if(!bDrewPath)
 	{
 		DebugDrawPath(DebugStart, DebugFinish, Canvas);

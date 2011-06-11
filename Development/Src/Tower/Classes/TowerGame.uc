@@ -44,6 +44,9 @@ var TowerBlock RootArchetype;
 /** Archetype to use for spawning air surrounding blocks. */
 var TowerBlock AirArchetype;
 
+var bool bPendingLoad;
+var string PendingLoadFile;
+
 var const Vector Borders[4];
 
 event PreBeginPlay()
@@ -89,59 +92,71 @@ event PreLogin(string Options, string Address, out string ErrorMessage)
 	local TowerModInfo Mod;
 	local String ModsList, VersionString;
 	local array<String> ModNames;
-
-	`log("PreLogin:"@Options@Address@ErrorMessage);
+	Super.PreLogin(Options, Address, ErrorMessage);
 	ModsList = ParseOption(Options, "Mods");
 	ModNames = SplitString(ModsList, ";");
-
-	for(Mod = Rootmod; Mod != None; Mod = Mod.NextMod)
+	if(bCheckClientMods)
 	{
-		ModIndex = ModNames.Find(Mod.ModName);
-		if(ModIndex == -1)
+		`log("PreLogin:"@Options@Address@ErrorMessage,,'PreLogin');
+		for(Mod = Rootmod; Mod != None; Mod = Mod.NextMod)
 		{
-			ErrorMessage $= "Mod missing:"$Mod.ModName@"Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
-			MissingMods++;
-		}
-		else
-		{
-			VersionString = Right(ModNames[ModIndex], InStr(ModNames[ModIndex], "|"));
-			MajorVersion = Byte(Left(VersionString, InStr(VersionString, ".")));
-			MinorVersion = Byte(Right(VersionString, InStr(VersionString, ".")));
-			if(MajorVersion == Mod.MajorVersion)
+			ModIndex = ModNames.Find(Mod.ModName);
+			if(ModIndex == -1)
 			{
-				if(MinorVersion != Mod.MinorVersion)
-				{
-//					OutdatedButUsableMods++;
-				}
+				`log("Missing mod:"@Mod.ModName$"!",,'PreLogin');
+				ErrorMessage $= "Mod missing:"$Mod.ModName@"Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
+				MissingMods++;
 			}
 			else
 			{
-				ErrorMessage $= "Mod outdated:"$Mod.ModName@"Your Version:"$MajorVersion$"."$MinorVersion@"Server Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
-				OutdatedMods++;
+				VersionString = Right(ModNames[ModIndex], InStr(ModNames[ModIndex], "|"));
+				MajorVersion = Byte(Left(VersionString, InStr(VersionString, ".")));
+				MinorVersion = Byte(Right(VersionString, InStr(VersionString, ".")));
+				if(MajorVersion == Mod.MajorVersion)
+				{
+					if(MinorVersion != Mod.MinorVersion)
+					{
+	//					OutdatedButUsableMods++;
+					}
+				}
+				else
+				{
+					ErrorMessage $= "Mod outdated:"$Mod.ModName@"Your Version:"$MajorVersion$"."$MinorVersion@"Server Version:"$Mod.MajorVersion$"."$Mod.MinorVersion;
+					OutdatedMods++;
+				}
 			}
 		}
+		if(MissingMods > 0 || OutdatedMods > 0)
+		{
+			`log("Player rejected.",,'PreLogin');
+			ErrorMessage $= "Failed to join server! Missing"@MissingMods@"mods!"@OutdatedMods@"Mods outdated!";
+		}
 	}
-	if(MissingMods > 0 || OutdatedMods > 0)
-	{
-		ErrorMessage $= "Failed to join server! Missing"@MissingMods@"mods!"@OutdatedMods@"Mods outdated!";
-	}
-	Super.PreLogin(Options, Address, ErrorMessage);
 }
 
 event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
 {
-	local PlayerController NewPlayer;
-	NewPlayer = super.Login(Portal, Options, UniqueID, ErrorMessage);
-//	TowerPlayerController(NewPlayer).SetModCount(24);
-	//TowerPlayerController(NewPlayer).GotoState('Master');
-	return NewPlayer;
+	local string LoadString;
+	LoadString = ParseOption(Options, "LoadGame");
+	`log("LoadString:"@LoadString);
+	if(LoadString != "")
+	{
+		`log("Load from file:"@LoadString);
+		bPendingLoad = true;
+		PendingLoadFile = LoadString;
+	}
+	return super.Login(Portal, Options, UniqueID, ErrorMessage);
 }
 
 event PostLogin(PlayerController NewPlayer)
 {
 	Super.PostLogin(NewPlayer);
 	//@TODO - Maybe not make this automatic?
-	AddTower(TowerPlayerController(NewPlayer));
+	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
+	if(bPendingLoad)
+	{
+		TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer));
+	}
 	if(!MatchIsInProgress())
 	{
 		StartMatch();
@@ -420,25 +435,23 @@ event FactionInactive(TowerFactionAI Faction)
 	}
 }
 
-function AddTower(TowerPlayerController Player,  optional string TowerName="")
+function AddTower(TowerPlayerController Player, bool bAddRootBlock,  optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
-	local TowerBlock Root;
 	local IVector GridLocation;
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
-	//@BUG
-	// For whatever reason PlayerController won't collide with children, so we're breaking
-	// the ownership chain right here. There's probably a flag for child collision but
-	// I can't find it.
 	TPRI.Tower = Spawn(class'Tower', self);
 	TPRI.Tower.OwnerPRI = TPRI;
 //	TPRI.Tower.Initialize(TPRI);
-	// Need to make this dependent on player count in future.
-	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
-	GridLocation.X = 8*(NumPlayers-1);
-	Root = AddBlock(TPRI.Tower, RootArchetype, None, GridLocation);
-	TPRI.Tower.Root = TowerBlockRoot(Root);
-	Hivemind.OnRootBlockSpawn(TowerBlockRoot(Root));
+	if(bAddRootBlock)
+	{
+		// Need to make this dependent on player count in future.
+		//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
+		GridLocation.X = 8*(NumPlayers-1);
+	
+		TPRI.Tower.Root = TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation));
+		Hivemind.OnRootBlockSpawn(TPRI.Tower.Root);
+	}
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
@@ -459,7 +472,7 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 	VectorGridLocation = ToVect(GridLocation);
 	SpawnLocation = GridLocationToVector(VectorGridLocation);
 	// Pivot point in middle, bump up.
-//	SpawnLocation.Z += 128;
+	SpawnLocation.Z += 128;
 	`assert(BlockArchetype != None);
 	if(CanAddBlock(VectorGridLocation))
 	{
@@ -493,7 +506,7 @@ static function Vector GridLocationToVector(out Vector GridLocation, optional cl
 	// Z is the very bottom of the block.
 	NewBlockLocation.Z = (GridLocation.Z * 256);
 	// Pivot point in middle, bump it up.
-	NewBlockLocation.Z += 128;
+//	NewBlockLocation.Z += 128;
 	return NewBlockLocation;
 }
 
