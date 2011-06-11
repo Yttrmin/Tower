@@ -110,7 +110,7 @@ simulated event Destroyed()
 		Obstacle.Destroy();
 	}
 }
-
+/*
 static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 	TowerBlock Parent, TowerTree NodeTree, out Vector SpawnLocation,
 	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
@@ -152,7 +152,7 @@ static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 		else
 		{
 			`assert(OwnerTPRI != None);
-			Block = OwnerTPRI.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,TRUE);
+			Block = OwnerTPRI.Spawn(BlockArchetype.class,,, SpawnLocation,,BlockArchetype,false);
 			ParentDir = IVect(0,0,0);
 			Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
 		}
@@ -161,11 +161,12 @@ static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
 	return Block;
 }
 
+
 static function RemoveBlock(TowerBlock Block, out TowerTree NodeTree)
 {
 	NodeTree.RemoveNode(Block);
 }
-
+*/
 simulated function IVector GetGridLocation()
 {
 	return GridLocation;
@@ -316,7 +317,7 @@ simulated state Unstable
 			GotoState('InActive');
 			bFalling = false;
 		}
-		if(OwnerPRI.Tower.NodeTree.FindNewParent(Self))
+		if(OwnerPRI.Tower.FindNewParent(Self))
 		{
 			`log("Found parent:"@Base);
 			GotoState('Stable');
@@ -375,7 +376,7 @@ simulated state InActive
 		ClearTimer('DroppedSpace');
 	}
 Begin:
-	if(OwnerPRI.Tower.NodeTree.FindNewParent(Self))
+	if(OwnerPRI.Tower.FindNewParent(Self))
 	{
 		`log("Found parent:"@Base);
 		GotoState('Stable');

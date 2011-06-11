@@ -37,11 +37,13 @@ function DrawHUD()
 	local rotator ViewRotation;
 
 	local Vector HitNormal;
-	local TowerBlock IterateBlock;
+//	local TowerBlock IterateBlock;
 	local TowerBlock TracedBlock;
-	local Tower Tower;
+//	local Tower Tower;
 
 	TraceForBlock(TracedBlock, HitNormal);
+	//@TODO - Put me in a PostRender somewhere!
+	/*
 	Tower = TowerPlayerController(PlayerOwner).GetTower();
 	if(Tower != None && Tower.NodeTree != None && Tower.NodeTree.bDebugDrawHierarchy)
 	{
@@ -53,6 +55,7 @@ function DrawHUD()
 			DrawDebugRelationship(Canvas, IterateBlock);
 		}
 	}
+	*/
 	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedBlock || HUDMovie.bInMenu))
 	{
 		LastHighlightedBlock.UnHighlight();

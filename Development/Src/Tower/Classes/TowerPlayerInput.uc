@@ -30,11 +30,13 @@ event PlayerInput( float DeltaTime )
 /** Opens the specified map, and sends along the current mod list so you can properly
 connect to Tower servers! */
 exec function TowerOpen(string MapName)
-{/*
+{
+	/*
 	local String Mods;
 	local int i;
-	local TowerModInfo Mod;
+	local String ModName;
 	Mods = "?Mods=";
+	foreach class'TowerGame'.default.ModPackages(
 	foreach TowerPlayerReplicationInfo(TowerPlayerController(Owner).PlayerReplicationInfo).Mods(Mod, i)
 	{
 		if(i > 0)
@@ -44,5 +46,6 @@ exec function TowerOpen(string MapName)
 		Mods $= Mod.ModName$"|"$Mod.Version;
 	}
 	MapName $= Mods;
-	ConsoleCommand(MapName);*/
+	ConsoleCommand(MapName);
+	*/
 }

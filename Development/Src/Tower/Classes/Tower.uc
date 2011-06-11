@@ -6,7 +6,6 @@ Represents a player's tower, which a player can only have one of. Tower's are es
 class Tower extends TowerFaction
 	dependson(TowerBlock);
 
-var TowerTree NodeTree;
 var TowerBlockRoot Root;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
@@ -32,20 +31,49 @@ simulated event ReplicatedEvent(name VarName)
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	AddTree();
 }
 
-reliable server function AddTree()
-{
-	NodeTree = new class'TowerTree';
-}
-
+//@TODO - We really only need one of the locations. Probably Grid.
 function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
-	out Vector SpawnLocation, out IVector GridLocation)
+	out Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
 {
 	local TowerBlock NewBlock;
-	NewBlock = BlockArchetype.AttachBlock(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
-	CreateSurroundingAir(NewBlock);
+	local IVector ParentDir;
+	local rotator NewRotation;
+	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
+//	NewBlock = BlockArchetype.AttachBlock(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
+	if(Parent != None && Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
+	{
+		if(Parent != None)
+		{
+			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
+			if(ParentDir.Z == 0)
+			{
+				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
+				NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
+				NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
+			}
+			else if(ParentDir.Z == -1)
+			{
+	//			NewRotation.Roll = -180 * DegToUnrRot;
+			}
+			else if(ParentDir.Z == 1)
+			{
+				NewRotation.Roll = 180 * DegToUnrRot;
+			}
+			else
+			{
+				NewRotation = NewBlock.Rotation;
+			}
+			NewBlock.SetBase(Parent);
+			NewBlock.SetRelativeRotation(NewRotation);
+		}
+	}
+	NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
+	if(bAddAir && NewBlock.class != class'TowerBlockAir')
+	{
+		CreateSurroundingAir(NewBlock);
+	}
 	// Tell AI about this?
 	return NewBlock;
 }
@@ -91,10 +119,13 @@ function CreateSurroundingAir(TowerBlock Block)
 	{
 		AirGridLocation = Block.GridLocation + EmptyDirections[0];
 		AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
-		Block.AttachBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, NodeTree, 
-			AirSpawnLocation, AirGridLocation, OwnerPRI);
+		AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirSpawnLocation,
+			AirGridLocation);
+//		Block.AttachBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, NodeTree, 
+//			AirSpawnLocation, AirGridLocation, OwnerPRI);
 		EmptyDirections.Remove(0, 1);
 	}
+	`log("Did air.");
 }
 
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
@@ -112,28 +143,47 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 
 function bool RemoveBlock(TowerBlock Block)
 {
-	Block.RemoveBlock(Block, NodeTree);
+	local TowerBlock IteratorBlock;
+	local TowerBlockAir ITeratorAir;
+	local array<TowerBlockAir> ToDelete;
+	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
+	{
+		`log(IteratorBlock);
+		if(IteratorBlock.class != class'TowerBlockAir')
+		{
+			FindNewParent(IteratorBlock, Block, true);
+		}
+		else
+		{
+			ToDelete.AddItem(TowerBlockAir(IteratorBlock));
+		}
+	}
+	foreach ToDelete(IteratorAir)
+	{
+		IteratorAir.Destroy();
+	}
+	Block.Destroy();
 	return true;
 //	NodeTree.RemoveNode(Placeable);
 }
 
-function TowerBlock GetBlockFromLocationAndDirection(out IVector GridLocation, out IVector ParentDirection)
+function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocation, const out IVector ParentDirection)
 {
 	local Actor Block;
 	local Vector StartLocation, EndLocation, HitNormal, HitLocation, VectorGridLocation;
-	VectorGridLocation = ToVect(GridLocation);
+	VectorGridLocation = ToVect(GridLocation) + ToVect(ParentDirection);
 	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(VectorGridLocation);
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
 	StartLocation.Z += 128;
-	EndLocation.X = StartLocation.X + (ParentDirection.X * 512);
-	EndLocation.Y = StartLocation.Y + (ParentDirection.Y * 512);
-	EndLocation.Z = StartLocation.Z + (ParentDirection.Z * 512);
+	EndLocation.X = StartLocation.X + 10;
+	EndLocation.Y = StartLocation.Y + 10;
+	EndLocation.Z = StartLocation.Z + 10;
 	//StartLocation.X += abs(ParentDirection.X * 128);
 	//StartLocation.Y += abs(ParentDirection.Y * 128);
 	//StartLocation.Z += abs(ParentDirection.Z * 128);
 //	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
-	Block = NodeTree.Root.Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
-//	`log(Block);
+	Block = Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
+	`log("GBFLAD:"@Block);
 	return TowerBlock(Block);
 }
 
@@ -144,17 +194,57 @@ function bool CheckForParent(TowerBlock Block)
 		// You already have a parent.
 		return true;
 	}
-	return NodeTree.FindNewParent(Block);
+	return FindNewParent(Block);
 }
 
-function CheckBlockSupport()
+/** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
+have all this nodes' children (and their children and so forth) perform a FindNewParent as well.
+PreviousNodes is used internally by the function, do not pass a variable in! */
+final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent=None,
+	optional bool bChildrenFindParent=false)
 {
-	// Toggling between PHYS_None and PHYS_RigidBody is not a solution at all, the physics simulation keeps going.
+	local TowerBlock Block;
+	local TraceHitInfo HitInfo;
+	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
+	Node.SetBase(None);
+//	Node.FindBase();
+//	`log("FindBase says:"@Node.Base);
+	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
+	{
+		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
+		{
+			Node.SetBase(Block);
+			Node.Adopted();
+			`log("And it's good!");
+			return TRUE;
+		}
+	}
+	if(bChildrenFindParent)
+	{
+		`log("Having children look for supported parents...");
+		foreach Node.BasedActors(class'TowerBlock', Block)
+		{
+			if(Block.class != class'TowerBlockAir')
+			{
+				FindNewParent(Block, OldParent, bChildrenFindParent);
+			}
+		}
+	}
+	if(Node.Base == None && OldParent != None)
+	{
+		`log("No parents available,"@Node@"is an orphan. Handle this.");
+		// True orphan.
+		Node.OrphanedParent();
+	}
+	return false;
 }
 
-function FindBlock()
+/** Returns TRUE if there is a path to the root through parents, otherwise FALSE. */
+private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBlock InvalidBase)
 {
-
+	// IBO and GBM both clocked out at 0.0250 ms. Virtually identical.
+	return Block.IsBasedOn(Root) && !Block.IsBasedOn(InvalidBase);
 }
 
 DefaultProperties

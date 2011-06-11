@@ -92,56 +92,6 @@ state PlayerFlying
 	}
 }
 
-/**
-Adding TowerModules:
-(Note: TMRI = TowerModuleReplicationInfo, TPRI = TowerPlayerReplicationInfo, TPC = TowerPlayerController)
-(Note: TPRI is used for sending client/server functions as it'd be impossible for all clients to do such with one TMRI.)
-
-Server: 
-AddPlaceable() (Called from TowerHUD. Determines whether or not Placeable needs to use tickets. In this case, yes.)
--> GenerateAddTicket() 
--> ServerSendAddTicket() (Yes, the server creates and sends AddTickets to itself. Keeps consistency.)
--> TowerGame::AddPlaceable() (Leads to TowerPlaceable::CreatePlaceable(), creates and initializes component.)
--> TPRI::ServerAddModule() (Updates TMRI's InfoPacket so that clients know to update.)
-
-Client:
-AddPlaceable() (Called from TowerHUD. Determines whether or not Placeable needs to use tickets. In this case, yes.)
--> GenerateAddTicket() 
--> ServerSendAddTicket()
-... Client is done here. If the server allows it, the TMRI's InfoPacket will be updated.
-XTMRI::ReplicatedEvent() (Called when InfoPacket is updated, in this case because the server accepted our addition.
-X-> HandleNewInfoPacket()
-X-> QueryModuleInfo() (Client finds the server has 1 more module than itself, requests info about it so it can create it.)
-X... Client is done here until the server (hopefully) responds shortly.
-X-> TPRI::ReceiveModuleInfo()
-X-> TMRI::AddModule() (Creates identical module based on info and updates its Count and Checksum data.)
-
-
-Removing TowerModules:
-
-Server:
-RemovePlaceable() (Called from TowerHUD. Determines whether or not to use RemoveModule(). In this case, yes.)
--> RemoveModule() (Creates a RemoveTicket for the next function (Modules can't be replicated).)
--> ServerSendRemoveTicket() (Yep, server sends a RemoveTicket to itself. This should probably come AFTER the rest to make sure valid.)
--> TPRI::ServerRemoveModule() (Removes Module from game and updates InfoPacket in TMRI.)
--> TPC::ServerRemovePlaceable() (Starts the chain of RemovePlaceables to actually remove Module from game.)
--> TowerGame::RemovePlaceable()
-
-Client:
-RemovePlaceable() (Called from TowerHUD. Determines whether or not to use RemoveModule(). In this case, yes.)
--> RemoveModule() (Creates a RemoveTicket for the next function (Modules can't be replicated).)
--> ServerSendRemoveTicket() 
-... Client is done here. Server will update TMRI's InfoPacket if it's allowed.
-TMRI::ReplicatedEvent()
--> HandleNewInfoPacket()
--> RemoveModule() (Removes the module and updates its Count and Checksum data.)
-
-
-Updating TowerModules:
-
-
-*/
-
 exec function ClickDown(int ButtonID)
 {
 	TowerHUD(myHUD).OnMouseClick(ButtonID);
@@ -171,11 +121,6 @@ exec function SetHighlightColor(LinearColor NewColor)
 	TowerPlayerReplicationInfo(PlayerReplicationInfo).SetHighlightColor(NewColor);
 }
 
-exec function RemoveAllBlocks()
-{
-	ServerRemoveAllBlocks();
-}
-
 //@TODO - Can't this just directly call a reliable server function in its Tower?
 exec function SetTowerName(string NewName)
 {
@@ -201,7 +146,8 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 	{
 		return;
 	}
-	SaveSystem.LoadGame(FileName, bTowerOnly, self);
+	ConsoleCommand("open"@WorldInfo.GetMapName(true)$"?LoadGame="$FileName);
+//	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
 // Only thing that really matters is lighting! (hopefully!)
@@ -322,6 +268,24 @@ exec function DebugTestReplicateArchetype()
 	ServerTestReplicateArchetype(TowerGameReplicationInfo(WorldInfo.GRI).RootMod.ModBlocks[0]);
 }
 
+static exec function DebugTestBlockBases()
+{
+	local TowerBlock IteratorBasedBlock;
+	local TowerBlock IteratorBlock;
+	foreach class'WorldInfo'.static.GetWorldInfo().DynamicActors(class'TowerBlock', IteratorBlock)
+	{
+		if(IteratorBlock.class != Class'TowerBlockAir')
+		{
+			`log("=====================================================================");
+			`log(IteratorBlock@"bases:");
+			foreach IteratorBlock.BasedActors(class'TowerBlock', IteratorBasedBlock)
+			{
+				`log(IteratorBasedBlock);
+			}
+		}
+	}
+}
+
 reliable server function ServerTestReplicateArchetype(TowerBlock Block)
 {
 	`log("STRA:"@Block@Block.class@Block.ObjectArchetype);
@@ -370,9 +334,6 @@ function TowerBlock ConvertIndexesToBlock(out int ModIndex, out int ModBlockInde
 simulated function RemoveBlock(TowerBlock Block)
 {
 	`log("RemovePlaceable:"@Block);
-//	Placeable.RemoveSelf();
-	//@TODO - Stupid parenting causing no collions means we have to do crap like this.
-
 	ServerRemoveBlock(Block);
 }
 
@@ -380,12 +341,6 @@ reliable server function ServerRemoveBlock(TowerBlock Block)
 {
 	`log("ServerRemovePlaceable:"@Block);
 	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
-}
-
-reliable server function ServerRemoveAllBlocks()
-{
-	//@TODO - Make work.
-	GetTower().NodeTree.RemoveNode(GetTower().NodeTree.GetRootNode());
 }
 
 reliable server function ServerSetTowerName(string NewName)

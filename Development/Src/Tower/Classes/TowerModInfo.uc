@@ -44,15 +44,12 @@ simulated event ReplicatedEvent(name VarName)
 
 final function PreInitialize(int ModIndex)
 {
-	/*
 	local int i;
-	for(i = 0; i < ModBlockInfo.Length; i++)
+	for(i = 0; i < ModBlocks.Length; i++)
 	{
-		ModBlockInfo[i].ModIndex = ModIndex;
-		ModBlockInfo[i].ModBlockInfoIndex = i;
-		`log("Modified ModBlockInfo:"@ModBlockInfo[i].ModIndex@ModBlockInfo[i].ModBlockInfoIndex@ModIndex@i);
+		ModBlocks[i].ModIndex = ModIndex;
+		ModBlocks[i].ModBlockIndex = i;
 	}
-	*/
 }
 
 /** Adds a mod to the end of the linked list regardless of this mod's position in it. */
@@ -68,7 +65,7 @@ final function AddMod(TowerModInfo Mod)
 	}
 }
 
-/** Should only be called on the RootMod. Returns the number of mods in the linked list. */
+/** Only call on RootMod! Returns the number of mods in the linked list. */
 final simulated function int GetModCount(optional int Count=0)
 {
 	Count++;
@@ -82,6 +79,24 @@ final simulated function int GetModCount(optional int Count=0)
 	}
 }
 
+/** Only call on RootMod! Returns the index of the given mod, -1 if the mod isn't in the linked list. */
+final function int GetModIndex(TowerModInfo Mod, optional int Index=0)
+{
+	if(self == Mod)
+	{
+		return Index;
+	}
+	else if(NextMod != None)
+	{
+		Index++;
+		return NextMod.GetModIndex(Mod, Index);
+	}
+	else if(NextMod == None)
+	{
+		return -1;
+	}
+}
+
 /** Called after mod is loaded and ready for use. */
 simulated event Initialize()
 {
@@ -92,12 +107,16 @@ simulated event Initialize()
 //==============================================================================
 // Save/Load events.
 // Note that custom blocks are saved and loaded by the game, there's no need to save/load them yourself.
+// Please be nice and call these functions for NextMod!
 
 /** Called by TowerGame during a regular save. */
 event GameSaved();
 
-/** Called by TowerGame during a regular load. */
-event GameLoaded();
+/** Called by TowerGame during a regular load. FileName does not contain the full path or extension. */
+event GameLoaded(const string FileName)
+{
+	NextMod.GameLoaded(FileName);
+}
 
 /** Called by TowerGame during a quick save. */
 event GameQuickSaved();
