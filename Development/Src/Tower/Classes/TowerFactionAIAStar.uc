@@ -148,6 +148,16 @@ final function GeneratePathToRoot()
 	`log("================== FINISHED A* ==================",,'AStar');
 }
 
+final function GenerateObjectives()
+{
+
+}
+
+event Think()
+{
+
+}
+
 final function int GetCost(TowerBlock Block, TowerBlock Finish)
 {
 	local int Cost;

@@ -280,7 +280,7 @@ static exec function DebugTestBlockBases()
 			`log(IteratorBlock@"bases:");
 			foreach IteratorBlock.BasedActors(class'TowerBlock', IteratorBasedBlock)
 			{
-				`log(IteratorBasedBlock);
+				`log(IteratorBasedBlock@""@IteratorBasedBlock.GridLocation.X@IteratorBasedBlock.GridLocation.Y@IteratorBasedBlock.GridLocation.Z);
 			}
 		}
 	}

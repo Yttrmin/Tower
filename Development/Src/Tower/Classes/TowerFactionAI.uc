@@ -118,6 +118,7 @@ struct FormationSpawnInfo
 	var TowerAIObjective Target;
 };
 
+//@TODO - Deprecate this?
 var protected Tower TargetTower;
 var() protected TowerFactionInfo FactionInfo;
 
@@ -224,11 +225,12 @@ state Active
 
 	event Think()
 	{
+		/*
 		if(TargetTower == None)
 		{
-			`log("GRAB NEW ONE");
 			GetNewTarget();
 		}
+		*/
 	//	SpawnFormation(0);
 	}
 

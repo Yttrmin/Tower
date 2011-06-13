@@ -63,7 +63,7 @@ event Tick(float DeltaTime)
 
 event Initialize()
 {
-	`log("HIVEMIND CREATED");
+	
 }
 
 function RegisterForAsyncTick(delegate<AsyncTick> TickDelegate)
