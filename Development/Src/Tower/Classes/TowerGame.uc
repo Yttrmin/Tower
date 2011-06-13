@@ -51,7 +51,6 @@ var const Vector Borders[4];
 
 event PreBeginPlay()
 {
-	`log(Self.default.ModPackages[0]);
 	Super.PreBeginPlay();
 	CheckForMods();
 }
@@ -63,10 +62,8 @@ event PostBeginPlay()
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
-	`log("PRI Count:"@GameReplicationInfo.PRIArray.Length);
 //	TowerGameViewportClient(class'Engine'.static.GetEngine().GameViewport).
 	class'Engine'.static.StopMovie(true);
-	`log(RTransform(Rot(0,16384,0), Rot(0,32768,0)));
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	StartNextRound();
 }
@@ -180,11 +177,11 @@ final function CheckForMods()
 	`log("Number of listed mods:"@ModPackages.Length);
 	foreach ModPackages(ModPackage, i)
 	{
-		`log("Loading Mod:"@ModPackage);
+		`log("Loading Mod:"@ModPackage$"...");
 		ModInfoPath = ModPackage$".ModInfo";
 		LoadedMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject(ModInfoPath,class'TowerModInfo',false)));
 		LoadedMod.PreInitialize(i);
-		`log("Loaded Mod:"@LoadedMod@LoadedMod.AuthorName@LoadedMod.Description@LoadedMod.MajorVersion@LoadedMod.MinorVersion);
+		`log("Loaded Mod:"@LoadedMod@LoadedMod.AuthorName@LoadedMod.Contact@LoadedMod.Website@LoadedMod.Description@LoadedMod.MajorVersion$"."$LoadedMod.MinorVersion);
 		if(RootMod == None)
 		{
 			RootMod = LoadedMod;
@@ -331,7 +328,6 @@ function RestartPlayer(Controller NewPlayer)
 	}
 	else
 	{
-		`log("SPAWNED PLAYER PAWN ALL READY");
 		NewPlayer.Possess(NewPlayer.Pawn, false);
 		NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
 		SetPlayerDefaults(NewPlayer.Pawn);

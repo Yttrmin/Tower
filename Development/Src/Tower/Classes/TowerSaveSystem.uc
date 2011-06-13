@@ -129,7 +129,12 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	//@TODO - parenting!
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
+		if(Block.class == class'TowerBlockAir')
+		{
+			continue;
+		}
 		Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+		Player.GetTower().CreateSurroundingAir(Block);
 	}
 	Mod.GameLoaded(FileName);
 }
@@ -144,15 +149,6 @@ final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> 
 		Info.Ma = Mod.MajorVersion;
 		Info.Mi = Mod.MinorVersion;
 		ModArray.AddItem(Info);
-	}
-}
-
-final function PopulateModTranslationList(TowerGameReplicationInfo GRI)
-{
-	local ModInfo Info;
-	foreach SaveMods(Info)
-	{
-
 	}
 }
 

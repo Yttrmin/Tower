@@ -125,7 +125,6 @@ function CreateSurroundingAir(TowerBlock Block)
 //			AirSpawnLocation, AirGridLocation, OwnerPRI);
 		EmptyDirections.Remove(0, 1);
 	}
-	`log("Did air.");
 }
 
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
@@ -133,7 +132,7 @@ function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 	local IVector Difference;
 	Difference.X = (Abs(Origin.GridLocation.X) - Abs(Other.GridLocation.X));
 	Difference.Y = (Abs(Origin.GridLocation.Y) - Abs(Other.GridLocation.Y));
-	Difference.Z = (Abs(Origin.GridLocation.Z) - Abs(Other.GridLocation.Z));
+	Difference.Z = (Abs(Other.GridLocation.Z) - Abs(Origin.GridLocation.Z));
 	return Difference;
 }
 
@@ -183,7 +182,6 @@ function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocat
 	//StartLocation.Z += abs(ParentDirection.Z * 128);
 //	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
 	Block = Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
-	`log("GBFLAD:"@Block);
 	return TowerBlock(Block);
 }
 

@@ -29,7 +29,6 @@ function ServerInitialize()
 {
 	if(!TowerMapInfo(WorldInfo.GetMapInfo()).bRootBlockSet)
 	{
-		`log("Initializing root block! This should only be called on servers!");
 		RadarVolume = TowerMapInfo(WorldInfo.GetMapInfo()).RadarVolume;
 		`assert(RadarVolume != None);
 		RadarVolume.AssociatedActor = Self;

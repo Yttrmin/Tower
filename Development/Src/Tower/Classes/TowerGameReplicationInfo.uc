@@ -87,7 +87,6 @@ simulated function ConstructBuildList()
 	`log("Constructing build list!");
 	foreach LocalPlayerControllers(class'TowerPlayerController', PC)
 	{
-		`log("FOUND A PLAYER TRING THING");
 		TowerHUD(PC.myHUD).SetupBuildList();
 	}
 }
