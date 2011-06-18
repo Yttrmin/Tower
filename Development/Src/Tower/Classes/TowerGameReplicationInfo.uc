@@ -1,10 +1,6 @@
 class TowerGameReplicationInfo extends GameReplicationInfo;
 
-var byte Phase;
-var repnotify byte Round;
-
 var protectedwrite bool bRoundInProgress;
-
 
 // RENAME ME
 var int MaxEnemyCount;
@@ -20,7 +16,7 @@ var TowerPlayerReplicationInfo ServerTPRI;
 replication
 {
 	if(bNetDirty)
-		Phase, Round, MaxEnemyCount;
+		MaxEnemyCount;
 	if(bNetInitial)
 		ModCount, RootMod, ServerTPRI;
 }
@@ -33,11 +29,7 @@ simulated event PostBeginPlay()
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
-	if(VarName == 'Round')
-	{
-		UpdateRoundCount();
-	}
-	else if(VarName == 'ModCount')
+	if(VarName == 'ModCount')
 	{
 		`log("MOD COUNT REPLICATED:"@ModCount);
 	}
@@ -89,34 +81,4 @@ simulated function ConstructBuildList()
 	{
 		TowerHUD(PC.myHUD).SetupBuildList();
 	}
-}
-
-simulated function UpdateRoundCount()
-{
-	TowerHUD(GetPlayerController().myHUD).HUDMovie.SetRoundNumber(Round);
-}
-
-simulated function TowerPlayerController GetPlayerController()
-{
-	//@TODO - Doesn't handle split screen.
-	local TowerPlayerController PC;
-	foreach LocalPlayerControllers(class'TowerPlayerController',PC)
-	{
-		return PC;
-	}
-}
-
-/** Called by TowerGame when cool-down period ends. */
-event NextRound()
-{
-	bRoundInProgress = TRUE;
-	Round++;
-	UpdateRoundCount();
-	// Completely arbitrary at the moment.
-	MaxEnemyCount = Round*20;
-}
-
-event EndRound()
-{
-	bRoundInProgress = FALSE;
 }

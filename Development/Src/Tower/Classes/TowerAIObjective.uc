@@ -7,6 +7,7 @@ class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);
 
 var privatewrite TowerBlock Target;
+var privatewrite TowerAIObjective NextObjective;
 
 final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
@@ -28,9 +29,11 @@ DefaultProperties
 {
 	bStatic=false
 	bNoDelete=false
+	bCollideActors=false
+	bBlockActors=false
 
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
 		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
 	End Object
-	Components.Add(MarkerMesh)
+//	Components.Add(MarkerMesh)
 }

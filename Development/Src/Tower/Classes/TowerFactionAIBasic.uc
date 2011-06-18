@@ -76,7 +76,7 @@ state CollectData extends Active
 		local FormationSpawnInfo NewFormation;
 		local int FormationIndex;
 
-		while(ConsumedBudget + CalculateBaseFormationCost(3) <= TroopBudget)
+		while(ConsumedBudget + CalculateBaseFormationCost(3) <= Budget)
 		{
 			ConsumedBudget += CalculateBaseFormationCost(3);
 			FormationIndex = 3;
@@ -142,6 +142,7 @@ state CollectData extends Active
 	event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
 	{
 		local int Index;
+		Super.OnTargetableDeath(Targetable, TargetableKiller, BlockKiller);
 		if(TargetableKiller != None)
 		{
 		//	Index = Killers.find('PlaceableArchetype', Targetable
