@@ -34,6 +34,27 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	}
 }
 
+simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
+{
+	Canvas.SetDrawColor(255,255,255);
+	Canvas.SetPos(0,0);
+	Canvas.CurX = 0;
+	Canvas.CurY = 50;
+	Canvas.DrawText("Targetable:"@Self, false);
+
+	Canvas.CurX = 0;
+	Canvas.CurY = 65;
+	Canvas.DrawText("State:"@GetStateName());
+
+	Canvas.CurX = 0;
+	Canvas.CurY = 80;
+	Canvas.DrawText("Health:"@Health);
+
+	Canvas.CurX = Canvas.SizeX-150;
+	Canvas.CurY = 50;
+	Canvas.DrawText("Squad:"@TowerEnemyController(Controller).Squad);
+}
+
 /**
 AI Interface for combat
 **/
@@ -46,7 +67,7 @@ function bool BotFire(bool bFinished)
 event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
 	Super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
-	ScriptTrace();
+//	ScriptTrace();
 }
 
 function bool OnSameFaction(TowerEnemyPawn Other)
@@ -57,8 +78,9 @@ function bool OnSameFaction(TowerEnemyPawn Other)
 function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 {
 	local bool Value;
-	`log(Self@"died. He owned"@Weapon);
+//	`log(Self@"died. He owned"@Weapon);
 	Value = Super.Died(Killer, DamageType, HitLocation);
+	OwnerFaction.OnTargetableDeath(Self, None, None);
 	Destroy();
 	if(Weapon != None)
 	{

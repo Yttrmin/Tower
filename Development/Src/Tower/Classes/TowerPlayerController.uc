@@ -150,6 +150,7 @@ exec function LoadGame(string FileName, bool bTowerOnly)
 //	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
+`if(`isdefined(DEBUG))
 // Only thing that really matters is lighting! (hopefully!)
 //@TODO - But what about when blocks are falling?!
 /** Creates a bunch of blocks and modules (as components) to test how many MeshComponents we can handle! */
@@ -291,6 +292,51 @@ reliable server function ServerTestReplicateArchetype(TowerBlock Block)
 	`log("STRA:"@Block@Block.class@Block.ObjectArchetype);
 }
 
+/**  */
+exec function DebugSpectateTargetable()
+{
+	local Vector WorldOrigin, WorldDir;
+	local Rotator PlayerDir;
+	local Vector HitLocation, HitNormal;
+	local TowerTargetable Targetable;
+	GetPlayerViewPoint(WorldOrigin, PlayerDir);
+	WorldDir = Vector(PlayerDir);
+	Targetable = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
+		(WorldOrigin+WorldDir), TRUE);
+	if(Actor(Targetable) != None)
+	{
+		if(ViewTarget != None)
+		{
+			myHUD.RemovePostRenderedActor(ViewTarget);
+		}
+		SetViewTarget(Actor(Targetable));
+		myHUD.AddPostRenderedActor(Actor(Targetable));
+	}
+}
+
+exec function DebugSpectateFactionAI(int Index)
+{
+	if(TowerGame(WorldInfo.Game).Factions[Index] != None)
+	{
+		if(ViewTarget != None)
+		{
+			myHUD.RemovePostRenderedActor(ViewTarget);
+		}
+		SetViewTarget(TowerGame(WorldInfo.Game).Factions[Index]);
+		myHUD.AddPostRenderedActor(TowerGame(WorldInfo.Game).Factions[Index]);
+	}
+}
+
+exec function DebugUnSpectate()
+{
+	if(ViewTarget != None)
+	{
+		myHUD.RemovePostRenderedActor(ViewTarget);
+	}
+	SetViewTarget(None);
+}
+`endif
+
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
 	local int ModIndex, ModBlockIndex;
@@ -333,19 +379,22 @@ function TowerBlock ConvertIndexesToBlock(out int ModIndex, out int ModBlockInde
 /** Called from TowerHUD::OnMouseClick if a valid TowerPlaceable is selected for removal. */
 simulated function RemoveBlock(TowerBlock Block)
 {
-	`log("RemovePlaceable:"@Block);
 	ServerRemoveBlock(Block);
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
 {
-	`log("ServerRemovePlaceable:"@Block);
 	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
 }
 
 reliable server function ServerSetTowerName(string NewName)
 {
 	TowerGame(WorldInfo.Game).SetTowerName(GetTower(), NewName);
+}
+
+reliable client function UpdateRoundNumber(byte NewRound)
+{
+	TowerHUD(myHUD).HUDMovie.SetRoundNumber(NewRound);
 }
 
 function Tower GetTower()

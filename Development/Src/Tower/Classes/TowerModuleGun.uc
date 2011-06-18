@@ -15,7 +15,10 @@ event Think()
 	{
 		GetNewTarget();
 	}
-	Shoot(Normal(Actor(Target).Location - Location));
+	if(Target != None)
+	{
+		Shoot(Normal(Actor(Target).Location - Location));
+	}
 }
 
 function GetNewTarget()
@@ -48,7 +51,7 @@ function Shoot(Vector Direction)
 	
 	DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
 	
-	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
+//	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
 	if(HitActor != None)
 	{
 		// Call TakeDamage();

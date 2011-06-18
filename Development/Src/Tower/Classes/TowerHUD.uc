@@ -70,7 +70,10 @@ function DrawHUD()
 	PlayerOwner.GetPlayerViewpoint(ViewPoint, ViewRotation);
 	for(i = 0; i < PostRenderedActors.Length; i++)
 	{
-		PostRenderedActors[i].NativePostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
+		if(PostRenderedActors[i] != None)
+		{
+			PostRenderedActors[i].PostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
+		}
 	}
 }
 

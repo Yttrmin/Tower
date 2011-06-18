@@ -32,6 +32,7 @@ var TowerFactionAIHivemind Hivemind;
 var byte FactionCount;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var protected byte RemainingActiveFactions;
+var protected byte Round;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -80,6 +81,7 @@ event InitGame(string Options, out string ErrorMessage)
 
 event PreLogin(string Options, string Address, out string ErrorMessage)
 {
+	`if(`notdefined(DEMO))
 	//@TODO - Check mod list in Options.
 	// New -> ModName|Major.Minor;OtherMod|Major.Minor
 	// Tower|0.1;MyMod|1.0
@@ -89,7 +91,9 @@ event PreLogin(string Options, string Address, out string ErrorMessage)
 	local TowerModInfo Mod;
 	local String ModsList, VersionString;
 	local array<String> ModNames;
+	`endif
 	Super.PreLogin(Options, Address, ErrorMessage);
+	`if(`notdefined(DEMO))
 	ModsList = ParseOption(Options, "Mods");
 	ModNames = SplitString(ModsList, ";");
 	if(bCheckClientMods)
@@ -129,6 +133,7 @@ event PreLogin(string Options, string Address, out string ErrorMessage)
 			ErrorMessage $= "Failed to join server! Missing"@MissingMods@"mods!"@OutdatedMods@"Mods outdated!";
 		}
 	}
+	`endif
 }
 
 event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
@@ -158,6 +163,7 @@ event PostLogin(PlayerController NewPlayer)
 	{
 		StartMatch();
 	}
+	TowerPlayerController(NewPlayer).UpdateRoundNumber(Round);
 }
 
 /** Modding:
@@ -167,6 +173,7 @@ event PostLogin(PlayerController NewPlayer)
 /** Called from PreBeginPlay. Loads any mods listed in the config file. */
 final function CheckForMods()
 {
+	`if(`notdefined(DEMO))
 	//@TODO - Convert package name to class name and such.
 	local int i;
 	local ModCheck Check;
@@ -207,6 +214,7 @@ final function CheckForMods()
 //	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
 	TowerGameReplicationInfo(GameReplicationInfo).ModCount = RootMod.GetModCount();
 //	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
+	`endif
 }
 
 function PopulateSpawnPointArrays()
@@ -283,10 +291,12 @@ local PlayerController PC;
 	}
 }
 
+`if(`isdefined(DEBUG))
 exec function DebugGetFactionLocation(Vector Point)
 {
 	`log(GetEnum(Enum'FactionLocation', GetPointFactionLocation(Point)));
 }
+`endif
 
 exec function StartGame()
 {
@@ -299,13 +309,102 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, RootMod.ModFactionAIs[1], FL_NegX);
-//	CrowdSpawner.CreateNewAgent(InfantryPoints[0], 
-//		GameCrowdAgent(CrowdSpawner.AgentArchetypes[0].AgentArchetype), New(None) class'GameCrowdGroup');
-//	for(i = 0; i < 200; i++)
-//		CrowdSpawner.SpawnAgent(InfantryPoints[0]);
-//	Agent.CurrentDestination = InfantryPoints[0].NextDestinations[0];
-	StartCoolDown();
+	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
+	RemainingActiveFactions = GetFactionCount() - 1;
+	GotoState('CoolDown');
+}
+
+final function byte GetFactionCount()
+{
+	local byte Count;
+	local int i;
+	for(i = 0; i < Factions.Length; i++)
+	{
+		if(Factions[i] != None)
+		{
+			Count++;
+		}
+	}
+	return Count;
+}
+
+event FactionInactive(TowerFactionAI Faction)
+{
+	`warn("FactionInactive called when not in RoundInProgress!");
+}
+
+state CoolDown
+{
+	event BeginState(Name PreviousStateName)
+	{
+		SetTimer(5, false);
+	}
+
+	event Timer()
+	{
+		GotoState('RoundInProgress');
+	}
+
+	function bool RoundInProgress()
+	{
+		return false;
+	}
+}
+
+state RoundInProgress
+{
+	event BeginState(Name PreviousStateName)
+	{
+		local TowerFaction Faction;
+		local int BudgetPerFaction;
+		IncrementRound();
+		BudgetPerFaction = 50 / GetFactionCount();
+		foreach Factions(Faction)
+		{
+			if(TowerFactionAI(Faction) != None)
+			{
+				TowerFactionAI(Faction).RoundStarted(BudgetPerFaction);
+			}
+		}
+	}
+
+	/** Increments the round number and sends it all PlayerControllers. */
+	function IncrementRound()
+	{
+		local TowerPlayerController PC;
+		Round++;
+		foreach LocalPlayerControllers(class'TowerPlayerController', PC)
+		{
+			PC.UpdateRoundNumber(Round);
+		}
+	}
+
+	/** */
+	event FactionInactive(TowerFactionAI Faction)
+	{
+		RemainingActiveFactions--;
+		if(RemainingActiveFactions <= 0)
+		{
+			GotoState('CoolDown');
+		}
+	}
+
+	event EndState(Name NextStateName)
+	{
+		local TowerFaction Faction;
+		foreach Factions(Faction)
+		{
+			if(TowerFactionAI(Faction) != None)
+			{
+				TowerFactionAI(Faction).RoundEnded();
+			}
+		}
+	}
+
+	function bool RoundInProgress()
+	{
+		return true;
+	}
 }
 
 //
@@ -340,10 +439,14 @@ function RestartPlayer(Controller NewPlayer)
 	}
 }
 
-exec function SkipRound()
+exec function KillAllTargetables()
 {
-	ClearTimer('GameTimerExpired');
-	GameTimerExpired(); 
+	local Actor Targetable;
+	foreach DynamicActors(class'Actor', Targetable, class'TowerTargetable')
+	{
+		Targetable.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+	}
+//	GotoState('CoolDown');
 }
 
 function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
@@ -373,62 +476,6 @@ function AddFactionHuman(int TeamIndex)
 	Factions[TeamIndex].TeamIndex = TeamIndex;
 	FactionCount++;
 	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
-}
-
-/** Very first part of a game, and happens between every round. */
-function StartCoolDown()
-{
-	`log("Starting 5 second cooldown round!");
-	SetCoolDownTimer(5);
-}
-
-function StartNextRound()
-{
-	local TowerFaction Faction;
-	local int BudgetPerFaction;
-	TowerGameReplicationInfo(GameReplicationInfo).NextRound();
-	//SetGameTimer(120);
-	BudgetPerFaction = TowerGameReplicationInfo(GameReplicationInfo).MaxEnemyCount / FactionCount;
-	foreach Factions(Faction)
-	{
-		if(TowerFactionAI(Faction) != None)
-		{
-			TowerFactionAI(Faction).RoundStarted(BudgetPerFaction);
-		}
-	}
-}
-
-function SetCoolDownTimer(float NewTime)
-{
-	SetTimer(NewTime, false, 'CoolDownTimerExpired');
-}
-
-event CoolDownTimerExpired()
-{
-	`log("Cool down over");
-	StartNextRound();
-}
-
-function SetGameTimer(float NewTime)
-{
-	`log("Started"@NewTime@"second round.");
-	SetTimer(NewTime, false, 'GameTimerExpired');
-}
-
-event GameTimerExpired()
-{
-	`log("Round over.");
-	TowerGameReplicationInfo(WorldInfo.GRI).EndRound();
-	StartCoolDown();
-}
-
-/** */
-event FactionInactive(TowerFactionAI Faction)
-{
-	RemainingActiveFactions--;
-	if(RemainingActiveFactions <= 0)
-	{
-	}
 }
 
 function AddTower(TowerPlayerController Player, bool bAddRootBlock,  optional string TowerName="")

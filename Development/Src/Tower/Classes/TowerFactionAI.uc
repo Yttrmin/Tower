@@ -136,10 +136,6 @@ var() protected noclear TowerUnitsList UnitList;
 
 // Have each type of troop have a specific cost?
 
-/** Amount of troops remaining that can be spawned. The AI is free to spend the budget as it sees fit.
-Only has an effect when changed ingame.*/
-var(InGame) protected int TroopBudget;
-
 /** Whether or not the AI is willing to spawn troops in other faction's borders. */
 var(InGame) protected bool bInfringeBorders;
 
@@ -156,6 +152,8 @@ var(InGame) protected editconst int UnitsOut;
 // Infantry archetype with lowest cost.
 var protected TowerTargetable CheapestInfantry;
 
+var private int CheapestTargetable;
+
 var TowerFactionAIHivemind Hivemind;
 
 var array<FormationSpawnInfo> OrderQueue;
@@ -163,6 +161,15 @@ var array<FormationSpawnInfo> OrderQueue;
 var array<NavigationPoint> InfantryDestinations;
 
 var array<TowerSpawnPoint> SpawnPoints;
+
+event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	`assert(UnitList != None);
+	Game = TowerGame(WorldInfo.Game);
+	GRI = TowerGameReplicationInfo(Game.GameReplicationInfo);
+	CalculateAllCosts();
+}
 
 event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 {
@@ -186,6 +193,11 @@ event CooledDown()
 	
 }
 
+event RoundEnded()
+{
+	`warn("RoundEnded not called in Active state!");
+}
+
 auto state InActive
 {
 	event BeginState(Name PreviousStateName)
@@ -194,8 +206,8 @@ auto state InActive
 	}
 	event RoundStarted(const int AwardedBudget)
 	{
-		TroopBudget = AwardedBudget;
-		`log(Self@"Round started! Budget:"@TroopBudget);
+		Budget = AwardedBudget;
+		`log(Self@"Round started! Budget:"@Budget);
 		bCanFight = True;
 		GotoState('Active');
 	}
@@ -293,7 +305,7 @@ state Active
 				Squad.Destroy();
 			}
 		}
-		`log("Spawn formation failed. Budget:"@TroopBudget);
+		`log("Spawn formation failed. Budget:"@Budget);
 		return false;
 	}
 
@@ -354,37 +366,23 @@ state Active
 }
 
 function Vector GetSpawnLocation(const TroopInfo Troop, const out Vector OriginLocation, const out Rotator OriginRotation)
-	{
-		/*
-		Out.X = SpawnIn.X + (Math.Cos(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
-				- Math.Sin(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
-			Out.Y = SpawnIn.Y + (Math.Sin(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
-				+ Math.Cos(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
-		*/
-		local Vector Coordinates;
-		local Vector ModTroopLocation;
-		ModTroopLocation = OriginLocation + Troop.RelativeLocation;
-		Coordinates.X = (OriginLocation.X + Cos(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.X - OriginLocation.X)
-			- Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
-		Coordinates.Y = (OriginLocation.Y + Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.X - OriginLocation.X)
-			+ Cos(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
-		//`log("Rotation:"@OriginRotation.Yaw@"degrees:"@OriginRotation.Yaw*UnrRotToDeg@"sin:"@Sin(OriginRotation.Yaw*UnrRotToRad)
-		//	@"Cos:"@Cos(OriginRotation.Yaw*UnrRotToRad)@"coordinates:"@Coordinates@"OriginLoc"@OriginLocation@"OriginRot"@OriginRotation);
-		return Coordinates;
-	}
-
-event PostBeginPlay()
 {
-	local PlayerController PC;
-	foreach LocalPlayerControllers(class'PlayerController', PC)
-	{
-		PC.myHUD.AddPostRenderedActor(self);
-	}
-	Super.PostBeginPlay();
-	`assert(UnitList != None);
-	Game = TowerGame(WorldInfo.Game);
-	GRI = TowerGameReplicationInfo(Game.GameReplicationInfo);
-	CalculateAllCosts();
+	/*
+	Out.X = SpawnIn.X + (Math.Cos(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
+			- Math.Sin(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
+		Out.Y = SpawnIn.Y + (Math.Sin(DegreeToRadian(Rotation)) * (In.X - SpawnIn.X)
+			+ Math.Cos(DegreeToRadian(Rotation)) * (In.Y - SpawnIn.Y));
+	*/
+	local Vector Coordinates;
+	local Vector ModTroopLocation;
+	ModTroopLocation = OriginLocation + Troop.RelativeLocation;
+	Coordinates.X = (OriginLocation.X + Cos(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.X - OriginLocation.X)
+		- Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
+	Coordinates.Y = (OriginLocation.Y + Sin(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.X - OriginLocation.X)
+		+ Cos(OriginRotation.Yaw*UnrRotToRad) * (ModTroopLocation.Y - OriginLocation.Y));
+	//`log("Rotation:"@OriginRotation.Yaw@"degrees:"@OriginRotation.Yaw*UnrRotToDeg@"sin:"@Sin(OriginRotation.Yaw*UnrRotToRad)
+	//	@"Cos:"@Cos(OriginRotation.Yaw*UnrRotToRad)@"coordinates:"@Coordinates@"OriginLoc"@OriginLocation@"OriginRot"@OriginRotation);
+	return Coordinates;
 }
 
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
@@ -405,7 +403,7 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 
 	Canvas.CurX = Canvas.SizeX-150;
 	Canvas.CurY = 50;
-	Canvas.DrawText("TroopBudget:"@TroopBudget);
+	Canvas.DrawText("Budget:"@Budget);
 	
 	Canvas.CurX = Canvas.SizeX-150;
 	Canvas.CurY = 65;
@@ -435,6 +433,7 @@ function CalculateAllCosts()
 			CheapestInfantry = UnitList.InfantryArchetypes[i];
 		}
 	}
+	CheapestTargetable = CheapestInfantry.GetCost(CheapestInfantry);
 	`log("Cheapest infantry unit:"@CheapestInfantry@CheapestInfantry.GetCost(CheapestInfantry));
 }
 
@@ -487,6 +486,10 @@ event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint S
 //	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
 	Targetable = UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
 	TowerEnemyPawn(Targetable).TeamIndex = TeamIndex;
+	if(Targetable != None)
+	{
+		UnitsOut++;
+	}
 	return Targetable;
 }
 
@@ -498,7 +501,7 @@ function int GetUnitCost(TowerTargetable UnitArchetype)
 function CheckActivity()
 {
 	// Check against minimum cost?
-	if(TroopBudget > 0)
+	if(Budget > 0)
 	{
 		
 	}
@@ -510,6 +513,10 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 {
 	//@TODO - Collect information about deaths so we can figure out what to counter.
 	UnitsOut--;
+	if(UnitsOut <= 0 && Budget < CheapestTargetable)
+	{
+		Game.FactionInactive(Self);
+	}
 }
 
 event OnVIPDeath(TowerTargetable VIP)
@@ -518,7 +525,7 @@ event OnVIPDeath(TowerTargetable VIP)
 
 function bool HasBudget(int Amount)
 {
-	if(Amount > TroopBudget)
+	if(Amount > Budget)
 	{
 		return FALSE;
 	}
@@ -527,7 +534,7 @@ function bool HasBudget(int Amount)
 
 function ConsumeBudget(int Amount)
 {
-	TroopBudget = Max(0, TroopBudget - Amount);
+	Budget = Max(0, Budget - Amount);
 }
 
 DefaultProperties
