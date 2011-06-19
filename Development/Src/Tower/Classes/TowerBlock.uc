@@ -14,14 +14,20 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	placeable
 	abstract;
 
-var() int Health;
-var() int HealthMax;
+var(InGame) int Health;
+//=========================================================
+// Used in archetypes when creating new blocks.
 /** User-friendly name. Used for things like the build menu. */
-//@TODO - Why not make this type name?
 var() const Name DisplayName;
+/** Description used when selected in the build menu. */
 var() const String Description;
-/** If FALSE, this Placeable will not be accessible to the player for placing in the world. */
+/** If TRUE, this block will be in the player's build list. */
 var() const bool bAddToBuildList;
+/** Maximum health of this block, and what value the block will lerp to during construction. May be modified for difficulty. */
+var() int HealthMax;
+/**  */
+var() int Cost;
+//=========================================================
 
 //=========================================================
 // A*-related
@@ -44,11 +50,11 @@ var protectedwrite editconst IVector ParentDirection;
 var protectedwrite editconst IVector GridLocation;
 
 var protected MaterialInstanceConstant MaterialInstance;
-var const LinearColor Black;
 var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
+/** Used when saving/loading, set in the archetype by the game during runtime when the mod is loaded. */
 var int ModIndex, ModBlockIndex;
 
 replication
@@ -110,63 +116,7 @@ simulated event Destroyed()
 		Obstacle.Destroy();
 	}
 }
-/*
-static function TowerBlock AttachBlock(TowerBlock BlockArchetype,
-	TowerBlock Parent, TowerTree NodeTree, out Vector SpawnLocation,
-	out IVector NewGridLocation, optional TowerPlayerReplicationInfo OwnerTPRI)
-{
-	local TowerBlock Block;
-	local IVector ParentDir;
-	local Rotator NewRotation;
-	// Only let stable blocks add stuff to them, otherwise things get wonky.
-	if(Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
-	{
-		if(Parent != None)
-		{
-			// Get PRI somewhere else since it might be none.
-			//TODO - Simple bool to check if we can just ignore this rotation stuff.
-			Block = Parent.Spawn(BlockArchetype.class, Parent,, SpawnLocation,,BlockArchetype,FALSE);
-			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
-//			`log(Block@"AttachBlock. ParentDir:"@Normal(Parent.Location - SpawnLocation));
-			if(round(ParentDir.Z) == 0)
-			{
-				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
-				NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
-				NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
-			}
-			else if(round(ParentDir.Z) == -1)
-			{
-//				NewRotation.Roll = -180 * DegToUnrRot;
-			}
-			else if(round(ParentDir.Z) == 1)
-			{
-				NewRotation.Roll = 180 * DegToUnrRot;
-			}
-			else
-			{
-				NewRotation = Block.Rotation;
-			}
-			Block.SetRelativeRotation(NewRotation);
-			Block.Initialize(NewGridLocation, ParentDir, Parent.OwnerPRI);
-		}
-		else
-		{
-			`assert(OwnerTPRI != None);
-			Block = OwnerTPRI.Spawn(BlockArchetype.class,,, SpawnLocation,,BlockArchetype,false);
-			ParentDir = IVect(0,0,0);
-			Block.Initialize(NewGridLocation, ParentDir, OwnerTPRI);
-		}
-		NodeTree.AddNode(Block, Parent);
-	}
-	return Block;
-}
 
-
-static function RemoveBlock(TowerBlock Block, out TowerTree NodeTree)
-{
-	NodeTree.RemoveNode(Block);
-}
-*/
 simulated function IVector GetGridLocation()
 {
 	return GridLocation;
@@ -226,7 +176,9 @@ final simulated function Highlight()
 
 final simulated function UnHighlight()
 {
-	MaterialInstance.SetVectorParameterValue('HighlightColor', Black);
+	local LinearColor BlackColor;
+	BlackColor = MakeLinearColor(0,0,0,0);
+	MaterialInstance.SetVectorParameterValue('HighlightColor', BlackColor);
 }
 
 final simulated function SetColor()

@@ -131,7 +131,7 @@ function SetupBuildList()
 		}
 	}
 	HUDMovie.SetVariableStringArray("_root.Placeables", 0, BuildStrings);
-	HUDMovie.OnBuildListChange(1);
+	HUDMovie.OnBuildListChange(0);
 }
 
 event OnMouseRelease(int Button)

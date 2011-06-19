@@ -6,3 +6,13 @@ var() protectedwrite const name FactionName;
 var() editconst FactionLocation Faction;
 
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller);
+
+function bool HasBudget(int Amount)
+{
+	return Amount < Budget;
+}
+
+function ConsumeBudget(int Amount)
+{
+	Budget = Max(0, Budget - Amount);
+}

@@ -16,7 +16,7 @@ var TowerPlayerReplicationInfo ServerTPRI;
 replication
 {
 	if(bNetDirty)
-		MaxEnemyCount;
+		bRoundInProgress;
 	if(bNetInitial)
 		ModCount, RootMod, ServerTPRI;
 }
@@ -81,4 +81,9 @@ simulated function ConstructBuildList()
 	{
 		TowerHUD(PC.myHUD).SetupBuildList();
 	}
+}
+
+function CheckRoundInProgress()
+{
+	bRoundInProgress = TowerGame(WorldInfo.Game).IsRoundInProgress();
 }

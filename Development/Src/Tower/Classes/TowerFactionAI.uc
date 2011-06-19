@@ -227,6 +227,7 @@ state Active
 	event BeginState(Name PreviousStateName)
 	{
 		DetermineStrategy();
+		CheckActivity();
 	}
 	// Do we really need to think every tick?
 	event Tick(float DeltaTime)
@@ -501,9 +502,9 @@ function int GetUnitCost(TowerTargetable UnitArchetype)
 function CheckActivity()
 {
 	// Check against minimum cost?
-	if(Budget > 0)
+	if(UnitsOut <= 0 && Budget < CheapestTargetable)
 	{
-		
+		Game.FactionInactive(Self);
 	}
 }
 
@@ -513,28 +514,11 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 {
 	//@TODO - Collect information about deaths so we can figure out what to counter.
 	UnitsOut--;
-	if(UnitsOut <= 0 && Budget < CheapestTargetable)
-	{
-		Game.FactionInactive(Self);
-	}
+	CheckActivity();
 }
 
 event OnVIPDeath(TowerTargetable VIP)
 {
-}
-
-function bool HasBudget(int Amount)
-{
-	if(Amount > Budget)
-	{
-		return FALSE;
-	}
-	return TRUE;
-}
-
-function ConsumeBudget(int Amount)
-{
-	Budget = Max(0, Budget - Amount);
 }
 
 DefaultProperties

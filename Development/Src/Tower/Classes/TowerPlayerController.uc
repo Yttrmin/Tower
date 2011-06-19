@@ -127,15 +127,21 @@ exec function SetTowerName(string NewName)
 	ServerSetTowerName(NewName);
 }
 
-exec function SaveGame(string FileName)
+exec function bool SaveGame(string FileName)
 {
 	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
 	// stuff publically.
-	if(FileName == "")
+	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
-		return;
+		`log("Trying to save while the round is in progress! This isn't allowed!");
+		return false;
+	}
+	else if(FileName == "")
+	{
+		return false;
 	}
 	SaveSystem.SaveGame(FileName, false, self);
+	return true;
 }
 
 exec function LoadGame(string FileName, bool bTowerOnly)
@@ -339,41 +345,17 @@ exec function DebugUnSpectate()
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
-	local int ModIndex, ModBlockIndex;
-	ConvertBlockToIndexes(BlockArchetype, ModIndex, ModBlockIndex);
-	ServerAddBlock(ModIndex, ModBlockIndex, Parent, GridLocation);
+	ServerAddBlock(BlockArchetype, Parent, GridLocation);
 	//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 }
 
-reliable server function ServerAddBlock(int ModIndex, int ModBlockIndex, TowerBlock Parent, IVector GridLocation)
+reliable server function ServerAddBlock(TowerBlock BlockArchetype, TowerBlock Parent, IVector GridLocation)
 {
-	TowerGame(WorldInfo.Game).AddBlock(GetTower(), ConvertIndexesToBlock(ModIndex, ModBlockIndex), Parent, GridLocation);
-}
-
-simulated final function ConvertBlockToIndexes(TowerBlock BlockArchetype, out int ModIndex, out int ModBlockIndex)
-{
-	local TowerModInfo Mod;
-	for(Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod; Mod != None; Mod = Mod.NextMod)
+	if(GetTower().HasBudget(BlockArchetype.Cost))
 	{
-		ModBlockIndex = Mod.ModBlocks.find(BlockArchetype);
-		if(ModBlockIndex != -1)
-		{
-			return;
-		}
-		ModIndex++;
+		GetTower().ConsumeBudget(BlockArchetype.Cost);
+		TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockArchetype, Parent, GridLocation);	
 	}
-}
-
-function TowerBlock ConvertIndexesToBlock(out int ModIndex, out int ModBlockIndex)
-{
-	local TowerModInfo Mod;
-	Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod;
-	while(ModIndex > 0)
-	{
-		Mod = Mod.NextMod;
-		ModIndex--;
-	}
-	return Mod.ModBlocks[ModBlockIndex];
 }
 
 /** Called from TowerHUD::OnMouseClick if a valid TowerPlaceable is selected for removal. */
