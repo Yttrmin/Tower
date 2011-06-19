@@ -37,7 +37,9 @@ var protected byte Round;
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
 var globalconfig const bool bCheckClientMods;
+`if(`notdefined(DEMO))
 var globalconfig const array<String> ModPackages;
+`endif
 /** First element of the TowerModInfo linked list. This is always assumed to be TowerMod! */
 var TowerModInfo RootMod;
 /** Archetype to use for spawning the root blocks of towers. */
@@ -214,6 +216,8 @@ final function CheckForMods()
 //	TowerGameReplicationInfo(GameReplicationInfo).ServerMods = ReplicatedModList;
 	TowerGameReplicationInfo(GameReplicationInfo).ModCount = RootMod.GetModCount();
 //	TowerGameReplicationInfo(GameReplicationInfo).AreModsLoaded();
+	`else
+	// Hardcode to only check for TowerMod since mods aren't supported in the demo.
 	`endif
 }
 
@@ -333,11 +337,18 @@ event FactionInactive(TowerFactionAI Faction)
 	`warn("FactionInactive called when not in RoundInProgress!");
 }
 
+function bool IsRoundInProgress()
+{
+	`log("RoundInProgress called outside proper states!"@GetStateName());
+	return false;
+}
+
 state CoolDown
 {
 	event BeginState(Name PreviousStateName)
 	{
 		SetTimer(5, false);
+		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 	}
 
 	event Timer()
@@ -345,7 +356,7 @@ state CoolDown
 		GotoState('RoundInProgress');
 	}
 
-	function bool RoundInProgress()
+	function bool IsRoundInProgress()
 	{
 		return false;
 	}
@@ -357,6 +368,7 @@ state RoundInProgress
 	{
 		local TowerFaction Faction;
 		local int BudgetPerFaction;
+		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 		IncrementRound();
 		BudgetPerFaction = 50 / GetFactionCount();
 		foreach Factions(Faction)
@@ -401,7 +413,7 @@ state RoundInProgress
 		}
 	}
 
-	function bool RoundInProgress()
+	function bool IsRoundInProgress()
 	{
 		return true;
 	}
@@ -485,6 +497,8 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock,  optional st
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	TPRI.Tower = Spawn(class'Tower', self);
 	TPRI.Tower.OwnerPRI = TPRI;
+	// Initial budget!
+	TPRI.Tower.Budget = 50;
 //	TPRI.Tower.Initialize(TPRI);
 	if(bAddRootBlock)
 	{
@@ -493,6 +507,7 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock,  optional st
 		GridLocation.X = 8*(NumPlayers-1);
 	
 		TPRI.Tower.Root = TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation));
+		//@FIXME - Have Root do this by itself?
 		Hivemind.OnRootBlockSpawn(TPRI.Tower.Root);
 	}
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
