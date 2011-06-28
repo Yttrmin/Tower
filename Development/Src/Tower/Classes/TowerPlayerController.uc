@@ -299,7 +299,7 @@ reliable server function ServerTestReplicateArchetype(TowerBlock Block)
 }
 
 /**  */
-exec function DebugSpectateTargetable()
+exec function DebugSpectateTargetable(optional bool bRetainViewTarget=false)
 {
 	local Vector WorldOrigin, WorldDir;
 	local Rotator PlayerDir;
@@ -315,12 +315,15 @@ exec function DebugSpectateTargetable()
 		{
 			myHUD.RemovePostRenderedActor(ViewTarget);
 		}
-		SetViewTarget(Actor(Targetable));
+		if(!bRetainViewTarget)
+		{
+			SetViewTarget(Actor(Targetable));
+		}
 		myHUD.AddPostRenderedActor(Actor(Targetable));
 	}
 }
 
-exec function DebugSpectateFactionAI(int Index)
+exec function DebugSpectateFactionAI(int Index, optional bool bRetainViewTarget=false)
 {
 	if(TowerGame(WorldInfo.Game).Factions[Index] != None)
 	{
@@ -328,7 +331,10 @@ exec function DebugSpectateFactionAI(int Index)
 		{
 			myHUD.RemovePostRenderedActor(ViewTarget);
 		}
-		SetViewTarget(TowerGame(WorldInfo.Game).Factions[Index]);
+		if(!bRetainViewTarget)
+		{
+			SetViewTarget(TowerGame(WorldInfo.Game).Factions[Index]);
+		}
 		myHUD.AddPostRenderedActor(TowerGame(WorldInfo.Game).Factions[Index]);
 	}
 }

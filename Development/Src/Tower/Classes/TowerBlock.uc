@@ -32,6 +32,7 @@ var() int Cost;
 //=========================================================
 // A*-related
 var() int BaseCost;
+var() int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
 

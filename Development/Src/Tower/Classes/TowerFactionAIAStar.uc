@@ -25,10 +25,7 @@ var bool bDrewPath;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	if(false)
-	{
-		SetTimer(10, false, 'Start');
-	}
+	SetTimer(10, false, 'Start');
 }
 
 function Start()
@@ -41,111 +38,88 @@ function Start()
 Please call me from AsyncTick! 
 May have to defer over multiple ticks if it has an impact on frame rate. */
 //@TODO - Document ASAP!
-final function GeneratePathToRoot()
+final function GeneratePath(TowerBlock Start, TowerBlock Finish)
 {
-	local int TentativeCost, i, LowestCostIndex; 
-	local array<TowerBlock> OpenList, ClosedList, AdjacentList;
-	local TowerBlock Start, Finish;
-	// Used when iterating over a block's based actors for TowerBlockAirs.
-	local TowerBlockAir IteratorAirBlock;
-	local TowerBlock IteratorBlock, LowestCostBlock;
-	local bool bTentativeIsBetter;
+	local array<TowerBlock> OpenList, ClosedList;
+	// References whichever Block in the OpenList that has the lowest Fitness.
+	local TowerBlock BestBlock;
+	local TowerBlock OldAStarParent;
+	local int i;
+
 	`log("================== STARTING A* ==================",,'AStar');
-	// Determine our starting and ending points.
-	Start = GetStartingBlock();
+	`log("Start:"@Start@" "@"Finish:"@Finish,,'AStar');
 	Start.BaseCost = 0;
-	Finish = Hivemind.RootBlock.Target;
 	// DebugStart/Finish are used for keeping track of the Start/Finish so we can draw the path later.
 	DebugStart = Start;
 	DebugFinish = Finish;
-	`log("Start:"@Start@" "@"Finish:"@Finish,,'AStar');
+	// #2
+	CalculateCosts(Start, Finish, GetGoalCost(Start));
 	// Add our Starting block to the OpenList and start pathfinding!
+	// #3
 	OpenList.AddItem(Start);
-
-	// Estimate of cost. Can be way lower than the actual just fine, but not more than the actual! Underestimate!
-//	HeuristicScore = GetHeuristicCost(Start, Finish);
-
-	while(OpenList.Length > 0 && LowestCostBlock != Finish)
+	while(OpenList.Length > 0)
 	{
-		// Clear the AdjacentList every iteration.
-		AdjacentList.Remove(0, AdjacentList.Length);
-		// Search through the OpenList for the lowest cost block.
-		LowestCostBlock = OpenList[0];
-		LowestCostIndex = 0;
-		foreach OpenList(IteratorBlock, i)
+		i++;
+		BestBlock = GetBestBlock(OpenList, Finish);
+		`log("Iteration"@i$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,,'AStar');
+		if(BestBlock == Finish)
 		{
-			`log(IteratorBlock@"cost:"@GetCost(IteratorBlock, Finish)@"Parent:"@IteratorBlock.AStarParent,,'AStar');
-			if(GetCost(IteratorBlock, Finish) < GetCost(LowestCostBlock, Finish))
-			{
-				LowestCostBlock = IteratorBlock;
-				LowestCostIndex = i;
-			}			
+			// We're done.
+			ConstructPath(Finish);
+			break;
 		}
-		`log("Determined LowestCostBlock:"@LowestCostBlock@"Cost:"@GetCost(LowestCostBlock, Finish),,'AStar');
-		// Put the lowest cost block in the ClosedList so we don't look at it after this.
-		OpenList.Remove(LowestCostIndex, 1);
-		ClosedList.AddItem(LowestCostBlock);
-		// If LowestCostBlock is our Finish block, skip this iteration. Otherwise...
-		if(LowestCostBlock == Finish)
+		else if(BestBlock == None)
 		{
-			continue;
+			// No path?! How?!
 		}
-		// Add each neighboring block (and any of its diagonal airs) to AdjacentList
-		// so we can neatly iterate through every block instead of having to copy/paste
-		// code and change variable names.
-		foreach LowestCostBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
-		{
-			//check for each neighbor's air since it won't get picked up by CollidingActors.
-			foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
-			{
-				if(IsDiagonalTo(IteratorAirBlock, LowestCostBlock))
-				{
-					AdjacentList.AddItem(IteratorAirBlock);
-				}
-			}
-			AdjacentList.AddItem(IteratorBlock);
-		}
-		// Now for real look through our neighboring blocks!
-		foreach AdjacentList(IteratorBlock)
-		{
-			
-			// If the block is in the ClosedList, skip it.
-			if(ClosedList.Find(IteratorBlock) != -1)
-			{
-				continue;
-			}
-			TentativeCost = GetCost(IteratorBlock, Finish);
-			// Else add it if it's not already in the OpenList...
-			if(OpenList.Find(IteratorBlock) == -1)
-			{
-				OpenList.AddItem(IteratorBlock);
-				bTentativeIsBetter = true;
-			}
-			// Else
-			else if(TentativeCost < GetCost(LowestCostBlock, Finish))
-			{
-				bTentativeIsBetter = true;
-			}
-			else
-			{
-				bTentativeIsBetter = false;
-			}
-			if(bTentativeIsBetter)
-			{
-				IteratorBlock.AStarParent = LowestCostBlock;
-			}
-		}
-		
+		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish);
+		OpenList.RemoveItem(BestBlock);
+		ClosedList.AddItem(BestBlock);
 	}
-	`log("Finished pathfinding! Saving results!",,'AStar');
-	for(IteratorBlock = Finish; IteratorBlock != None; IteratorBlock = IteratorBlock.AStarParent)
-	{
-		`log(IteratorBlock@"s parent is"@IteratorBlock.AStarParent,,'AStar');
-		PathToRoot.AddItem(IteratorBlock);
-	}
-	bDrewPath = false;
-	Start.BaseCost = Start.default.BaseCost;
+
 	`log("================== FINISHED A* ==================",,'AStar');
+}
+
+final function TowerBlock GetBestBlock(out array<TowerBlock> OpenList, TowerBlock Finish)
+{
+	local TowerBlock BestBlock, IteratorBlock;
+	foreach OpenList(IteratorBlock)
+	{
+		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness);
+		if(BestBlock == None)
+		{
+			BestBlock = IteratorBlock;
+		}
+		else if(IteratorBlock.Fitness < BestBlock.FitNess)
+		{
+			BestBlock = IteratorBlock;
+		}
+		//@TODO - Should we really do this?
+		if(IteratorBlock == Finish)
+		{
+			return IteratorBlock;
+		}
+	}
+	return BestBlock;
+}
+
+final function CalculateCosts(TowerBlock Block, TowerBlock Finish, optional int GoalCost)
+{
+	Block.HeuristicCost = GetHeuristicCost(Block, Finish);
+	if(Block.AStarParent != None)
+	{
+		Block.GoalCost = GoalCost;
+	}
+	Block.Fitness = Block.HeuristicCost + Block.GoalCost;
+}
+
+final function int GetGoalCost(TowerBlock Block)
+{
+	if(Block.AStarParent != None)
+	{
+		return Block.BaseCost + GetGoalCost(Block.AStarParent);
+	}
+	return 0;
 }
 
 final function GenerateObjectives()
@@ -158,15 +132,22 @@ event Think()
 
 }
 
-final function int GetCost(TowerBlock Block, TowerBlock Finish)
+final function ConstructPath(TowerBlock Finish)
 {
-	local int Cost;
-	local TowerBlock IteratorBlock;
-	for(IteratorBlock = Block; IteratorBlock != None; IteratorBlock = IteratorBlock.AStarParent)
+	local TowerBlock Block;
+	local int i;
+	local array<TowerBlock> BackwardsPath;
+	`log("* * Path complete, constructing!",,'AStar');
+	for(Block = Finish; Block != None; Block = Block.AStarParent)
 	{
-		Cost += IteratorBlock.BaseCost;
+		BackwardsPath.AddItem(Block);
 	}
-	return Cost + GetHeuristicCost(Block, Finish);
+	for(i = BackwardsPath.Length-1; i >= 0; i--)
+	{
+		PathToRoot.AddItem(BackwardsPath[i]);
+		`log(PathToRoot.Length$":"@BackwardsPath[i]);
+	}
+	`log("Path construction complete!",,'AStar');
 }
 
 final function TowerBlockAir GetStartingBlock()
@@ -189,9 +170,94 @@ final function TowerBlockAir GetStartingBlock()
 	return None;
 }
 
-final function AddAdjacentBlocksToSet(out array<TowerBlock> Set, TowerBlock SourceBlock)
+final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out array<TowerBlock> ClosedList, 
+	TowerBlock SourceBlock, TowerBlock Finish)
 {
+	local array<TowerBlock> AdjacentList;
+	local TowerBlock IteratorBlock;
+	local TowerBlockAir IteratorAirBlock;
+	local TowerBlock OldAStarParent;
+	local int GoalCost;
+	GoalCost = SourceBlock.GoalCost;
+	// Add everything to a single array so we can iterate through it easily.
+	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
+	{
+		//check for each neighbor's air since it won't get picked up by CollidingActors.
+		foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
+		{
+			if(IsDiagonalTo(IteratorAirBlock, SourceBlock) || IsAdjacentTo(IteratorAirBlock, SourceBlock))
+			{
+				AdjacentList.AddItem(IteratorAirBlock);
+			}
+		}
+		AdjacentList.AddItem(IteratorBlock);
+	}
+	foreach AdjacentList(IteratorBlock)
+	{
+//		OldAStarParent = IteratorBlock.AStarParent;
+//		IteratorBlock.AStarParent = SourceBlock;
+//		CalculateCosts(IteratorBlock, SourceBlock, Finish);
+//		IteratorBlock.AStarParent = OldAStarParent;
+		if(OpenList.Find(IteratorBlock) != -1)
+		{
+			// Already in OpenList.
+			if(IteratorBlock.GoalCost > SourceBlock.GoalCost)
+			{
+				// Better path?
+				IteratorBlock.AStarParent = SourceBlock;
+				CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
+			}
+		}
+		else if(ClosedList.Find(IteratorBlock) != -1)
+		{
+			// IRRELEVANT.
+			// Already in ClosedList.
+			if(IteratorBlock.GoalCost > SourceBlock.GoalCost)
+			{
+				// Better path?
+				`log("Better path in the closed list shouldn't happen!(?)",,'AStar');
+				IteratorBlock.AStarParent = SourceBlock;
+				CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
+				UpdateParents(IteratorBlock, Finish);
+			}
+		}
+		else
+		{
+			// Not in either list.
+			IteratorBlock.AStarParent = SourceBlock;
+			CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
+			OpenList.AddItem(IteratorBlock);
+		}
+	}
+}
 
+// SHOULD LITERALLY NEVER BE CALLED FOR OUR TESTS. IRRELEVANT.
+final function UpdateParents(TowerBlock Block, TowerBlock Finish)
+{
+	local TowerBlock IteratorBlock;
+	local TowerBlockAir IteratorAirBlock;
+	local array<TowerBlock> AdjacentList;
+	local int GoalCost;
+	GoalCost = Block.GoalCost;
+	`log("UPDATEPARENTD* **********************");
+	ScriptTrace();
+	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
+	{
+		//check for each neighbor's air since it won't get picked up by CollidingActors.
+		foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
+		{
+			if(IsDiagonalTo(IteratorAirBlock, Block))
+			{
+				AdjacentList.AddItem(IteratorAirBlock);
+			}
+		}
+		AdjacentList.AddItem(IteratorBlock);
+	}
+	foreach AdjacentList(IteratorBlock)
+	{
+		IteratorBlock.AStarParent = Block;
+		CalculateCosts(IteratorBlock, Finish, GoalCost+1);
+	}
 }
 
 /** Returns true if both blocks share just an edge. */
@@ -229,7 +295,55 @@ final function bool IsDiagonalTo(TowerBlock A, TowerBlock B)
 		bValid = false;
 	}
 	// If corner-checking we'd look for Count == 3.
-	return Count == 2 && bValid;
+	return (Count == 2 && bValid);
+}
+
+//@TODO - Make this not awful.
+final function bool IsAdjacentTo(TowerBlock A, TowerBlock B)
+{
+	local IVector Comparison;
+	local bool bNoMoreDeviation;
+	local bool bValid;
+	bValid = true;
+	bNoMoreDeviation = false;
+	Comparison = A.GridLocation - B.GridLocation;
+	if(Comparison.X == 1 || Comparison.X == -1)
+	{
+		if(bNoMoreDeviation)
+		{
+			bValid = false;
+		}
+		else
+		{
+			bNoMoreDeviation = true;
+			bValid = true;
+		}
+	}
+	if(bValid && (Comparison.Y == 1 || Comparison.Y == -1))
+	{
+		if(bNoMoreDeviation)
+		{
+			bValid = false;
+		}
+		else
+		{
+			bNoMoreDeviation = true;
+			bValid = true;
+		}
+	}
+	if(bValid && (Comparison.Z == 1 || Comparison.Z == -1))
+	{
+		if(bNoMoreDeviation)
+		{
+			bValid = false;
+		}
+		else
+		{
+			bNoMoreDeviation = true;
+			bValid = true;
+		}
+	}
+	return bValid && bNoMoreDeviation;
 }
 
 final function DebugDrawPath(TowerBlock Start, TowerBlock Finish, Canvas Canvas)
@@ -276,19 +390,19 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 {
 	Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
 	//@TODO - Move me somewhere appropriate.
-	//DebugDrawNames(Canvas);
-	if(!bDrewPath)
+	DebugDrawNames(Canvas);
+	if(PathToRoot.Length > 0)
 	{
 		DebugDrawPath(DebugStart, DebugFinish, Canvas);
 	}
 }
 
-final function int GetHeuristicCost(TowerBlock Start, TowerBlock End)
+final function int GetHeuristicCost(TowerBlock Block, TowerBlock Finish)
 {
 	local IVector Comparison;
-	Comparison.X = Abs(Abs(Start.GridLocation.X) - Abs(End.GridLocation.X));
-	Comparison.Y = Abs(Abs(Start.GridLocation.Y) - Abs(End.GridLocation.Y));
-	Comparison.Z = Abs(Abs(Start.GridLocation.Z) - Abs(End.GridLocation.Z));
+	Comparison.X = Abs(Abs(Block.GridLocation.X) - Abs(Finish.GridLocation.X));
+	Comparison.Y = Abs(Abs(Block.GridLocation.Y) - Abs(Finish.GridLocation.Y));
+	Comparison.Z = Abs(Abs(Block.GridLocation.Z) - Abs(Finish.GridLocation.Z));
 	return (Comparison.X+Comparison.Y+Comparison.Z)*2;
 }
 
@@ -314,12 +428,12 @@ event AsyncTick(float DeltaTime)
 {
 	if(PathToRoot.Length == 0)
 	{
-		GeneratePathToRoot();
+		GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target);
 	}
 }
 
 DefaultProperties
 {
 	bDebug=true
-	bDrewPath=true
+	bDrewPath=false
 }
