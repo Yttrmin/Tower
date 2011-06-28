@@ -313,7 +313,7 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
+	AddFactionAI(5, RootMod.ModFactionAIs[1], FL_NegX);
 	RemainingActiveFactions = GetFactionCount() - 1;
 	GotoState('CoolDown');
 }
