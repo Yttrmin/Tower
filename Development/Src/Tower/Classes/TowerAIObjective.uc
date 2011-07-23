@@ -6,8 +6,16 @@ Used to mark a TowerBlock target for AI, and stores points where units should go
 class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);
 
+enum ObjectiveType
+{
+	OT_NULL,
+	OT_Destroy,
+	OT_GoTo
+};
+
 var privatewrite TowerBlock Target;
 var privatewrite TowerAIObjective NextObjective;
+var privatewrite ObjectiveType Type;
 
 final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
@@ -25,6 +33,16 @@ final function SetTarget(TowerBlock NewTarget)
 	Target = NewTarget;
 }
 
+final function SetType(ObjectiveType NewType)
+{
+	Type = NewType;
+}
+
+final function SetNextObjective(TowerAIObjective NewNextObjective)
+{
+	NextObjective = NewNextObjective;
+}
+
 DefaultProperties
 {
 	bStatic=false
@@ -35,5 +53,5 @@ DefaultProperties
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
 		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
 	End Object
-//	Components.Add(MarkerMesh)
+	Components.Add(MarkerMesh)
 }

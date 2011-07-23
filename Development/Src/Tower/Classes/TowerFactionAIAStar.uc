@@ -18,7 +18,7 @@ class TowerFactionAIAStar extends TowerFactionAI
 	config(Tower);
 
 var config float DesiredPathfindTime;
-var array<TowerBlock> PathToRoot;
+var array<TowerAIObjective> Paths;
 var TowerBlock DebugStart, DebugFinish;
 var bool bDrewPath;
 
@@ -43,7 +43,6 @@ final function GeneratePath(TowerBlock Start, TowerBlock Finish)
 	local array<TowerBlock> OpenList, ClosedList;
 	// References whichever Block in the OpenList that has the lowest Fitness.
 	local TowerBlock BestBlock;
-	local TowerBlock OldAStarParent;
 	local int i;
 
 	`log("================== STARTING A* ==================",,'AStar');
@@ -132,22 +131,63 @@ event Think()
 
 }
 
+/** Called when a path was found. Builds a linked list of objectives so the AI can navigate it. */
 final function ConstructPath(TowerBlock Finish)
 {
 	local TowerBlock Block;
-	local int i;
-	local array<TowerBlock> BackwardsPath;
+	local array<TowerBlock> PathToRoot;
+	local TowerAIObjective PreviousObjective, Objective;
 	`log("* * Path complete, constructing!",,'AStar');
+
 	for(Block = Finish; Block != None; Block = Block.AStarParent)
 	{
-		BackwardsPath.AddItem(Block);
+		`log("Adding block to PathToRoot..."@Block);
+		PathToRoot.AddItem(Block);
 	}
-	for(i = BackwardsPath.Length-1; i >= 0; i--)
+
+	ReverseArray(PathToRoot);
+	foreach PathToRoot(Block)
 	{
-		PathToRoot.AddItem(BackwardsPath[i]);
-		`log(PathToRoot.Length$":"@BackwardsPath[i]);
+		Objective = Spawn(class'TowerAIObjective',,, Block.Location);
+		`log("Spawn and initialize:"@Objective@Block);
+		InitializeObjective(Objective, Block, PreviousObjective);
 	}
 	`log("Path construction complete!",,'AStar');
+	DebugLogPaths();
+}
+
+function ReverseArray(out array<TowerBlock> Blocks)
+{
+	local int i;
+	local TowerBlock TempBlock;
+	for(i = 0; i < Blocks.Length/2; i++)
+	{
+		TempBlock = Blocks[Blocks.Length-i-1];
+		Blocks[Blocks.Length-i-1] = Blocks[i];
+		Blocks[i] = TempBlock;
+	}
+}
+
+final function InitializeObjective(TowerAIObjective Objective, TowerBlock Block, out TowerAIObjective PreviousObjective)
+{
+	Objective.SetTarget(Block);
+	if(Block.IsA('TowerBlockStructural'))
+	{
+		Objective.SetType(OT_Destroy);
+	}
+	else
+	{
+		Objective.SetType(OT_GoTo);
+	}
+	if(PreviousObjective != None)
+	{
+		PreviousObjective.SetNextObjective(Objective);
+	}
+	else
+	{
+		Paths.AddItem(Objective);
+	}
+	PreviousObjective = Objective;
 }
 
 final function TowerBlockAir GetStartingBlock()
@@ -176,9 +216,6 @@ final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out array<Tower
 	local array<TowerBlock> AdjacentList;
 	local TowerBlock IteratorBlock;
 	local TowerBlockAir IteratorAirBlock;
-	local TowerBlock OldAStarParent;
-	local int GoalCost;
-	GoalCost = SourceBlock.GoalCost;
 	// Add everything to a single array so we can iterate through it easily.
 	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
 	{
@@ -194,10 +231,6 @@ final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out array<Tower
 	}
 	foreach AdjacentList(IteratorBlock)
 	{
-//		OldAStarParent = IteratorBlock.AStarParent;
-//		IteratorBlock.AStarParent = SourceBlock;
-//		CalculateCosts(IteratorBlock, SourceBlock, Finish);
-//		IteratorBlock.AStarParent = OldAStarParent;
 		if(OpenList.Find(IteratorBlock) != -1)
 		{
 			// Already in OpenList.
@@ -231,7 +264,6 @@ final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out array<Tower
 	}
 }
 
-// SHOULD LITERALLY NEVER BE CALLED FOR OUR TESTS. IRRELEVANT.
 final function UpdateParents(TowerBlock Block, TowerBlock Finish)
 {
 	local TowerBlock IteratorBlock;
@@ -349,28 +381,28 @@ final function bool IsAdjacentTo(TowerBlock A, TowerBlock B)
 final function DebugDrawPath(TowerBlock Start, TowerBlock Finish, Canvas Canvas)
 {
 	local Vector BeginPoint, EndPoint;
-	local int i;
+//	local int i;
 	BeginPoint = Canvas.Project(Start.Location+Vect(16,16,16));
-	Canvas.CurX = BeginPoint.X;
-	Canvas.CurY = BeginPoint.Y;
+	Canvas.SetPos(BeginPoint.X, BeginPoint.Y);
 	Canvas.bCenter = true;
 	Canvas.DrawText("Start");
 	EndPoint = Canvas.Project(Finish.Location+Vect(16,16,16));
-	Canvas.CurX = EndPoint.X;
-	Canvas.CurY = EndPoint.Y;
+	Canvas.SetPos(EndPoint.X, EndPoint.Y);
 	Canvas.DrawText("Finish");
 	Canvas.bCenter = false;
 //	DrawDebugString(Start.Location, "Start");
 //	DrawDebugStar(Start.Location, 48, 0, 255, 0, true);
 //	DrawDebugString(Finish.Location, "Finish", Finish);
 //	DrawDebugStar(Finish.Location, 48, 0, 255, 0, true);
-	for(i = PathToRoot.Length-2; i >= 0; i--)
+	/*
+	for(i = Paths.Length-2; i >= 0; i--)
 	{
 		BeginPoint = Canvas.Project(PathToRoot[i].Location+Vect(16,16,16));
 		EndPoint = Canvas.Project(PathToRoot[i+1].Location+Vect(16,16,16));
 		Canvas.Draw2DLine(BeginPoint.X, BeginPoint.Y, EndPoint.X, EndPoint.Y, MakeColor(0, 255, 0));
 //		DrawDebugLine(PathToRoot[i].Location+Vect(16,16,16), PathToRoot[i+1].Location+Vect(16,16,16), 0, 0, 255, true);
 	}
+	*/
 }
 
 final function DebugDrawNames(Canvas Canvas)
@@ -380,9 +412,24 @@ final function DebugDrawNames(Canvas Canvas)
 	foreach DynamicActors(class'TowerBlock', Block)
 	{
 		BeginPoint = Canvas.Project(Block.Location+Vect(16,16,16));
-		Canvas.CurX = BeginPoint.X;
-		Canvas.CurY = BeginPoint.Y;
+		Canvas.SetPos(BeginPoint.X, BeginPoint.Y);
 		Canvas.DrawText(Block.name);
+	}
+}
+
+final function DebugLogPaths()
+{
+	local int i;
+	local TowerAIObjective RootObjective, ChildObjective;
+	`log("=================================================");
+	foreach Paths(RootObjective, i)
+	{
+		`log("-------------------------------------------------");
+		`log("Path"@i$":"@RootObjective@"("$RootObjective.Target$")");
+		for(ChildObjective = RootObjective.NextObjective; ChildObjective != None; ChildObjective = ChildObjective.NextObjective)
+		{
+			`log(ChildObjective@"("$ChildObjective.Target$")");
+		}
 	}
 }
 
@@ -391,7 +438,7 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
 	//@TODO - Move me somewhere appropriate.
 	DebugDrawNames(Canvas);
-	if(PathToRoot.Length > 0)
+	if(Paths.Length > 0)
 	{
 		DebugDrawPath(DebugStart, DebugFinish, Canvas);
 	}
@@ -426,7 +473,7 @@ final function Vector GetFactionLocationDirection()
 
 event AsyncTick(float DeltaTime)
 {
-	if(PathToRoot.Length == 0)
+	if(Paths.Length == 0)
 	{
 		GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target);
 	}

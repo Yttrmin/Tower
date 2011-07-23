@@ -42,6 +42,7 @@ simulated event ReplicatedEvent(name VarName)
 	}
 }
 
+/** Called before Initialize, sets important values for TowerBlocks that every mod needs done. */
 final function PreInitialize(int ModIndex)
 {
 	local int i;

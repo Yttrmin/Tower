@@ -39,7 +39,7 @@ function ServerInitialize()
 }
 
 /** RadarVolume's Touch. */
-event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation,
+event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation,
 	vector HitNormal)
 {
 	local TowerTargetable Targetable;
@@ -64,7 +64,7 @@ event k2override Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLoca
 }
 
 /** RadarVolume's UnTouch. */
-event k2override UnTouch(Actor Other)
+event UnTouch(Actor Other)
 {
 
 }
