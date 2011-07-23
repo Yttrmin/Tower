@@ -394,31 +394,25 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 //	UnitsOut++;
 	Canvas.SetDrawColor(255,255,255);
 	Canvas.SetPos(0,0);
-	Canvas.CurX = 0;
-	Canvas.CurY = 50;
+	Canvas.SetPos(0,50);
 	Canvas.DrawText("Faction:"@Self, false);
 
-	Canvas.CurX = 0;
-	Canvas.CurY = 65;
+	Canvas.SetPos(0,65);
 	Canvas.DrawText("FactionLocation:"@GetEnum(Enum'FactionLocation', Faction));
 
-	Canvas.CurX = Canvas.SizeX-150;
-	Canvas.CurY = 50;
+	Canvas.SetPos(Canvas.SizeX-150, 50);
 	Canvas.DrawText("Budget:"@Budget);
 	
-	Canvas.CurX = Canvas.SizeX-150;
-	Canvas.CurY = 65;
+	Canvas.SetPos(Canvas.SizeX-150, 65);
 	Canvas.DrawText("UnitsOut:"@UnitsOut);
 
-	Canvas.CurX = 0;
-	Canvas.CurY = 80;
+	Canvas.SetPos(0, 80);
 	Canvas.DrawText("State:"@GetStateName());
 
 	//@TODO - Let each state draw its own stuff.
 	if(GetStateName() == 'CollectData')
 	{
-		Canvas.CurX = 0;
-		Canvas.CurY = 95;
+		Canvas.SetPos(0, 95);
 		Canvas.DrawText("Orders Queued:"@OrderQueue.Length);
 	}
 }

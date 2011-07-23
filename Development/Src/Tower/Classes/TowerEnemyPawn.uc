@@ -38,20 +38,16 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 {
 	Canvas.SetDrawColor(255,255,255);
 	Canvas.SetPos(0,0);
-	Canvas.CurX = 0;
-	Canvas.CurY = 50;
+	Canvas.SetPos(0,50);
 	Canvas.DrawText("Targetable:"@Self, false);
 
-	Canvas.CurX = 0;
-	Canvas.CurY = 65;
+	Canvas.SetPos(0,65);
 	Canvas.DrawText("State:"@GetStateName());
 
-	Canvas.CurX = 0;
-	Canvas.CurY = 80;
+	Canvas.SetPos(0,80);
 	Canvas.DrawText("Health:"@Health);
 
-	Canvas.CurX = Canvas.SizeX-150;
-	Canvas.CurY = 50;
+	Canvas.SetPos(Canvas.SizeX-150, 50);
 	Canvas.DrawText("Squad:"@TowerEnemyController(Controller).Squad);
 }
 

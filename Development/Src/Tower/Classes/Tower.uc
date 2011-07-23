@@ -1,7 +1,7 @@
 /** 
 Tower
 
-Represents a player's tower, which a player can only have one of. Tower's are essentially containers for TowerBlocks.
+Represents a player's tower.
 */
 class Tower extends TowerFaction
 	dependson(TowerBlock);
@@ -9,11 +9,11 @@ class Tower extends TowerFaction
 var TowerBlockRoot Root;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
-non-debug in-game things ever!*/
-var() private array<TowerBlock> DebugBlocks;
+non-debug in-game things ever! */
+var(InGame) editconst private array<TowerBlock> DebugBlocks;
 
-var() string TowerName;
-var() repnotify TowerPlayerReplicationInfo OwnerPRI;
+var(InGame) editconst string TowerName;
+var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
 
 replication
 {
@@ -21,16 +21,6 @@ replication
 		TowerName, OwnerPRI;
 	if(bNetInitial)
 		Root;
-}
-
-simulated event ReplicatedEvent(name VarName)
-{
-	Super.ReplicatedEvent(VarName);
-}
-
-simulated event PostBeginPlay()
-{
-	Super.PostBeginPlay();
 }
 
 //@TODO - We really only need one of the locations. Probably Grid.
@@ -41,7 +31,6 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local IVector ParentDir;
 	local rotator NewRotation;
 	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
-//	NewBlock = BlockArchetype.AttachBlock(BlockArchetype, Parent, NodeTree, SpawnLocation, GridLocation, OwnerPRI);
 	if(Parent != None && Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
 	{
 		if(Parent != None)
@@ -74,7 +63,7 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	{
 		CreateSurroundingAir(NewBlock);
 	}
-	// Tell AI about this?
+	//@TODO - Tell AI about this?
 	return NewBlock;
 }
 
@@ -121,12 +110,11 @@ function CreateSurroundingAir(TowerBlock Block)
 		AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
 		AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirSpawnLocation,
 			AirGridLocation);
-//		Block.AttachBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, NodeTree, 
-//			AirSpawnLocation, AirGridLocation, OwnerPRI);
 		EmptyDirections.Remove(0, 1);
 	}
 }
 
+//@BUG - Sticking a block +Y of another results in an air at -Y (WRONG) and no air at +Y (WRONG).
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
@@ -136,9 +124,7 @@ function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 	return Difference;
 }
 
-event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
-{
-}
+event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller);
 
 function bool RemoveBlock(TowerBlock Block)
 {
@@ -163,7 +149,6 @@ function bool RemoveBlock(TowerBlock Block)
 	}
 	Block.Destroy();
 	return true;
-//	NodeTree.RemoveNode(Placeable);
 }
 
 function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocation, const out IVector ParentDirection)
@@ -177,10 +162,6 @@ function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocat
 	EndLocation.X = StartLocation.X + 10;
 	EndLocation.Y = StartLocation.Y + 10;
 	EndLocation.Z = StartLocation.Z + 10;
-	//StartLocation.X += abs(ParentDirection.X * 128);
-	//StartLocation.Y += abs(ParentDirection.Y * 128);
-	//StartLocation.Z += abs(ParentDirection.Z * 128);
-//	`log("Tracing From:"@StartLocation@"To:"@EndLocation@"ParentDirection:"@ParentDirection);
 	Block = Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
 	return TowerBlock(Block);
 }
@@ -196,8 +177,7 @@ function bool CheckForParent(TowerBlock Block)
 }
 
 /** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
-have all this nodes' children (and their children and so forth) perform a FindNewParent as well.
-PreviousNodes is used internally by the function, do not pass a variable in! */
+have all this nodes' children (and their children and so forth) perform a FindNewParent as well. */
 final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent=None,
 	optional bool bChildrenFindParent=false)
 {
@@ -205,8 +185,6 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	local TraceHitInfo HitInfo;
 	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 	Node.SetBase(None);
-//	Node.FindBase();
-//	`log("FindBase says:"@Node.Base);
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
 		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);

@@ -343,8 +343,6 @@ Begin:
 function float TimeToDrop()
 {
 	local float Time;
-	//ScriptTrace();
-//	Time = sqrt(((512/(BlocksFalling+BlocksFallen))/ZAcceleration)/BlocksFalling);
 	Time = 256 / DropRate;	
 	`log("TimeToDrop:"@Time);
 	return Time;
