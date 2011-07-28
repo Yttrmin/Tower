@@ -47,6 +47,9 @@ var TowerBlock RootArchetype;
 /** Archetype to use for spawning air surrounding blocks. */
 var TowerBlock AirArchetype;
 
+/** The root TowerStart for the world, represents space (0,0,0) for GridLocations. Typically the first player's spot. */
+var TowerStart RootTowerStart;
+
 var bool bPendingLoad;
 var string PendingLoadFile;
 
@@ -65,7 +68,7 @@ event PostBeginPlay()
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
-//	TowerGameViewportClient(class'Engine'.static.GetEngine().GameViewport).
+	CheckTowerStarts();
 	class'Engine'.static.StopMovie(true);
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	StartNextRound();
@@ -231,6 +234,11 @@ function PopulateSpawnPointArrays()
 	}
 }
 
+final function CheckTowerStarts()
+{
+
+}
+
 /** Returns the FactionLocation that the given point is in.
 Useful for determining who's land the Point is on. */
 function FactionLocation GetPointFactionLocation(Vector Point)
@@ -263,7 +271,7 @@ function FactionLocation GetPointFactionLocation(Vector Point)
 
 function GenericPlayerInitialization(Controller C)
 {
-local PlayerController PC;
+	local PlayerController PC;
 
 	PC = PlayerController(C);
 	if (PC != None)
@@ -451,7 +459,7 @@ function RestartPlayer(Controller NewPlayer)
 	}
 }
 
-exec function KillAllTargetables()
+exec function DebugKillAllTargetables()
 {
 	local Actor Targetable;
 	foreach DynamicActors(class'Actor', Targetable, class'TowerTargetable')
@@ -459,6 +467,17 @@ exec function KillAllTargetables()
 		Targetable.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
 	}
 //	GotoState('CoolDown');
+}
+
+/** Forces the server and all clients to play this index on their OverrideMusic list. */
+exec function DebugServerMusicForcePlay(byte Index)
+{
+
+}
+
+exec function DebugServerMusicForceStop()
+{
+
 }
 
 function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
