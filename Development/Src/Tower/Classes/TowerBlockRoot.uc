@@ -7,7 +7,7 @@ enum TargetType
 	TT_Projectile
 };
 
-var Volume RadarVolume;
+var privatewrite Volume RadarVolume;
 var array<delegate<OnEnterRange> > InfantryRangeNotify, ProjectileRangeNotify, VehicleRangeNotify,
 	AllRangeNotify;
 
@@ -39,8 +39,7 @@ function ServerInitialize()
 }
 
 /** RadarVolume's Touch. */
-event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation,
-	vector HitNormal)
+event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal)
 {
 	local TowerTargetable Targetable;
 	Targetable = TowerTargetable(Other);
@@ -66,7 +65,7 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation,
 /** RadarVolume's UnTouch. */
 event UnTouch(Actor Other)
 {
-
+	// Do things dying trigger an UnTouch?
 }
 
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
@@ -93,7 +92,7 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 	return;
 }
 
-function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)
+private function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)
 {
 	local delegate<OnEnterRange> Callback;
 	switch(Type)

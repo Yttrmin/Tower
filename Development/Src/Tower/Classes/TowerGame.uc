@@ -308,6 +308,29 @@ exec function DebugGetFactionLocation(Vector Point)
 {
 	`log(GetEnum(Enum'FactionLocation', GetPointFactionLocation(Point)));
 }
+
+exec function DebugKillAllTargetables()
+{
+	local Actor Targetable;
+	foreach DynamicActors(class'Actor', Targetable, class'TowerTargetable')
+	{
+		Targetable.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+	}
+//	GotoState('CoolDown');
+}
+
+/** Forces the server and all clients to play this index on their OverrideMusic list. */
+exec function DebugServerMusicForcePlay(byte Index)
+{
+	local TowerPlayerController Controller;
+	Controller = TowerPlayerController(GetALocalPlayerController());
+	PlaySound(Controller.MusicManager.CurrentMusicList.OverrideMusic[Index], false, false, true);
+}
+
+exec function DebugServerMusicForceStop()
+{
+
+}
 `endif
 
 exec function StartGame()
@@ -321,7 +344,7 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, RootMod.ModFactionAIs[1], FL_NegX);
+	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
 	RemainingActiveFactions = GetFactionCount() - 1;
 	GotoState('CoolDown');
 }
@@ -457,27 +480,6 @@ function RestartPlayer(Controller NewPlayer)
 		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
 		return;
 	}
-}
-
-exec function DebugKillAllTargetables()
-{
-	local Actor Targetable;
-	foreach DynamicActors(class'Actor', Targetable, class'TowerTargetable')
-	{
-		Targetable.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
-	}
-//	GotoState('CoolDown');
-}
-
-/** Forces the server and all clients to play this index on their OverrideMusic list. */
-exec function DebugServerMusicForcePlay(byte Index)
-{
-
-}
-
-exec function DebugServerMusicForceStop()
-{
-
 }
 
 function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)

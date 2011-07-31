@@ -20,12 +20,12 @@ var(InGame) int Health;
 /** User-friendly name. Used for things like the build menu. */
 var() const Name DisplayName;
 /** Description used when selected in the build menu. */
-var() const String Description;
+var() edittextbox const String Description;
 /** If TRUE, this block will be in the player's build list. */
 var() const bool bAddToBuildList;
 /** Maximum health of this block, and what value the block will lerp to during construction. May be modified for difficulty. */
 var() int HealthMax;
-/**  */
+/** Cost for the player to construct this block. Modifiers are applied directly to this value in the archetype. */
 var() int Cost;
 //=========================================================
 
@@ -36,7 +36,7 @@ var() int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
 
-var const int DropRate;
+const DropRate = 128;
 
 var repnotify bool bFalling;
 
@@ -405,9 +405,6 @@ DefaultProperties
 
 	CustomTimeDilation=1
 
-//	ZAcceleration=1039.829009434
-	DropRate=128
-//	BlockFallTime=0.701704103 //0.496179729 //2.01539874//
 	bCollideWorld=false
 	bAlwaysRelevant = true
 	bCollideActors=true

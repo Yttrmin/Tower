@@ -9,6 +9,7 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 	SaveSystem = new class'Tower.TowerSaveSystem';
 	MusicManager = Spawn(class'Tower.TowerMusicManager');
+	MusicManager.Initialize();
 //	SaveSystem.TestInt = 123456;
 //	SaveSystem.TransTestInt = 345678;
 //	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
@@ -346,6 +347,12 @@ exec function DebugUnSpectate()
 		myHUD.RemovePostRenderedActor(ViewTarget);
 	}
 	SetViewTarget(None);
+}
+
+/** Plays the music at the given index */
+exec function DebugPlayMusic(int Index)
+{
+	MusicManager.PlayOverrideMusic(Index);
 }
 `endif
 

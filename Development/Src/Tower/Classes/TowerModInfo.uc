@@ -25,6 +25,9 @@ var() privatewrite const array<TowerBlock> ModBlocks;
 
 var() privatewrite const array<TowerFactionAI> ModFactionAIs;
 
+//@TODO - Does this need to be an array, or should each mod just have one?
+var() privatewrite const array<TowerMusicList> ModMusicLists;
+
 var privatewrite repnotify TowerModInfo NextMod;
 
 replication
