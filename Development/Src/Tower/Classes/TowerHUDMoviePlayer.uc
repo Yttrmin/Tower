@@ -88,12 +88,14 @@ function SetKeyBindings()
 /** Called by ActionScript when the user clicks a new item in the BuildMenu's PlaceablesList. */
 event OnBuildListChange(int Index)
 {
+	local TowerBlock BlockArchetype;
 	`log("New Index:"@Index);
-	//@TODO - Convery indices to placeable.
+//	if(BuildIndexes[Index]TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks
+	BlockArchetype = TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]];
 	//@BUG - Out of bounds.
-	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(
-		TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]]);
-	HUD.SetPlaceBlock(TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]]);
+	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(BlockArchetype);
+	HUD.SetPlaceBlock(BlockArchetype);
+	SetBuildMenuInfo(BlockArchetype);
 }
 
 event OnMouseMove(float DeltaX, float DeltaY)
@@ -104,6 +106,14 @@ event OnMouseMove(float DeltaX, float DeltaY)
 	MouseY = FMax(FMin(MouseY + DeltaY, 768), 0);
 	MoveCursor();
 //	`log(DeltaX@DeltaY);
+}
+
+function SetBuildMenuInfo(TowerBlock BlockArchetype)
+{
+	SetVariableString("_root.BuildMenu.BlockName.text", string(BlockArchetype.DisplayName));
+	SetVariableString("_root.BuildMenu.BlockDescription.text", BlockArchetype.Description);
+	SetVariableString("_root.BuildMenu.BlockCost.text", "$"$BlockArchetype.Cost);
+	SetVariableString("_root.BuildMenu.BlockHealth.text", "+"$BlockArchetype.HealthMax);
 }
 
 function MoveCursor()
