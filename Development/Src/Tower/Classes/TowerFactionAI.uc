@@ -495,9 +495,12 @@ function int GetUnitCost(TowerTargetable UnitArchetype)
 
 function CheckActivity()
 {
+//	`log(Self@"checking activity."@"UO:"$UnitsOut@"B:"$Budget@"CT:"$CheapestTargetable);
 	// Check against minimum cost?
-	if(UnitsOut <= 0 && Budget < CheapestTargetable)
+	//@TODO - Should be Budget < CheapestTargetable, or a special check to ask the AI if it wants to stay active.
+	if(UnitsOut <= 0 && Budget <= CheapestTargetable)
 	{
+		`log(Self@"is inactive! Notifying TowerGame!");
 		Game.FactionInactive(Self);
 	}
 }

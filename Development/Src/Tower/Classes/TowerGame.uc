@@ -164,11 +164,45 @@ event PostLogin(PlayerController NewPlayer)
 	{
 		TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer));
 	}
+	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
+	if(NewPlayer.Pawn == None)
+	{
+		RestartPlayer(newPlayer);
+	}
 	if(!MatchIsInProgress())
 	{
 		StartMatch();
 	}
 	TowerPlayerController(NewPlayer).UpdateRoundNumber(Round);
+}
+
+function RestartPlayer(Controller NewPlayer)
+{
+	if (NewPlayer.Pawn == None)
+	{
+		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,Vect(500, 200, 90));
+	}
+	if (NewPlayer.Pawn == None)
+	{
+		`log("failed to spawn player at "/*$StartSpot*/);
+		NewPlayer.GotoState('Dead');
+		if ( PlayerController(NewPlayer) != None )
+		{
+			PlayerController(NewPlayer).ClientGotoState('Dead','Begin');
+		}
+	}
+	else
+	{
+		NewPlayer.Possess(NewPlayer.Pawn, false);
+		NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
+		SetPlayerDefaults(NewPlayer.Pawn);
+		NewPlayer.GotoState('PlayerFlying');
+	}
+	if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
+	{
+		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
+		return;
+	}
 }
 
 /** Modding:
@@ -425,9 +459,11 @@ state RoundInProgress
 	/** */
 	event FactionInactive(TowerFactionAI Faction)
 	{
+		`log(Faction@"now claims to be inactive.");
 		RemainingActiveFactions--;
 		if(RemainingActiveFactions <= 0)
 		{
+			`log("No more active factions, cooling down!");
 			GotoState('CoolDown');
 		}
 	}
@@ -453,34 +489,6 @@ state RoundInProgress
 //
 // Restart a player.
 //
-function RestartPlayer(Controller NewPlayer)
-{
-	if (NewPlayer.Pawn == None)
-	{
-		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,Vect(500, 200, 90));
-	}
-	if (NewPlayer.Pawn == None)
-	{
-		`log("failed to spawn player at "/*$StartSpot*/);
-		NewPlayer.GotoState('Dead');
-		if ( PlayerController(NewPlayer) != None )
-		{
-			PlayerController(NewPlayer).ClientGotoState('Dead','Begin');
-		}
-	}
-	else
-	{
-		NewPlayer.Possess(NewPlayer.Pawn, false);
-		NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
-		SetPlayerDefaults(NewPlayer.Pawn);
-		NewPlayer.GotoState('PlayerFlying');
-	}
-	if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
-	{
-		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
-		return;
-	}
-}
 
 function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
 {
