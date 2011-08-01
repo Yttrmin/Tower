@@ -39,6 +39,14 @@ function PlayMusic(out SoundCue SoundCue)
 
 }
 
+function StopMusic()
+{
+	if(CurrentSong.SoundCue != None)
+	{
+		CurrentSong.Stop();
+	}
+}
+
 DefaultProperties
 {
 	Begin Object Class=AudioComponent Name=Music

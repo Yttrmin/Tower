@@ -283,7 +283,6 @@ simulated function StartFire(byte FireModeNum)
 
 function HolderDied()
 {
-	`log("Holder died!");
 	Super.HolderDied();
 }
 

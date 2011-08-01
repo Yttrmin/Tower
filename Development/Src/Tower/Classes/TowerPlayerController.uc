@@ -354,6 +354,34 @@ exec function DebugPlayMusic(int Index)
 {
 	MusicManager.PlayOverrideMusic(Index);
 }
+
+exec function DebugStopMusic()
+{
+	MusicManager.StopMusic();
+}
+
+/** Lists all music in the MusicManager's MusicList as well as the currently playing song. */
+exec function DebugListMusic()
+{
+	local SoundCue Cue;
+	local int i;
+	`log("=================================================");
+	`log("Override Music. Count:"@MusicManager.CurrentMusicList.OverrideMusic.Length);
+	foreach MusicManager.CurrentMusicList.OverrideMusic(Cue, i)
+	{
+		`log(i$"):"@Cue.Name@Cue.Duration@"Seconds");
+	}
+	`log("-------------------------------------------------");
+	if(MusicManager.CurrentSong.SoundCue != None)
+	{
+		`log("Currently playing:"@MusicManager.CurrentSong.SoundCue.Name@MusicManager.CurrentSong.PlaybackTime$"/"$MusicManager.CurrentSong.SoundCue.Duration@"Seconds");
+	}
+	else
+	{
+		`log("Currently playing: Nothing");
+	}
+	`log("=================================================");
+}
 `endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
