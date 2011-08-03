@@ -14,7 +14,6 @@ class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	placeable
 	abstract;
 
-var(InGame) int Health;
 //=========================================================
 // Used in archetypes when creating new blocks.
 /** User-friendly name. Used for things like the build menu. */
@@ -36,9 +35,9 @@ var() int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
 
-const DropRate = 128;
+var(InGame) int Health;
 
-var repnotify bool bFalling;
+const DropRate = 128;
 
 /** If FALSE, only StaticMeshComponents will be used with TowerBlocks. */
 var private const globalconfig bool bEnableApexDestructibles;
@@ -60,8 +59,6 @@ var int ModIndex, ModBlockIndex;
 
 replication
 {
-	if(bNetDirty)
-		bFalling;
 	if(bNetInitial)
 		GridLocation, OwnerPRI;
 }
@@ -74,22 +71,6 @@ simulated function StaticMesh GetStaticMesh()
 simulated function SkeletalMesh GetSkeletalMesh()
 {
 	return None;
-}
-
-simulated event ReplicatedEvent(name VarName)
-{
-	Super.ReplicatedEvent(VarName);
-	if(VarName == 'bFalling')
-	{
-		if(bFalling)
-		{
-			GotoState('Unstable');
-		}
-		else
-		{
-			GotoState('Stable');
-		}
-	}
 }
 
 simulated event PostBeginPlay()
@@ -187,11 +168,6 @@ final simulated function SetColor()
 
 }
 
-static final function bool IsReplicable()
-{
-	return TRUE;
-}
-
 /** */
 reliable server function Remove()
 {
@@ -253,65 +229,6 @@ auto simulated state Stable
 	}
 }
 
-/** State for root blocks of orphan branches. Block falls with all its attachments. */
-simulated state Unstable
-{
-	//@TODO - Experiment with Move() function.
-	/** Called after block should have dropped 256 units.  */
-	event DroppedSpace()
-	{
-		`log("Dropped space");
-		// SetRelativeLocation here to be sure?
-		//SetFullLocation(Location, false);
-//		SetGridLocation();
-		`log("GridLocation Z:"@GridLocation.Z);
-		if(GridLocation.Z == 0)
-		{
-			GotoState('InActive');
-			bFalling = false;
-		}
-		if(OwnerPRI.Tower.FindNewParent(Self))
-		{
-			`log("Found parent:"@Base);
-			GotoState('Stable');
-			bFalling = false;
-		}
-		// NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
-		
-	}
-	event BeginState(name PreviousStateName)
-	{
-		if(GridLocation.Z == 0)
-		{
-			GotoState('InActive');
-			bFalling = false;
-		}
-		else
-		{
-			bReplicateMovement = false;
-			SetTimer(TimeToDrop(), true, 'DroppedSpace');
-		}
-	}
-	simulated event Tick(float DeltaTime)
-	{
-		local Vector NewLocation;
-		Super.Tick(DeltaTime);
-		NewLocation.X = Location.X;
-		NewLocation.Y = Location.Y;
-		NewLocation.Z = Location.Z - (DropRate * DeltaTime);
-
-		/*SetCollision(false, false, true);
-		SetPhysics(PHYS_Falling);
-		Velocity.Z = 128;*/
-
-		SetLocation(NewLocation);
-	}
-	function bool CanDrop()
-	{
-		return true;
-	}
-};
-
 simulated state UnstableParent
 {
 
@@ -348,32 +265,11 @@ function float TimeToDrop()
 	return Time;
 }
 
-//@TODO - Convert from recursion to iteration!
 /** Called on TowerBlocks that are the root node of an orphan branch. */
-event OrphanedParent()
-{
-	local TowerBlock Node;
-	bFalling = true;
-	GotoState('Unstable');
-	`log(Self@"is now unstable!");
-	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
-	foreach BasedActors(class'TowerBlock', Node)
-	{
-		Node.OrphanedChild();
-	}
-}
+event OrphanedParent();
 
 /** Called on TowerBlocks that are orphans but not the root node. */
-event OrphanedChild()
-{
-	local TowerBlock Node;
-	`log("OrphanedChild");
-	GotoState('UnstableParent');
-	foreach BasedActors(class'TowerBlock', Node)
-	{
-		Node.OrphanedChild();
-	}
-}
+event OrphanedChild();
 
 //@TODO - Convert from recursion to iteration!
 event Adopted()

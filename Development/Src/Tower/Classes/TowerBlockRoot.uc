@@ -66,10 +66,11 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 event UnTouch(Actor Other)
 {
 	// Do things dying trigger an UnTouch?
+	`log(Self@"untouched by"@Other);
 }
 
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
-	bool bProjectileNotify, bool bVehicleNotify)
+	bool bVehicleNotify, bool bProjectileNotify)
 {
 	`log("Adding range callback for Infantry:"@bInfantryNotify@"Projectile:"@bProjectileNotify@"Vehicle:"@bVehicleNotify);
 //	if(bInfantryNotify && bProjectileNotify && bVehicleNotify)
@@ -90,6 +91,23 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 		VehicleRangeNotify.AddItem(Callback);
 	}
 	return;
+}
+
+function RemoveRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
+	bool bVehicleNotify, bool bProjectileNotify)
+{
+	if(bInfantryNotify)
+	{
+		InfantryRangeNotify.RemoveItem(Callback);
+	}
+	if(bProjectileNotify)
+	{
+		ProjectileRangeNotify.RemoveItem(Callback);
+	}
+	if(bVehicleNotify)
+	{
+		VehicleRangeNotify.RemoveItem(Callback);
+	}
 }
 
 private function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)

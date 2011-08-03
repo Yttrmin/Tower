@@ -6,7 +6,7 @@ Represents a player's tower.
 class Tower extends TowerFaction
 	dependson(TowerBlock);
 
-var TowerBlockRoot Root;
+var privatewrite TowerBlockRoot Root;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
 non-debug in-game things ever! */
@@ -21,6 +21,12 @@ replication
 		TowerName, OwnerPRI;
 	if(bNetInitial)
 		Root;
+}
+
+final function SetRootBlock(TowerBlockRoot RootBlock)
+{
+	Root = RootBlock;
+	`assert(Root != None);
 }
 
 //@TODO - We really only need one of the locations. Probably Grid.
@@ -114,7 +120,7 @@ function CreateSurroundingAir(TowerBlock Block)
 	}
 }
 
-//@BUG - Sticking a block +Y of another results in an air at -Y (WRONG) and no air at +Y (WRONG).
+//@BUG - Sticking a block +Y of another results in an air at -Y (WRONG) and no air at +Y (ALSO WRONG).
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
