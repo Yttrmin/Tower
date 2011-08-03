@@ -420,6 +420,12 @@ reliable client function UpdateRoundNumber(byte NewRound)
 	TowerHUD(myHUD).HUDMovie.SetRoundNumber(NewRound);
 }
 
+/** TowerMusicManager doesn't exist on servers, so forward me to the MusicManager, thanks! */
+reliable client function OnMusicEvent(MusicEvent Event)
+{
+	MusicManager.OnMusicEvent(Event);
+}
+
 function Tower GetTower()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower;

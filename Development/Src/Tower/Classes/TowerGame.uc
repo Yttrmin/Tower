@@ -6,6 +6,7 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
 class TowerGame extends FrameworkGame
+	dependson(TowerMusicManager)
 	config(Tower);
 
 enum FactionLocation
@@ -31,7 +32,7 @@ var array<TowerFaction> Factions;
 var TowerFactionAIHivemind Hivemind;
 var byte FactionCount;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
-var protected byte RemainingActiveFactions;
+var private byte RemainingActiveFactions;
 var protected byte Round;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
@@ -69,6 +70,7 @@ event PostBeginPlay()
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
 	CheckTowerStarts();
+	Spawn(class'StaticMeshActor');
 	class'Engine'.static.StopMovie(true);
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	StartNextRound();
@@ -379,22 +381,68 @@ function StartMatch()
 	Super.StartMatch();
 	AddFactionHuman(0);
 	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
-	RemainingActiveFactions = GetFactionCount() - 1;
 	GotoState('CoolDown');
 }
 
-final function byte GetFactionCount()
+function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
 {
-	local byte Count;
-	local int i;
-	for(i = 0; i < Factions.Length; i++)
+	local array<TowerSpawnPoint> FactionSpawnPoints;
+	local TowerSpawnPoint Point;
+	// Fill an array of spawn points for the AI.
+	foreach SpawnPoints(Point)
 	{
-		if(Factions[i] != None)
+		if(Point.Faction == Faction)
 		{
-			Count++;
+			FactionSpawnPoints.AddItem(Point);
 		}
 	}
-	return Count;
+	Factions[TeamIndex] = Spawn(Archetype.class,,,,,Archetype);
+	Factions[TeamIndex].TeamIndex = TeamIndex;
+	TowerFactionAI(Factions[TeamIndex]).Hivemind = HiveMind;
+	TowerFactionAI(Factions[TeamIndex]).Faction = FactionLocation(Faction);
+	TowerFactionAI(Factions[TeamIndex]).ReceiveSpawnPoints(FactionSpawnPoints);
+	FactionCount++;
+	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
+}
+
+function AddFactionHuman(int TeamIndex)
+{
+	Factions[TeamIndex] = Spawn(class'TowerFactionHuman');
+	Factions[TeamIndex].TeamIndex = TeamIndex;
+	FactionCount++;
+	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
+}
+
+function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
+{
+	local TowerPlayerReplicationInfo TPRI;
+	local IVector GridLocation;
+	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
+	TPRI.Tower = Spawn(class'Tower', self);
+	TPRI.Tower.OwnerPRI = TPRI;
+	// Initial budget!
+	TPRI.Tower.Budget = 50;
+//	TPRI.Tower.Initialize(TPRI);
+	if(bAddRootBlock)
+	{
+		// Need to make this dependent on player count in future.
+		//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
+		GridLocation.X = 8*(NumPlayers-1);
+	
+		TPRI.Tower.SetRootBlock(TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation)));
+		//@FIXME - Have Root do this by itself?
+		Hivemind.OnRootBlockSpawn(TPRI.Tower.Root);
+	}
+//	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
+	if(TowerName != "")
+	{
+		SetTowerName(TPRI.Tower, TowerName);
+	}
+}
+
+function SetTowerName(Tower Tower, string NewTowerName)
+{
+	Tower.TowerName = NewTowerName;
 }
 
 event FactionInactive(TowerFactionAI Faction)
@@ -435,7 +483,10 @@ state RoundInProgress
 		local int BudgetPerFaction;
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 		IncrementRound();
-		BudgetPerFaction = 50 / GetFactionCount();
+		CalculateRemainingActiveFactions();
+		SendMusicEvent(ME_StartRound);
+		//@FIXME - Remove +1
+		BudgetPerFaction = 50 / (GetFactionAICount()+1);
 		foreach Factions(Faction)
 		{
 			if(TowerFactionAI(Faction) != None)
@@ -486,69 +537,32 @@ state RoundInProgress
 	}
 }
 
-//
-// Restart a player.
-//
-
-function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
+function SendMusicEvent(MusicEvent Event)
 {
-	local array<TowerSpawnPoint> FactionSpawnPoints;
-	local TowerSpawnPoint Point;
-	// Fill an array of spawn points for the AI.
-	foreach SpawnPoints(Point)
+	local TowerPlayerController Controller;
+	foreach WorldInfo.AllControllers(class'TowerPlayerController', Controller)
 	{
-		if(Point.Faction == Faction)
+		Controller.OnMusicEvent(Event);
+	}
+}
+
+function byte GetFactionAICount()
+{
+	local TowerFaction Faction;
+	local byte Count;
+	foreach Factions(Faction)
+	{
+		if(TowerFactionAI(Faction) != None)
 		{
-			FactionSpawnPoints.AddItem(Point);
+			Count++;
 		}
 	}
-	Factions[TeamIndex] = Spawn(Archetype.class,,,,,Archetype);
-	Factions[TeamIndex].TeamIndex = TeamIndex;
-	TowerFactionAI(Factions[TeamIndex]).Hivemind = HiveMind;
-	TowerFactionAI(Factions[TeamIndex]).Faction = FactionLocation(Faction);
-	TowerFactionAI(Factions[TeamIndex]).ReceiveSpawnPoints(FactionSpawnPoints);
-	FactionCount++;
-	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
+	return Count;
 }
 
-function AddFactionHuman(int TeamIndex)
+function CalculateRemainingActiveFactions()
 {
-	Factions[TeamIndex] = Spawn(class'TowerFactionHuman');
-	Factions[TeamIndex].TeamIndex = TeamIndex;
-	FactionCount++;
-	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
-}
-
-function AddTower(TowerPlayerController Player, bool bAddRootBlock,  optional string TowerName="")
-{
-	local TowerPlayerReplicationInfo TPRI;
-	local IVector GridLocation;
-	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
-	TPRI.Tower = Spawn(class'Tower', self);
-	TPRI.Tower.OwnerPRI = TPRI;
-	// Initial budget!
-	TPRI.Tower.Budget = 50;
-//	TPRI.Tower.Initialize(TPRI);
-	if(bAddRootBlock)
-	{
-		// Need to make this dependent on player count in future.
-		//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
-		GridLocation.X = 8*(NumPlayers-1);
-	
-		TPRI.Tower.Root = TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation));
-		//@FIXME - Have Root do this by itself?
-		Hivemind.OnRootBlockSpawn(TPRI.Tower.Root);
-	}
-//	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
-	if(TowerName != "")
-	{
-		SetTowerName(TPRI.Tower, TowerName);
-	}
-}
-
-function SetTowerName(Tower Tower, string NewTowerName)
-{
-	Tower.TowerName = NewTowerName;
+	RemainingActiveFactions = GetFactionAICount();
 }
 
 function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
