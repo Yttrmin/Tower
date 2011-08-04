@@ -90,7 +90,29 @@ function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryN
 	{
 		VehicleRangeNotify.AddItem(Callback);
 	}
+	CallbackAllTouching(Callback, bInfantryNotify, bVehicleNotify, bProjectileNotify);
 	return;
+}
+
+/** Calls Callback for every type of enemy in range that the caller wants.
+Used on newly-spawned Modules to get them up to speed. */
+private function CallbackAllTouching(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
+	bool bVehicleNotify, bool bProjectileNotify)
+{
+	local Actor Toucher;
+	local TowerTargetable Targetable;
+	foreach TouchingActors(class'Actor', Toucher)
+	{
+		Targetable = TowerTargetable(Toucher);
+		if(Targetable != None)
+		{
+			if((bInfantryNotify && Targetable.IsInfantry()) || (bVehicleNotify && Targetable.IsVehicle())
+				|| (bProjectileNotify && Targetable.IsProjectile()))
+			{
+				Callback(Targetable);
+			}
+		}
+	}
 }
 
 function RemoveRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 

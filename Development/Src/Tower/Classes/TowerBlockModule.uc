@@ -33,8 +33,10 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 
 simulated event OnEnterRange(TowerTargetable Targetable)
 {
-	`log(Self$":"@Targetable@"in range!");
+//	`log(Self$":"@Targetable@"in range!");
 }
+
+event Think();
 
 function RegisterRangeCallbacks()
 {
@@ -45,6 +47,22 @@ function UnRegisterRangeCallbacks()
 {
 	OwnerPRI.Tower.Root.RemoveRangeNotifyCallback(OnEnterRange, Callbacks.bInfantry, Callbacks.bVehicle, Callbacks.bProjectile);
 }
+
+auto simulated state Stable
+{
+
+};
+
+/** Enter this state in cases like OrphanedChild (modules don't work if there's no path to Root). */
+simulated state InActive
+{
+	ignores Think;
+};
+
+simulated state Unstable
+{
+	
+};
 
 /** Called on TowerBlocks that are the root node of an orphan branch.
 For Modules, this means our Owner was destroyed or disconnected from us somehow, so we die. */

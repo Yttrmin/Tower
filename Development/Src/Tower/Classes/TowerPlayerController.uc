@@ -382,6 +382,20 @@ exec function DebugListMusic()
 	}
 	`log("=================================================");
 }
+
+/** Logs what you're looking at. */
+exec function DebugLookingAt()
+{
+	local Vector WorldOrigin, WorldDir;
+	local Rotator PlayerDir;
+	local Vector HitLocation, HitNormal;
+	local Actor LookingAt;
+	GetPlayerViewPoint(WorldOrigin, PlayerDir);
+	WorldDir = Vector(PlayerDir);
+	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
+		(WorldOrigin+WorldDir), TRUE);
+	`log(LookingAt,,'LookingAt');
+}
 `endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
@@ -415,7 +429,7 @@ reliable server function ServerSetTowerName(string NewName)
 	TowerGame(WorldInfo.Game).SetTowerName(GetTower(), NewName);
 }
 
-reliable client function UpdateRoundNumber(byte NewRound)
+simulated function UpdateRoundNumber(byte NewRound)
 {
 	TowerHUD(myHUD).HUDMovie.SetRoundNumber(NewRound);
 }

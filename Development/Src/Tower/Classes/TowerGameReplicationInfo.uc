@@ -1,4 +1,5 @@
-class TowerGameReplicationInfo extends GameReplicationInfo;
+class TowerGameReplicationInfo extends GameReplicationInfo
+	dependson(TowerMusicManager);
 
 var protectedwrite bool bRoundInProgress;
 
@@ -10,13 +11,15 @@ var array<TowerBlock> Blocks;
 var bool bModsLoaded;
 var repnotify int ModCount;
 var repnotify TowerModInfo RootMod;
+var repnotify MusicEvent MusicEvent;
+var repnotify byte Round;
 
 var TowerPlayerReplicationInfo ServerTPRI;
 
 replication
 {
 	if(bNetDirty)
-		bRoundInProgress;
+		bRoundInProgress, MusicEvent, Round;
 	if(bNetInitial)
 		ModCount, RootMod, ServerTPRI;
 }
@@ -29,7 +32,15 @@ simulated event PostBeginPlay()
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
-	if(VarName == 'ModCount')
+	if(VarName == 'MusicEvent')
+	{
+		TowerPlayerController(GetALocalPlayerController()).OnMusicEvent(MusicEvent);
+	}
+	else if(VarName == 'Round')
+	{
+		TowerPlayerController(GetALocalPlayerController()).UpdateRoundNumber(Round);
+	}
+	else if(VarName == 'ModCount')
 	{
 		`log("MOD COUNT REPLICATED:"@ModCount);
 	}
