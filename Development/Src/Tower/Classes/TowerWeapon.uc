@@ -145,7 +145,7 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 	local ImpactInfo		CurrentImpact;
 	local PortalTeleporter	Portal;
 	local float				HitDist;
-	local bool				bOldBlockActors, bOldCollideActors;
+	local bool				bOldBlockActors, bOldCollideActors, bOldBlockZeroExtent;
 
 	// Perform trace to retrieve hit info
 	HitActor = GetTraceOwner().Trace(HitLocation, HitNormal, EndTrace, StartTrace, TRUE, Extent, HitInfo, TRACEFLAG_Bullet);
@@ -179,9 +179,9 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 			bOldBlockActors = HitActor.bBlockActors;
 			if (HitActor.IsA('Pawn'))
 			{
-				// For pawns, we need to disable bCollideActors as well
-				HitActor.SetCollision(false, false);
-
+				bOldBlockZeroExtent = Pawn(HitActor).CollisionComponent.BlockZeroExtent;
+				// Set the pawn to ignore zero extent traces.
+				Pawn(HitActor).CollisionComponent.SetTraceBlocking(false, Pawn(HitActor).CollisionComponent.BlockNonZeroExtent);
 				// recurse another trace
 				CurrentImpact = CalcWeaponFire(HitLocation, EndTrace, ImpactList, Extent);
 			}
@@ -197,7 +197,8 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 
 			// and reenable collision for the trigger
 			HitActor.bProjTarget = true;
-			HitActor.SetCollision(bOldCollideActors, bOldBlockActors);
+			// Set Pawn's zero extent trace blocking back to what it was before.
+			Pawn(HitActor).CollisionComponent.SetTraceBlocking(bOldBlockZeroExtent, Pawn(HitActor).CollisionComponent.BlockNonZeroExtent);
 		}
 		else
 		{

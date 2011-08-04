@@ -99,11 +99,6 @@ simulated event Destroyed()
 	}
 }
 
-simulated function IVector GetGridLocation()
-{
-	return GridLocation;
-}
-
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
@@ -212,58 +207,12 @@ event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 
 auto simulated state Stable
 {
-	function StopFall()
-	{
-		ClearTimer('DroppedSpace');
-	}
-
-	event BeginState(name PreviousStateName)
-	{
-		if(PreviousStateName == 'Unstable')
-		{
-			`log("Now stable!");
-			bReplicateMovement = true;
-			ClearTimer('DroppedSpace');
-			StopFall();
-		}
-	}
-}
-
-simulated state UnstableParent
-{
-
-};
-
-simulated state Building
-{
 
 };
 
 simulated state InActive
 {
-	event BeginState(name PreviousStateName)
-	{
-		ClearTimer('DroppedSpace');
-	}
-Begin:
-	if(OwnerPRI.Tower.FindNewParent(Self))
-	{
-		`log("Found parent:"@Base);
-		GotoState('Stable');
-	}
-	`log("Ping");
-	Sleep(5);
-	Goto('Begin');
 };
-
-
-function float TimeToDrop()
-{
-	local float Time;
-	Time = 256 / DropRate;	
-	`log("TimeToDrop:"@Time);
-	return Time;
-}
 
 /** Called on TowerBlocks that are the root node of an orphan branch. */
 event OrphanedParent();
@@ -271,23 +220,17 @@ event OrphanedParent();
 /** Called on TowerBlocks that are orphans but not the root node. */
 event OrphanedChild();
 
-//@TODO - Convert from recursion to iteration!
-event Adopted()
-{
-	local TowerBlock Node;
-	`log("ADOPTED:"@Self);
-	SetGridLocation();
-	GotoState('Stable');
-	foreach BasedActors(class'TowerBlock', Node)
-	{
-		Node.Adopted();
-	}
-}
+event AdoptedParent();
+
+event AdoptedChild();
 
 event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent,
 				const out CollisionImpactData RigidCollisionData, int ContactIndex )
 {
+	ScriptTrace();
+	`log("IS THIS EVEN USED?!");
 	`log("BLOCK IN COLLISION!"@HitComponent@OtherComponent);
+	`assert(false);
 }
 
 DefaultProperties

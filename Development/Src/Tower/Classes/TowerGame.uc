@@ -175,7 +175,6 @@ event PostLogin(PlayerController NewPlayer)
 	{
 		StartMatch();
 	}
-	TowerPlayerController(NewPlayer).UpdateRoundNumber(Round);
 }
 
 function RestartPlayer(Controller NewPlayer)
@@ -380,7 +379,7 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
+//	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
 	GotoState('CoolDown');
 }
 
@@ -427,7 +426,7 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 	{
 		// Need to make this dependent on player count in future.
 		//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
-		GridLocation.X = 8*(NumPlayers-1);
+		GridLocation.X = 4*(NumPlayers-1);
 	
 		TPRI.Tower.SetRootBlock(TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation)));
 		//@FIXME - Have Root do this by itself?
@@ -460,7 +459,7 @@ state CoolDown
 {
 	event BeginState(Name PreviousStateName)
 	{
-		SetTimer(5, false);
+		SetTimer(50000, false);
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 	}
 
@@ -499,12 +498,10 @@ state RoundInProgress
 	/** Increments the round number and sends it all PlayerControllers. */
 	function IncrementRound()
 	{
-		local TowerPlayerController PC;
 		Round++;
-		foreach LocalPlayerControllers(class'TowerPlayerController', PC)
-		{
-			PC.UpdateRoundNumber(Round);
-		}
+		TowerGameReplicationInfo(GameReplicationInfo).Round = Round;
+		// Force update Round for the server since it won't get replicated to it.
+		TowerGameReplicationInfo(GameReplicationInfo).ReplicatedEvent('Round');
 	}
 
 	/** */
@@ -539,11 +536,7 @@ state RoundInProgress
 
 function SendMusicEvent(MusicEvent Event)
 {
-	local TowerPlayerController Controller;
-	foreach WorldInfo.AllControllers(class'TowerPlayerController', Controller)
-	{
-		Controller.OnMusicEvent(Event);
-	}
+	TowerGameReplicationInfo(GameReplicationInfo).MusicEvent = Event;
 }
 
 function byte GetFactionAICount()

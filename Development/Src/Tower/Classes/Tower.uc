@@ -36,11 +36,12 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
 	local rotator NewRotation;
-	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 	if(Parent != None && Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
 	{
+		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 		if(Parent != None)
 		{
+			`log(NewBlock@"spawning with parent"@Parent@"in state"@GetStateName());
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 			if(ParentDir.Z == 0)
 			{
@@ -63,12 +64,13 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 			NewBlock.SetBase(Parent);
 			NewBlock.SetRelativeRotation(NewRotation);
 		}
+		NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
+		if(bAddAir && NewBlock.class != class'TowerBlockAir')
+		{
+			CreateSurroundingAir(NewBlock);
+		}
 	}
-	NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
-	if(bAddAir && NewBlock.class != class'TowerBlockAir')
-	{
-		CreateSurroundingAir(NewBlock);
-	}
+	
 	//@TODO - Tell AI about this?
 	return NewBlock;
 }
@@ -185,19 +187,22 @@ function bool CheckForParent(TowerBlock Block)
 /** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
 have all this nodes' children (and their children and so forth) perform a FindNewParent as well. */
 final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent=None,
-	optional bool bChildrenFindParent=false)
+	optional bool bChildrenFindParent=false, optional bool bChild=false)
 {
 	local TowerBlock Block;
 	local TraceHitInfo HitInfo;
 	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
-	Node.SetBase(None);
+	if(!bChild)
+	{
+		Node.SetBase(None); // Why.
+	}
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
 		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			Node.SetBase(Block);
-			Node.Adopted();
+			Node.AdoptedParent();
 			`log("And it's good!");
 			return TRUE;
 		}
@@ -207,16 +212,19 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 		`log("Having children look for supported parents...");
 		foreach Node.BasedActors(class'TowerBlock', Block)
 		{
-			if(Block.class != class'TowerBlockAir')
+			// We don't want air or modules looking for parents.
+			if(Block.IsA('TowerBlockStructural'))
 			{
-				FindNewParent(Block, OldParent, bChildrenFindParent);
+				//@TODO - Make me iterative instead of recursive!
+				FindNewParent(Block, OldParent, bChildrenFindParent, true);
 			}
 		}
 	}
-	if(Node.Base == None && OldParent != None)
+	if(!bChild && Node.Base == None && OldParent != None)
 	{
 		`log("No parents available,"@Node@"is an orphan. Handle this.");
 		// True orphan.
+		Node.SetBase(None); // Why.
 		Node.OrphanedParent();
 	}
 	return false;

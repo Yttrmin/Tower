@@ -94,7 +94,7 @@ event OnMouseClick(int Button)
 			TraceForBlock(TracedBlock, HitNormal);
 			if(TracedBlock != None)
 			{
-				FinalGridLocation = TracedBlock.GetGridLocation() + HitNormal;
+				FinalGridLocation = TracedBlock.GridLocation + HitNormal;
 //				FinalGridLocation.X = Round(FinalGridLocation.X);
 //				FinalGridLocation.Y = Round(FinalGridLocation.Y);
 //				FinalGridLocation.Z = Round(FinalGridLocation.Z);
