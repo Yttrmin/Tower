@@ -16,6 +16,7 @@ enum MusicEvent
 
 /** Owner of this MusicManager */
 var TowerPlayerController PlayerOwner;
+var globalconfig bool bEnable;
 /** Maximum volume for music audiocomponents (max value for VolumeMultiplier). */
 var globalconfig float MusicVolume;
 /** Path to a TowerMusicList. It will be DynamicLoadObject()'d upon initializing a TowerMusicManager. */
@@ -59,9 +60,12 @@ function PlayOverrideMusic(int Index)
 
 private function PlayMusic(SoundCue SoundCue)
 {
-	StopMusic();
-	CurrentSong.SoundCue = SoundCue;
-	CurrentSong.Play();
+	if(bEnable)
+	{
+		StopMusic();
+		CurrentSong.SoundCue = SoundCue;
+		CurrentSong.Play();
+	}
 }
 
 function StopMusic()

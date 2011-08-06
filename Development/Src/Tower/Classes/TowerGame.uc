@@ -9,6 +9,9 @@ class TowerGame extends FrameworkGame
 	dependson(TowerMusicManager)
 	config(Tower);
 
+`define debugconfig `if(`isdefined(debug)) config `else `define debugconfig `endif
+`define releasedefault x `if(`notdefined(debug)) x `else `define releasedefault `endif
+
 enum FactionLocation
 {
 	FL_None,
@@ -34,6 +37,7 @@ var byte FactionCount;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var private byte RemainingActiveFactions;
 var protected byte Round;
+var const config float CoolDownTime;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -70,7 +74,6 @@ event PostBeginPlay()
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
 	CheckTowerStarts();
-	Spawn(class'StaticMeshActor');
 	class'Engine'.static.StopMovie(true);
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	StartNextRound();
@@ -375,7 +378,6 @@ exec function StartGame()
 
 function StartMatch()
 {
-//	local int i;
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
@@ -437,6 +439,7 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 	{
 		SetTowerName(TPRI.Tower, TowerName);
 	}
+	TPRI.Tower.Initialize();
 }
 
 function SetTowerName(Tower Tower, string NewTowerName)
@@ -459,7 +462,7 @@ state CoolDown
 {
 	event BeginState(Name PreviousStateName)
 	{
-		SetTimer(50000, false);
+		SetTimer(CoolDownTime, false);
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 	}
 

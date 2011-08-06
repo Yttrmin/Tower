@@ -145,7 +145,7 @@ exec function bool SaveGame(string FileName)
 	return true;
 }
 
-exec function LoadGame(string FileName, bool bTowerOnly)
+exec function LoadGame(string FileName/*, bool bTowerOnly*/)
 {
 	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
 	// stuff publically.
@@ -395,6 +395,11 @@ exec function DebugLookingAt()
 	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE);
 	`log(LookingAt,,'LookingAt');
+}
+
+exec function DebugTestRenderTime()
+{
+	`log(GetTower().Root.LastRenderTime@WorldInfo.TimeSeconds@GetTower().Root.LastRenderTime==WorldInfo.TimeSeconds);
 }
 `endif
 

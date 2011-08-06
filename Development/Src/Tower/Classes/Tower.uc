@@ -4,6 +4,7 @@ Tower
 Represents a player's tower.
 */
 class Tower extends TowerFaction
+	config(Tower)
 	dependson(TowerBlock);
 
 var privatewrite TowerBlockRoot Root;
@@ -15,12 +16,25 @@ var(InGame) editconst private array<TowerBlock> DebugBlocks;
 var(InGame) editconst string TowerName;
 var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
 
+var array<TowerBlockStructural> OrphanRoots;
+var const config bool bDebugDrawHierarchy;
+var const Color RegularColor, OrphanColor;
+
 replication
 {
 	if(bNetDirty)
 		TowerName, OwnerPRI;
 	if(bNetInitial)
 		Root;
+}
+
+//@TODO - Take all needed vars here.
+event Initialize()
+{
+	if(bDebugDrawHierarchy)
+	{
+		TowerPlayerController(GetALocalPlayerController()).myHUD.AddPostRenderedActor(Self);
+	}
 }
 
 final function SetRootBlock(TowerBlockRoot RootBlock)
@@ -36,12 +50,12 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
 	local rotator NewRotation;
-	if(Parent != None && Parent.IsInState('Stable') || BlockArchetype.class == class'TowerBlockRoot')
+	if((Parent != None && Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' 
+		|| TowerGame(WorldInfo.Game).bPendingLoad)
 	{
 		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 		if(Parent != None)
 		{
-			`log(NewBlock@"spawning with parent"@Parent@"in state"@GetStateName());
 			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
 			if(ParentDir.Z == 0)
 			{
@@ -139,17 +153,30 @@ function bool RemoveBlock(TowerBlock Block)
 	local TowerBlock IteratorBlock;
 	local TowerBlockAir ITeratorAir;
 	local array<TowerBlockAir> ToDelete;
+	local array<TowerBlock> ToIterate;
 	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
 	{
-		`log(IteratorBlock);
 		if(IteratorBlock.class != class'TowerBlockAir')
 		{
-			FindNewParent(IteratorBlock, Block, true);
+			if(IteratorBlock.IsA('TowerBlockModule'))
+			{
+				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
+				// being modified, right?
+				IteratorBlock.OrphanedParent();
+				continue;
+			}
+			ToIterate.AddItem(IteratorBlock);
+			//@README DON'T DO THIS YOU IDIOT, FINDNEWPARENT CHANGES BASES, AND WE'RE IN A BASEDACTORS() ITERATOR. THINK.
+			//FindNewParent(IteratorBlock, Block, true);
 		}
 		else
 		{
 			ToDelete.AddItem(TowerBlockAir(IteratorBlock));
 		}
+	}
+	foreach ToIterate(IteratorBlock)
+	{
+		FindNewParent(IteratorBlock, Block, true);
 	}
 	foreach ToDelete(IteratorAir)
 	{
@@ -237,8 +264,36 @@ private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBloc
 	return Block.IsBasedOn(Root) && !Block.IsBasedOn(InvalidBase);
 }
 
+simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
+{
+	local TowerBlockStructural OrphanRoot;
+	DrawDebugRelationship(Canvas, Root, RegularColor);
+	foreach OrphanRoots(OrphanRoot)
+	{
+		DrawDebugRelationship(Canvas, OrphanRoot, OrphanColor);
+	}
+}
+
+function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, out const Color DrawColor)
+{
+	local TowerBlock Block;
+	local Vector Begin, End;
+	Begin = Canvas.Project(CurrentBlock.Location);
+	foreach CurrentBlock.BasedActors(class'TowerBlock', Block)
+	{
+		if(Block.Rendered())
+		{
+			End = Canvas.Project(Block.Location);
+			Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
+		}
+		DrawDebugRelationship(Canvas, Block, DrawColor);
+	}
+}
+
 DefaultProperties
 {
+	RegularColor={(R=255)}
+	OrphanColor={(B=255)}
 	RemoteRole=ROLE_SimulatedProxy
 	bAlwaysRelevant=True
 	bStatic=False

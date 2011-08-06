@@ -37,19 +37,12 @@ final function float TimeToDrop()
 
 auto simulated state Stable
 {
-	function StopFall()
-	{
-		ClearTimer('DroppedSpace');
-	}
-
 	event BeginState(name PreviousStateName)
 	{
 		if(PreviousStateName == 'Unstable')
 		{
 			`log("Now stable!");
 			bReplicateMovement = true;
-			ClearTimer('DroppedSpace');
-			StopFall();
 		}
 	}
 }
@@ -98,7 +91,7 @@ simulated state UnstableParent extends Unstable
 			GotoState('Stable');
 			bFalling = false;
 		}
-		// NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
+		//@TODO - NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
 		
 	}
 	event BeginState(name PreviousStateName)
@@ -113,6 +106,10 @@ simulated state UnstableParent extends Unstable
 			bReplicateMovement = false;
 			SetTimer(TimeToDrop(), true, 'DroppedSpace');
 		}
+	}
+	event EndState(Name NextStateName)
+	{
+		ClearTimer('DroppedSpace');
 	}
 };
 
@@ -141,6 +138,7 @@ event OrphanedParent()
 	bFalling = true;
 	GotoState('UnstableParent');
 	`log(Self@"is now unstable!");
+	OwnerPRI.Tower.OrphanRoots.AddItem(Self);
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach BasedActors(class'TowerBlock', Node)
 	{
@@ -164,11 +162,12 @@ event OrphanedChild()
 //@TODO - Convert from recursion to iteration!
 event AdoptedParent()
 {
-	local TowerBlock Node;
+	local TowerBlockStructural Node;
 	`log("ADOPTED:"@Self);
-	SetGridLocation();
+	SetGridLocation(false);
 	GotoState('Stable');
-	foreach BasedActors(class'TowerBlock', Node)
+	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
+	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
 		Node.AdoptedChild();
 	}
@@ -176,11 +175,11 @@ event AdoptedParent()
 
 event AdoptedChild()
 {
-	local TowerBlock Node;
+	local TowerBlockStructural Node;
 	`log("ADOPTEDCHILD:"@Self);
-//	SetGridLocation();
+	SetGridLocation(false);
 	GotoState('Stable');
-	foreach BasedActors(class'TowerBlock', Node)
+	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
 		Node.AdoptedChild();
 	}

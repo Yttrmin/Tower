@@ -22,7 +22,8 @@ var() const Name DisplayName;
 var() edittextbox const String Description;
 /** If TRUE, this block will be in the player's build list. */
 var() const bool bAddToBuildList;
-/** Maximum health of this block, and what value the block will lerp to during construction. May be modified for difficulty. */
+/** Maximum health of this block, and what value the block will lerp to during construction. 
+May be modified for difficulty. */
 var() int HealthMax;
 /** Cost for the player to construct this block. Modifiers are applied directly to this value in the archetype. */
 var() int Cost;
@@ -71,6 +72,12 @@ simulated function StaticMesh GetStaticMesh()
 simulated function SkeletalMesh GetSkeletalMesh()
 {
 	return None;
+}
+
+/** Returns TRUE if the Block was rendered this most recent frame. */
+simulated final function bool Rendered()
+{
+	return (WorldInfo.TimeSeconds - LastRenderTime) < 0.25 ;
 }
 
 simulated event PostBeginPlay()
@@ -133,16 +140,22 @@ function SetFullLocation(Vector NewLocation, bool bRelative,
 	}
 }
 
-final function SetGridLocation()
+//@TODO - UpdateGridLocation()?
+final function SetGridLocation(optional bool bUpdateRelativeLocation=true)
 {
 	local Vector NewLocation;
 	GridLocation.X = Round(int(Location.X) / 256);
 	GridLocation.Y = Round(int(Location.Y) / 256);
 	GridLocation.Z = Round(int(Location.Z) / 256);
-	NewLocation.X = 256 * (GridLocation.X - TowerBlock(Base).GridLocation.X);
-	NewLocation.Y = 256 * (GridLocation.Y - TowerBlock(Base).GridLocation.Y);
-	NewLocation.Z = 256 * (GridLocation.Z - TowerBlock(Base).GridLocation.Z);
-	SetRelativeLocation(NewLocation);
+	if(bUpdateRelativeLocation)
+	{
+		NewLocation.X = 256 * (GridLocation.X - TowerBlock(Base).GridLocation.X);
+		NewLocation.Y = 256 * (GridLocation.Y - TowerBlock(Base).GridLocation.Y);
+		NewLocation.Z = 256 * (GridLocation.Z - TowerBlock(Base).GridLocation.Z);
+		`log(Self@"adjusting RelativeLocation from"@RelativeLocation$"...");
+		SetRelativeLocation(NewLocation);
+		`log("to"@RelativeLocation$"!"@"(Should hopefully be:"@NewLocation$"!)");
+	}
 }
 
 final simulated function Highlight()

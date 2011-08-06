@@ -42,20 +42,6 @@ function DrawHUD()
 //	local Tower Tower;
 
 	TraceForBlock(TracedBlock, HitNormal);
-	//@TODO - Put me in a PostRender somewhere!
-	/*
-	Tower = TowerPlayerController(PlayerOwner).GetTower();
-	if(Tower != None && Tower.NodeTree != None && Tower.NodeTree.bDebugDrawHierarchy)
-	{
-		Tower.NodeTree.
-		DrawDebugRelationship(Canvas, Tower.NodeTree.Root);
-		foreach Tower.NodeTree.OrphanNodeRoots(IterateBlock)
-		{
-			Tower.NodeTree.
-			DrawDebugRelationship(Canvas, IterateBlock);
-		}
-	}
-	*/
 	if(LastHighlightedBlock != None && (LastHighlightedBlock != TracedBlock || HUDMovie.bInMenu))
 	{
 		LastHighlightedBlock.UnHighlight();
