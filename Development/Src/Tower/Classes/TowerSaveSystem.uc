@@ -13,6 +13,14 @@ struct immutable BlockSaveInfo
 	var IVector G, P;
 };
 
+struct immutable PlayerInfo
+{
+	// Pawn Location.
+	var Vector L;
+	// Pawn Rotation.
+	var Rotator R;
+};
+
 struct immutable ModInfo
 {
 	// ModName.
@@ -52,7 +60,7 @@ final function LoadGame(string FileName, bool bJustTower, TowerPlayerController 
 }
 
 /** Saves the game using Engine.uc's BasicSaveObject function, serializing this class. PC and iOS. */
-final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
+final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local TowerBlock Block;
 	local BlockSaveInfo Info;
@@ -74,7 +82,7 @@ final function NativeSaveGame(string FileName, bool bJustTower, TowerPlayerContr
 		Info.H = Block.Health;
 		Blocks.AddItem(Info);
 	}
-	class'Engine'.static.BasicSaveObject(Self, FileName$".bin", true, SAVE_FILE_VERSION);
+	return class'Engine'.static.BasicSaveObject(Self, FileName$".bin", true, SAVE_FILE_VERSION);
 }
 
 //@TODO - We have a player by then?
@@ -84,6 +92,7 @@ Called from TowerGame::Login(). Guaranteed to be called on an empty map with tow
 final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local int i;
+	local bool bLoaded;
 	local TowerGameReplicationInfo GRI;
 	local BlockSaveInfo BlockInfo;
 	local TowerModInfo Mod;
@@ -94,12 +103,24 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	local TowerBlock BlockArchetype, Block;
 	local Vector SpawnLocation;
 	local IVector GridLocation;
+
+	FileName $= ".bin";
 	`log("Loading:"@FileName,,'NativeLoad');
 	GRI = TowerGameReplicationInfo(Player.WorldInfo.GRI);
 	CleanupSaveLoadVariables();
-	`log("Loaded"@FileName$".bin?:"@class'Engine'.static.BasicLoadObject(Self, FileName$".bin", true, SAVE_FILE_VERSION),,'NativeLoad');
-	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
 
+	bLoaded = class'Engine'.static.BasicLoadObject(Self, FileName, true, SAVE_FILE_VERSION);
+	if(bLoaded)
+	{
+		`log("Load successful!",,'NativeLoad');
+	}
+	else
+	{
+		`log("Load failed! Aborting!",,'NativeLoad');
+		return;
+	}
+
+	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
 	for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
 	{
 		ModsArray.AddItem(Mod);
@@ -123,8 +144,13 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		GridLocation.Z = SpawnLocation.Z / 256;
 		//@TODO - NO MORE TOWERTREE.
 		BlockArchetype = ModsArray[TranslatedMods[BlockInfo.M]].ModBlocks[BlockInfo.I];
+		// Without a parent no block will get spawned.
 		Block = Player.GetTower().AddBlock(BlockArchetype, None, SpawnLocation, GridLocation, false);
 		Block.Initialize(BlockInfo.G, BlockInfo.P, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
+		if(BlockArchetype == TowerGame(Player.WorldInfo.Game).RootArchetype)
+		{
+			Player.GetTower().SetRootBlock(TowerBlockRoot(Block));
+		}
 	}
 	//@TODO - parenting!
 	foreach Player.DynamicActors(class'TowerBlock', Block)

@@ -89,13 +89,14 @@ function SetKeyBindings()
 event OnBuildListChange(int Index)
 {
 	local TowerBlock BlockArchetype;
-	`log("New Index:"@Index);
 //	if(BuildIndexes[Index]TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks
-	BlockArchetype = TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]];
-	//@BUG - Out of bounds.
-	TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(BlockArchetype);
-	HUD.SetPlaceBlock(BlockArchetype);
-	SetBuildMenuInfo(BlockArchetype);
+	if(Index < BuildIndexes.Length)
+	{
+		BlockArchetype = TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]];
+		TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(BlockArchetype);
+		HUD.SetPlaceBlock(BlockArchetype);
+		SetBuildMenuInfo(BlockArchetype);
+	}
 }
 
 event OnMouseMove(float DeltaX, float DeltaY)
