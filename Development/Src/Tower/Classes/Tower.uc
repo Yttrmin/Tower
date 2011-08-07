@@ -17,7 +17,7 @@ var(InGame) editconst string TowerName;
 var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
 
 var array<TowerBlockStructural> OrphanRoots;
-var const config bool bDebugDrawHierarchy;
+var const config bool bDebugDrawHierarchy, bDebugDrawHierarchyOnlyVisible, bDebugDrawHierarchyIncludeAir;
 var const Color RegularColor, OrphanColor;
 
 replication
@@ -50,8 +50,8 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
 	local rotator NewRotation;
-	if((Parent != None && Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' 
-		|| TowerGame(WorldInfo.Game).bPendingLoad)
+	if((Parent != None && !Parent.IsA('TowerBlockModule') && Parent.IsInState('Stable')) 
+		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
 	{
 		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 		if(Parent != None)
@@ -281,10 +281,22 @@ function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, out c
 	Begin = Canvas.Project(CurrentBlock.Location);
 	foreach CurrentBlock.BasedActors(class'TowerBlock', Block)
 	{
-		if(Block.Rendered())
+		if(bDebugDrawHierarchyOnlyVisible)
 		{
-			End = Canvas.Project(Block.Location);
-			Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
+			if(Block.Rendered() || (bDebugDrawHierarchyIncludeAir && Block.class == class'TowerBlockAir' 
+				&& TowerBlock(Block.Base).Rendered()))
+			{
+				End = Canvas.Project(Block.Location);
+				Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
+			}
+		}
+		else
+		{
+			if(Block.class != class'TowerBlockAir' || bDebugDrawHierarchyIncludeAir)
+			{
+				End = Canvas.Project(Block.Location);
+				Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
+			}
 		}
 		DrawDebugRelationship(Canvas, Block, DrawColor);
 	}

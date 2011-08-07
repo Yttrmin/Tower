@@ -38,6 +38,7 @@ var byte FactionCount;
 var private byte RemainingActiveFactions;
 var protected byte Round;
 var const config float CoolDownTime;
+var const config array<String> FactionAIs;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -168,6 +169,7 @@ event PostLogin(PlayerController NewPlayer)
 	if(bPendingLoad)
 	{
 		TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer));
+		bPendingLoad = false;
 	}
 	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
 	if(NewPlayer.Pawn == None)
@@ -381,7 +383,11 @@ function StartMatch()
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
-//	AddFactionAI(5, RootMod.ModFactionAIs[0], FL_NegX);
+	//@TODO
+	if(FactionAIs.Length > 0)
+	{
+		AddFactionAI(5, TowerFactionAI(DynamicLoadObject(FactionAIs[0], class'TowerFactionAI', true)), FL_NegX);
+	}
 	GotoState('CoolDown');
 }
 
