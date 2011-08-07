@@ -413,8 +413,10 @@ reliable server function ServerAddBlock(TowerBlock BlockArchetype, TowerBlock Pa
 {
 	if(GetTower().HasBudget(BlockArchetype.Cost))
 	{
-		GetTower().ConsumeBudget(BlockArchetype.Cost);
-		TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockArchetype, Parent, GridLocation);	
+		if(TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockArchetype, Parent, GridLocation) != None)
+		{
+			GetTower().ConsumeBudget(BlockArchetype.Cost);
+		}
 	}
 }
 
