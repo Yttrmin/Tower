@@ -75,7 +75,10 @@ event PostBeginPlay()
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
 	CheckTowerStarts();
-	class'Engine'.static.StopMovie(true);
+	if(WorldInfo.NetMode != NM_DedicatedServer)
+	{
+		class'Engine'.static.StopMovie(true);
+	}
 //	ZMod = Spawn(class'TowerModInfo',,,,,TowerModInfo(DynamicLoadObject("MyModd.ZModModInfo",class'TowerModInfo',false)));
 //	StartNextRound();
 }
@@ -428,7 +431,8 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 	TPRI.Tower = Spawn(class'Tower', self);
 	TPRI.Tower.OwnerPRI = TPRI;
 	// Initial budget!
-	TPRI.Tower.Budget = 50;
+	//@FIXME
+	TPRI.Tower.Budget = 99999;
 //	TPRI.Tower.Initialize(TPRI);
 	if(bAddRootBlock)
 	{

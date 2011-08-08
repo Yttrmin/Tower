@@ -227,6 +227,9 @@ simulated state InActive
 {
 };
 
+/** Called on root blocks of an orphan branch that lost an orphan child. */
+event LostOrphan();
+
 /** Called on TowerBlocks that are the root node of an orphan branch. */
 event OrphanedParent();
 
