@@ -1,4 +1,5 @@
 class TowerPlayerController extends GamePlayerController
+	dependson(TowerSaveSystem)
 	config(Tower);
 
 var TowerSaveSystem SaveSystem;
@@ -400,6 +401,15 @@ exec function DebugLookingAt()
 exec function DebugTestRenderTime()
 {
 	`log(GetTower().Root.LastRenderTime@WorldInfo.TimeSeconds@GetTower().Root.LastRenderTime==WorldInfo.TimeSeconds);
+}
+
+exec function DebugListSaveGames()
+{
+	local SaveInfo Info;
+	foreach SaveSystem.Saves(Info)
+	{
+		`log(Info.FileName@Info.Timestamp@Info.bVisible);
+	}
 }
 `endif
 

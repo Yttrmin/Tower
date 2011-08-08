@@ -66,7 +66,7 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 event UnTouch(Actor Other)
 {
 	// Do things dying trigger an UnTouch?
-	`log(Self@"untouched by"@Other);
+//	`log(Self@"untouched by"@Other);
 }
 
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 

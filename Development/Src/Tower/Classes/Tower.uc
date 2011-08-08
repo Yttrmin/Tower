@@ -18,7 +18,7 @@ var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
 
 var array<TowerBlockStructural> OrphanRoots;
 var const config bool bDebugDrawHierarchy, bDebugDrawHierarchyOnlyVisible, bDebugDrawHierarchyIncludeAir;
-var const Color RegularColor, OrphanColor;
+var const Color RegularColor, OrphanColor, OrphanRootColor;
 
 replication
 {
@@ -218,25 +218,25 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 {
 	local TowerBlock Block;
 	local TraceHitInfo HitInfo;
-	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
+//	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 	if(!bChild)
 	{
 		Node.SetBase(None); // Why.
 	}
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
-		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+//		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			Node.SetBase(Block);
 			Node.AdoptedParent();
-			`log("And it's good!");
+//			`log("And it's good!");
 			return TRUE;
 		}
 	}
 	if(bChildrenFindParent)
 	{
-		`log("Having children look for supported parents...");
+//		`log("Having children look for supported parents...");
 		foreach Node.BasedActors(class'TowerBlock', Block)
 		{
 			// We don't want air or modules looking for parents.
@@ -249,7 +249,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	}
 	if(!bChild && Node.Base == None && OldParent != None)
 	{
-		`log("No parents available,"@Node@"is an orphan. Handle this.");
+//		`log("No parents available,"@Node@"is an orphan. Handle this.");
 		// True orphan.
 		Node.SetBase(None); // Why.
 		Node.OrphanedParent();
@@ -270,11 +270,11 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	DrawDebugRelationship(Canvas, Root, RegularColor);
 	foreach OrphanRoots(OrphanRoot)
 	{
-		DrawDebugRelationship(Canvas, OrphanRoot, OrphanColor);
+		DrawDebugRelationship(Canvas, OrphanRoot, OrphanRootColor);
 	}
 }
 
-function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, out const Color DrawColor)
+function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, Color DrawColor)
 {
 	local TowerBlock Block;
 	local Vector Begin, End;
@@ -288,6 +288,10 @@ function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, out c
 			{
 				End = Canvas.Project(Block.Location);
 				Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
+				if(DrawColor == OrphanRootColor)
+				{
+					DrawColor = OrphanColor;
+				}
 			}
 		}
 		else
@@ -306,6 +310,7 @@ DefaultProperties
 {
 	RegularColor={(R=255)}
 	OrphanColor={(B=255)}
+	OrphanRootColor={(G=255)}
 	RemoteRole=ROLE_SimulatedProxy
 	bAlwaysRelevant=True
 	bStatic=False

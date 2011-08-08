@@ -6,15 +6,15 @@ simulated event PostBeginPlay()
 {
 	local TowerModInfo Mod;
 	Super.PostBeginPlay();
-	if(Role == ROLE_Authority)
+	if(WorldInfo.NetMode < NM_Client && !TowerGameReplicationInfo(WorldInfo.GRI).bModsLoaded)
 	{
 		for(Mod = TowerGameReplicationInfo(WorldInfo.GRI).RootMod; Mod != None; Mod = Mod.NextMod)
 		{
 			TowerGameReplicationInfo(WorldInfo.GRI).LoadMod(Mod);
 		}
 		TowerGameReplicationInfo(WorldInfo.GRI).bModsLoaded = true;
+		TowerGameReplicationInfo(WorldInfo.GRI).ConstructBuildList();
 	}
-	TowerGameReplicationInfo(WorldInfo.GRI).ConstructBuildList();
 }
 
 event Bump( Actor Other, PrimitiveComponent OtherComp, vector HitNormal )

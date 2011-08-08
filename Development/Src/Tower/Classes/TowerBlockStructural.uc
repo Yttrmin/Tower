@@ -31,8 +31,28 @@ final function float TimeToDrop()
 {
 	local float Time;
 	Time = 256 / DropRate;	
-	`log("TimeToDrop:"@Time);
 	return Time;
+}
+
+function bool IsTouchingGround(bool bChildrenCheck)
+{
+	local TowerBlockStructural Block;
+	SetGridLocation(false);
+	if(GridLocation.Z == 0)
+	{
+		return true;
+	}
+	if(bChildrenCheck)
+	{
+		foreach BasedActors(class'TowerBlockStructural', Block)
+		{
+			if(Block.IsTouchingGround(bChildrenCheck))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 auto simulated state Stable
@@ -41,7 +61,6 @@ auto simulated state Stable
 	{
 		if(PreviousStateName == 'Unstable')
 		{
-			`log("Now stable!");
 			bReplicateMovement = true;
 		}
 	}
@@ -50,7 +69,11 @@ auto simulated state Stable
 /** State for blocks that are part of an orphan branch, but not the root of it. */
 simulated state Unstable
 {
-	
+	simulated event Destroyed()
+	{
+		TowerBlockStructural(GetBaseMost()).LostOrphan();
+		Super.Destroyed();
+	}
 };
 
 /** State for root blocks of orphan branches. Block falls with all its attachments. */
@@ -75,19 +98,18 @@ simulated state UnstableParent extends Unstable
 	/** Called after block should have dropped 256 units.  */
 	event DroppedSpace()
 	{
-		`log("Dropped space");
+//		`log(Self@"Dropped space");
 		// SetRelativeLocation here to be sure?
 		//SetFullLocation(Location, false);
-//		SetGridLocation();
-		`log("GridLocation Z:"@GridLocation.Z);
-		if(GridLocation.Z == 0)
+//		`log(Self@"GridLocation Z:"@GridLocation.Z);
+		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
 			bFalling = false;
 		}
 		if(OwnerPRI.Tower.FindNewParent(Self))
 		{
-			`log("Found parent:"@Base);
+//			`log("Found parent:"@Base);
 			GotoState('Stable');
 			bFalling = false;
 		}
@@ -96,7 +118,7 @@ simulated state UnstableParent extends Unstable
 	}
 	event BeginState(name PreviousStateName)
 	{
-		if(GridLocation.Z == 0)
+		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
 			bFalling = false;
@@ -119,13 +141,19 @@ simulated state InActive
 	{
 		ClearTimer('DroppedSpace');
 	}
+	event LostOrphan()
+	{
+		if(!IsTouchingGround(true))
+		{
+			GotoState('UnstableParent');
+		}
+	}
 Begin:
 	if(OwnerPRI.Tower.FindNewParent(Self))
 	{
-		`log("Found parent:"@Base);
+		`log(Self@"Found parent:"@Base);
 		GotoState('Stable');
 	}
-	`log(self@"Ping");
 	Sleep(5);
 	Goto('Begin');
 }
@@ -137,7 +165,6 @@ event OrphanedParent()
 	local TowerBlock Node;
 	bFalling = true;
 	GotoState('UnstableParent');
-	`log(Self@"is now unstable!");
 	OwnerPRI.Tower.OrphanRoots.AddItem(Self);
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach BasedActors(class'TowerBlock', Node)
@@ -151,7 +178,6 @@ event OrphanedParent()
 event OrphanedChild()
 {
 	local TowerBlock Node;
-	`log("OrphanedChild");
 	GotoState('Unstable');
 	foreach BasedActors(class'TowerBlock', Node)
 	{
@@ -163,7 +189,6 @@ event OrphanedChild()
 event AdoptedParent()
 {
 	local TowerBlockStructural Node;
-	`log("ADOPTED:"@Self);
 	SetGridLocation(false);
 	GotoState('Stable');
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
@@ -176,7 +201,6 @@ event AdoptedParent()
 event AdoptedChild()
 {
 	local TowerBlockStructural Node;
-	`log("ADOPTEDCHILD:"@Self);
 	SetGridLocation(false);
 	GotoState('Stable');
 	foreach BasedActors(class'TowerBlockStructural', Node)

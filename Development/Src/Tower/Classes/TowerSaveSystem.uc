@@ -5,6 +5,15 @@ Class used to save and load games on the PC and iOS. */
 class TowerSaveSystem extends Object
 	config(Tower);
 
+struct SaveInfo
+{
+	// With extension!
+	var string FileName;
+	// Format: 2011/08/07 - 22:51:06
+	var string TimeStamp;
+	var bool bVisible;
+};
+
 struct immutable BlockSaveInfo
 {
 	// ModIndex, ModBlockIndex, Health.
@@ -30,10 +39,13 @@ struct immutable ModInfo
 };
 
 const SAVE_FILE_VERSION = 3;
+const SAVE_FILE_EXTENSION = ".bin";
 
 var string SaveTowerName;
 var array<ModInfo> SaveMods;
 var array<BlockSaveInfo> Blocks;
+
+var transient config array<SaveInfo> Saves;
 
 /** Dumps what is pretty close of the current gamestate to disk. Anticipated to produce a very
 sizable file compared to normal saving. */
@@ -59,11 +71,13 @@ final function LoadGame(string FileName, bool bJustTower, TowerPlayerController 
 		NativeLoadGame(FileName, bJustTower, Player);
 }
 
-/** Saves the game using Engine.uc's BasicSaveObject function, serializing this class. PC and iOS. */
+/** Saves the game using Engine.uc's BasicSaveObject function, serializing this object. PC and iOS. */
 final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local TowerBlock Block;
 	local BlockSaveInfo Info;
+	local bool Result;
+	FileName $= SAVE_FILE_EXTENSION;
 	CleanupSaveLoadVariables();
 	SaveTowerName = Player.GetTower().TowerName;
 	PopulateModList(TowerGameReplicationInfo(Player.WorldInfo.GRI), SaveMods);
@@ -82,12 +96,21 @@ final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayer
 		Info.H = Block.Health;
 		Blocks.AddItem(Info);
 	}
-	return class'Engine'.static.BasicSaveObject(Self, FileName$".bin", true, SAVE_FILE_VERSION);
+	Result = class'Engine'.static.BasicSaveObject(Self, FileName, true, SAVE_FILE_VERSION);
+	if(Result)
+	{
+		AddToSaves(FileName);
+	}
+	else
+	{
+		`log("Saving"@FileName@"failed!");
+	}
+	return Result;
 }
 
 //@TODO - We have a player by then?
 //@SOLVED - Yes, it's called from Login.
-/** Loads the game using Engine.uc's BasicLoadObject function, serializing this class. PC and iOS.
+/** Loads the game using Engine.uc's BasicLoadObject function, serializing this object. PC and iOS.
 Called from TowerGame::Login(). Guaranteed to be called on an empty map with towers but no blocks (including root).*/
 final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
@@ -104,7 +127,7 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	local Vector SpawnLocation;
 	local IVector GridLocation;
 
-	FileName $= ".bin";
+	FileName $= SAVE_FILE_EXTENSION;
 	`log("Loading:"@FileName,,'NativeLoad');
 	GRI = TowerGameReplicationInfo(Player.WorldInfo.GRI);
 	CleanupSaveLoadVariables();
@@ -152,17 +175,21 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 			Player.GetTower().SetRootBlock(TowerBlockRoot(Block));
 		}
 	}
-	//@TODO - parenting!
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
 		if(Block.class == class'TowerBlockAir')
 		{
 			continue;
 		}
-		Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+		if(Block.class != class'TowerBlockRoot')
+		{
+			Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+		}
 		Player.GetTower().CreateSurroundingAir(Block);
 	}
-	Mod.GameLoaded(FileName);
+	// Mods don't need the extension.
+	FileName -= SAVE_FILE_EXTENSION;
+	GRI.RootMod.GameLoaded(FileName);
 }
 
 final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> ModArray)
@@ -176,6 +203,37 @@ final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> 
 		Info.Mi = Mod.MinorVersion;
 		ModArray.AddItem(Info);
 	}
+}
+
+final function AddToSaves(out string FileName)
+{
+	local int Index;
+	local SaveInfo Info;
+	Info.FileName = Filename;
+	Info.TimeStamp = TimeStamp();
+	Info.bVisible = true;
+
+	Index = Saves.Find('FileName', FileName);
+	if(Index == INDEX_NONE)
+	{
+		Saves.AddItem(Info);
+	}
+	else
+	{
+		Saves[Index] = Info;
+	}
+	SaveConfig();
+}
+
+final function RemoveFromSaves(out string FileName)
+{
+	local int Index;
+	Index = Saves.Find('FileName', FileName);
+	if(Index != INDEX_NONE)
+	{
+		Saves.Remove(Index, 1);
+	}
+	SaveConfig();
 }
 
 final function CleanupSaveLoadVariables()
