@@ -189,9 +189,10 @@ function bool RemoveBlock(TowerBlock Block)
 function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocation, const out IVector ParentDirection)
 {
 	local Actor Block;
-	local Vector StartLocation, EndLocation, HitNormal, HitLocation, VectorGridLocation;
-	VectorGridLocation = ToVect(GridLocation) + ToVect(ParentDirection);
-	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(VectorGridLocation);
+	local IVector StartGridLocation;
+	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
+	StartGridLocation = GridLocation + ParentDirection;
+	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(StartGridLocation);
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
 	StartLocation.Z += 128;
 	EndLocation.X = StartLocation.X + 10;
@@ -243,7 +244,10 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 			if(Block.IsA('TowerBlockStructural'))
 			{
 				//@TODO - Make me iterative instead of recursive!
-				FindNewParent(Block, OldParent, bChildrenFindParent, true);
+				if(FindNewParent(Block, OldParent, bChildrenFindParent, true) && !bChild)
+				{
+					FindNewParent(Node, OldParent, false);
+				}
 			}
 		}
 	}

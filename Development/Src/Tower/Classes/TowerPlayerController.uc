@@ -391,11 +391,22 @@ exec function DebugLookingAt()
 	local Rotator PlayerDir;
 	local Vector HitLocation, HitNormal;
 	local Actor LookingAt;
+	local TowerBlockStructural LookingBlock;
 	GetPlayerViewPoint(WorldOrigin, PlayerDir);
 	WorldDir = Vector(PlayerDir);
 	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE);
-	`log(LookingAt,,'LookingAt');
+	LookingBlock = TowerBlockStructural(LookingAt);
+	if(LookingAt != None && LookingBlock == None)
+	{
+		`log(LookingAt,,'LookingAt');
+	}
+	else if(LookingBlock != None)
+	{
+		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"GL:"
+			@"("$LookingBlock.GridLocation.X$","@LookingBlock.GridLocation.Y$","@LookingBlock.GridLocation.Z$")"@"L:"
+			@LookingBlock.Location,,'LookingAt');
+	}
 }
 
 exec function DebugTestRenderTime()

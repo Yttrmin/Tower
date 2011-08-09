@@ -144,17 +144,20 @@ function SetFullLocation(Vector NewLocation, bool bRelative,
 final function SetGridLocation(optional bool bUpdateRelativeLocation=true)
 {
 	local Vector NewLocation;
+	local Actor TempBase;
 	GridLocation.X = Round(int(Location.X) / 256);
 	GridLocation.Y = Round(int(Location.Y) / 256);
 	GridLocation.Z = Round(int(Location.Z) / 256);
 	if(bUpdateRelativeLocation)
 	{
-		NewLocation.X = 256 * (GridLocation.X - TowerBlock(Base).GridLocation.X);
-		NewLocation.Y = 256 * (GridLocation.Y - TowerBlock(Base).GridLocation.Y);
-		NewLocation.Z = 256 * (GridLocation.Z - TowerBlock(Base).GridLocation.Z);
-		`log(Self@"adjusting RelativeLocation from"@RelativeLocation$"...");
-		SetRelativeLocation(NewLocation);
-		`log("to"@RelativeLocation$"!"@"(Should hopefully be:"@NewLocation$"!)");
+		NewLocation.X = 256 * (GridLocation.X);
+		NewLocation.Y = 256 * (GridLocation.Y);
+		//@TODO - No magic number.
+		NewLocation.Z = 256 * (GridLocation.Z) + 128;
+		// Base is lost when you do SetLocation, so we have to reset it afterwards.
+		TempBase = Base;
+		SetLocation(NewLocation);
+		SetBase(TempBase);
 	}
 }
 

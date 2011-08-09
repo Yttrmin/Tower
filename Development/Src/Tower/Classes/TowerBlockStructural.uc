@@ -186,10 +186,11 @@ event OrphanedChild()
 }
 
 //@TODO - Convert from recursion to iteration!
+/** Called on orphan parent when adopted. */
 event AdoptedParent()
 {
 	local TowerBlockStructural Node;
-	SetGridLocation(false);
+	SetGridLocation(true);
 	GotoState('Stable');
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
 	foreach BasedActors(class'TowerBlockStructural', Node)
