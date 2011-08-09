@@ -119,8 +119,10 @@ event GameSaved();
 /** Called by TowerGame during a regular load. FileName does not contain the full path or extension. */
 event GameLoaded(const out string FileName)
 {
-	//@TODO - NullObject ModInfo so we don't always have to check for none.
-	NextMod.GameLoaded(FileName);
+	if(NextMod != None)
+	{
+		NextMod.GameLoaded(FileName);
+	}
 }
 
 /** Called by TowerGame during a quick save. */

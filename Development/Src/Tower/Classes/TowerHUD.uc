@@ -81,10 +81,6 @@ event OnMouseClick(int Button)
 			if(TracedBlock != None)
 			{
 				FinalGridLocation = TracedBlock.GridLocation + HitNormal;
-//				FinalGridLocation.X = Round(FinalGridLocation.X);
-//				FinalGridLocation.Y = Round(FinalGridLocation.Y);
-//				FinalGridLocation.Z = Round(FinalGridLocation.Z);
-//				`log("FinalGridLocation:"@FinalGridLocation@"From:"@TracedPlaceable.GetGridLocation());
 				TowerPlayerController(PlayerOwner).AddBlock(PlaceBlock, TracedBlock, FinalGridLocation);
 			}
 		}

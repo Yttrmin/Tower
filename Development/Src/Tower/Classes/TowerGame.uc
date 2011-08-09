@@ -575,13 +575,11 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 	out IVector GridLocation)
 {
 	local Vector SpawnLocation;
-	local Vector VectorGridLocation;
-	VectorGridLocation = ToVect(GridLocation);
-	SpawnLocation = GridLocationToVector(VectorGridLocation);
+	SpawnLocation = GridLocationToVector(GridLocation);
 	// Pivot point in middle, bump up.
 	SpawnLocation.Z += 128;
 	`assert(BlockArchetype != None);
-	if(CanAddBlock(VectorGridLocation))
+	if(CanAddBlock(GridLocation, Parent))
 	{
 		return Tower.AddBlock(BlockArchetype, Parent, SpawnLocation, GridLocation);
 	}
@@ -596,28 +594,27 @@ function RemoveBlock(Tower Tower, TowerBlock Block)
 	Tower.RemoveBlock(Block);
 }
 
-function bool CanAddBlock(out Vector GridLocation)
+/** Returns TRUE if GridLocation is on the grid and there's no Unstable blocks currently falling into GridLocation. */
+function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent)
 {
-	return (IsGridLocationFree(GridLocation) && IsGridLocationOnGrid(GridLocation));
+	return (IsGridLocationOnGrid(GridLocation) && !IsBlockFallingOntoBlock(GridLocation, Parent));
 }
 
-static function Vector GridLocationToVector(out Vector GridLocation, optional class<TowerBlock> BlockClass)
+static function Vector GridLocationToVector(out const IVector GridLocation, optional class<TowerBlock> BlockClass)
 {
-//	local int MapBlockWidth, MapBlockHeight;
 	local Vector NewBlockLocation;
-//	MapBlockHeight = TowerMapInfo(WorldInfo.GetMapInfo()).BlockHeight;
-//	MapBlockWidth = TowerMapInfo(WorldInfo.GetMapInfo()).BlockWidth;
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
 	NewBlockLocation.X = (GridLocation.X * 256);
 	NewBlockLocation.Y = (GridLocation.Y * 256);
-	// Z is the very bottom of the block.
 	NewBlockLocation.Z = (GridLocation.Z * 256);
+	//@TODO - Are we doing this here or what?
 	// Pivot point in middle, bump it up.
 //	NewBlockLocation.Z += 128;
 	return NewBlockLocation;
 }
 
-function bool IsGridLocationOnGrid(out Vector GridLocation)
+/** Returns TRUE if the GridLocation is inside the bounds specified in TowerMapInfo. */
+function bool IsGridLocationOnGrid(out const IVector GridLocation)
 {
 	local int MapXBlocks; 
 	local int MapYBlocks; 
@@ -625,48 +622,36 @@ function bool IsGridLocationOnGrid(out Vector GridLocation)
 	MapXBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).XBlocks;
 	MapYBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).YBlocks;
 	MapZBlocks = TowerMapInfo(WorldInfo.GetMapInfo()).ZBlocks;
-	if((GridLocation.X <= MapXBlocks/2 && GridLocation.X >= -MapXBlocks/2) && 
-		(GridLocation.Y <= MapYBlocks/2 && GridLocation.Y >= -MapYBlocks/2) &&
-		(GridLocation.Z <= MapZBlocks/2 && GridLocation.Z >= -MapZBlocks/2))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return	((GridLocation.X <= MapXBlocks/2 && GridLocation.X >= -MapXBlocks/2) && 
+			(GridLocation.Y <= MapYBlocks/2 && GridLocation.Y >= -MapYBlocks/2) &&
+			(GridLocation.Z <= MapZBlocks/2 && GridLocation.Z >= -MapZBlocks/2));
 }
 
-function bool IsGridLocationFree(out Vector GridLocation)
+/** Returns TRUE if there are any Unstable blocks in the process of falling into TestGridLocation. */
+function bool IsBlockFallingOntoBlock(out const IVector TestGridLocation, TowerBlock Block)
 {
-	return true;
-}
+	local TowerBlock IteratorBlock;
+	local Vector HitLocation, HitNormal, Extent, Start, End;
 
-function TowerBlock GetBlockFromGrid(int XBlock, int YBlock, int ZBlock, out int BlockIndex)
-{
-	/*
-	// Seriously need a helper function to make grid vectors, or at least make all XBlocks etc into vectors.
-	local Vector GridLocation;
-	local TowerBlock Block;
-	local PlayerReplicationInfo PRI;
-	local TowerPlayerReplicationInfo TPRI;
+	Start = Block.Location;
+	Start.Z -= 128;
 
-	GridLocation.X = XBlock;
-	GridLocation.Y = YBlock;
-	GridLocation.Z = ZBlock;
-	foreach GameReplicationInfo.PRIArray(PRI)
+	End = Start;
+	End.Z += 512;
+
+	Extent = Vect(384, 384, 0);
+
+	foreach TraceActors(class'TowerBlock', IteratorBlock, HitLocation, HitNormal, End, Start, Extent)
 	{
-		TPRI = TowerPlayerReplicationInfo(PRI);
-		foreach TPRI.Tower.Blocks(Block, BlockIndex)
+		if(IteratorBlock.IsInState('Unstable') || IteratorBlock.IsChildState(IteratorBlock.GetStateName(), 'Unstable'))
 		{
-			if(Block.GridLocation == GridLocation)
+			if(IteratorBlock.GridLocation - Vect(0,0,1) == TestGridLocation)
 			{
-				return Block;
+				return true;
 			}
 		}
 	}
-	*/
-	return None;
+	return false;
 }
 
 function int GetRemainingTime()
