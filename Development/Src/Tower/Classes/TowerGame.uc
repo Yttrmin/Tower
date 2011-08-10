@@ -171,7 +171,14 @@ event PostLogin(PlayerController NewPlayer)
 	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
 	if(bPendingLoad)
 	{
-		TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer));
+		if(!TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer)))
+		{
+			`log("Failed to load file"@"'"$PendingLoadFile$"' (Should have NO extension)! Does the file exist?"
+				@"It might be from a previous version of save files that is no longer supported. If that's the case"
+				@"there's no solution to it for now.",,'Error');
+			`log("Continuing as a new game due to loading failure.",,'Loading');
+			AddRootBlock(TowerPlayerController(NewPlayer));
+		}
 		bPendingLoad = false;
 	}
 	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
@@ -187,9 +194,20 @@ event PostLogin(PlayerController NewPlayer)
 
 function RestartPlayer(Controller NewPlayer)
 {
+	local Vector SpawnLocation;
+	local Rotator SpawnRotation;
+	if(TowerPlayerController(NewPlayer).SaveSystem.bLoaded)
+	{
+		SpawnLocation = TowerPlayerController(NewPlayer).SaveSystem.PlayerInfo.L;
+		SpawnRotation = TowerPlayerController(NewPlayer).SaveSystem.PlayerInfo.R;
+	}
+	else
+	{
+		SpawnLocation = Vect(500,200,90);
+	}
 	if (NewPlayer.Pawn == None)
 	{
-		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,Vect(500, 200, 90));
+		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,SpawnLocation, SpawnRotation);
 	}
 	if (NewPlayer.Pawn == None)
 	{
@@ -423,10 +441,11 @@ function AddFactionHuman(int TeamIndex)
 	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
 }
 
+//@TODO - Need Tower, not TPRI.
 function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
 {
 	local TowerPlayerReplicationInfo TPRI;
-	local IVector GridLocation;
+	
 	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	TPRI.Tower = Spawn(class'Tower', self);
 	TPRI.Tower.OwnerPRI = TPRI;
@@ -436,13 +455,7 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 //	TPRI.Tower.Initialize(TPRI);
 	if(bAddRootBlock)
 	{
-		// Need to make this dependent on player count in future.
-		//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
-		GridLocation.X = 4*(NumPlayers-1);
-	
-		TPRI.Tower.SetRootBlock(TowerBlockRoot(AddBlock(TPRI.Tower, RootArchetype, None, GridLocation)));
-		//@FIXME - Have Root do this by itself?
-		Hivemind.OnRootBlockSpawn(TPRI.Tower.Root);
+		AddRootBlock(Player);
 	}
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
@@ -450,6 +463,20 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 		SetTowerName(TPRI.Tower, TowerName);
 	}
 	TPRI.Tower.Initialize();
+}
+
+//@TODO - Need Tower, not TPRI.
+function AddRootBlock(TowerPlayerController Player)
+{
+	local IVector GridLocation;
+	// Need to make this dependent on player count in future.
+	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
+	GridLocation.X = 4*(NumPlayers-1);
+	
+	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower
+		.SetRootBlock(TowerBlockRoot(AddBlock(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower, RootArchetype, None, GridLocation)));
+	//@FIXME - Have Root do this by itself?
+	Hivemind.OnRootBlockSpawn(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower.Root);
 }
 
 function SetTowerName(Tower Tower, string NewTowerName)
@@ -550,6 +577,7 @@ state RoundInProgress
 function SendMusicEvent(MusicEvent Event)
 {
 	TowerGameReplicationInfo(GameReplicationInfo).MusicEvent = Event;
+	TowergameReplicationInfo(GameReplicationInfo).ReplicatedEvent('MusicEvent');
 }
 
 function byte GetFactionAICount()

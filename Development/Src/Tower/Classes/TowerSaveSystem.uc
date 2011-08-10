@@ -9,8 +9,6 @@ struct SaveInfo
 {
 	// With extension!
 	var string FileName;
-	// Format: 2011/08/07 - 22:51:06
-	var string TimeStamp;
 	var bool bVisible;
 };
 
@@ -20,9 +18,11 @@ struct immutable BlockSaveInfo
 	var int M, I, H;
 	// GridLocation, ParentDirection.
 	var IVector G, P;
+	// State.
+	var Name S;
 };
 
-struct immutable PlayerInfo
+struct immutable PlayerSaveInfo
 {
 	// Pawn Location.
 	var Vector L;
@@ -38,13 +38,17 @@ struct immutable ModInfo
 	var byte Ma, Mi;
 };
 
-const SAVE_FILE_VERSION = 3;
+const SAVE_FILE_VERSION = 4;
 const SAVE_FILE_EXTENSION = ".bin";
 
 var string SaveTowerName;
 var array<ModInfo> SaveMods;
 var array<BlockSaveInfo> Blocks;
+var PlayerSaveInfo PlayerInfo;
+// Format: 2011/08/07 - 22:51:06
+var string SaveTimeStamp;
 
+var transient privatewrite bool bLoaded;
 var transient config array<SaveInfo> Saves;
 
 /** Dumps what is pretty close of the current gamestate to disk. Anticipated to produce a very
@@ -63,25 +67,30 @@ final function QuickLoad()
 
 final function SaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
-		NativeSaveGame(FileName, bJustTower, Player);
+	NativeSaveGame(FileName, bJustTower, Player);
 }
 
-final function LoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
+final function bool LoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
-		NativeLoadGame(FileName, bJustTower, Player);
+	return NativeLoadGame(FileName, bJustTower, Player);
 }
 
 /** Saves the game using Engine.uc's BasicSaveObject function, serializing this object. PC and iOS. */
 final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local TowerBlock Block;
-	local BlockSaveInfo Info;
+	local BlockSaveInfo BlockInfo;
 	local bool Result;
+	SaveTimeStamp = TimeStamp();
 	FileName $= SAVE_FILE_EXTENSION;
 	CleanupSaveLoadVariables();
 	SaveTowerName = Player.GetTower().TowerName;
 	PopulateModList(TowerGameReplicationInfo(Player.WorldInfo.GRI), SaveMods);
-	
+
+	PlayerInfo.L = Player.Pawn.Location;
+	PlayerInfo.R = Player.Pawn.Rotation;
+
+	// Save block data.
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
 		if(Block.class == class'TowerBlockAir')
@@ -89,13 +98,15 @@ final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayer
 			continue;
 		}
 //		`log("Saving:"@Block.ModIndex@Block.ModBlockInfoIndex);
-		Info.M = Block.ModIndex;
-		Info.I = Block.ModBlockIndex;
-		Info.G = Block.GridLocation;
-		Info.P = Block.ParentDirection;
-		Info.H = Block.Health;
-		Blocks.AddItem(Info);
+		BlockInfo.M = Block.ModIndex;
+		BlockInfo.I = Block.ModBlockIndex;
+		BlockInfo.G = Block.GridLocation;
+		BlockInfo.P = Block.ParentDirection;
+		BlockInfo.H = Block.Health;
+		BlockInfo.S = Block.GetStateName();
+		Blocks.AddItem(BlockInfo);
 	}
+
 	Result = class'Engine'.static.BasicSaveObject(Self, FileName, true, SAVE_FILE_VERSION);
 	if(Result)
 	{
@@ -112,10 +123,9 @@ final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayer
 //@SOLVED - Yes, it's called from Login.
 /** Loads the game using Engine.uc's BasicLoadObject function, serializing this object. PC and iOS.
 Called from TowerGame::Login(). Guaranteed to be called on an empty map with towers but no blocks (including root).*/
-final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
+final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local int i;
-	local bool bLoaded;
 	local TowerGameReplicationInfo GRI;
 	local BlockSaveInfo BlockInfo;
 	local TowerModInfo Mod;
@@ -140,7 +150,7 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 	else
 	{
 		`log("Load failed! Aborting!",,'NativeLoad');
-		return;
+		return false;
 	}
 
 	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
@@ -158,6 +168,8 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 			}
 		}
 	}
+
+	// Spawn blocks (excluding air).
 	foreach Blocks(BlockInfo, i)
 	{
 		SpawnLocation = ToVect(BlockInfo.G*256);
@@ -174,7 +186,9 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		{
 			Player.GetTower().SetRootBlock(TowerBlockRoot(Block));
 		}
+		Block.GotoState(BlockInfo.S);
 	}
+	// Recreate hierarchy.
 	foreach Player.DynamicActors(class'TowerBlock', Block)
 	{
 		if(Block.class == class'TowerBlockAir')
@@ -187,6 +201,10 @@ final function NativeLoadGame(string FileName, bool bJustTower, TowerPlayerContr
 		}
 		Player.GetTower().CreateSurroundingAir(Block);
 	}
+	// Put player where they saved.
+//	Player.Pawn.SetLocation(PlayerInfo.L);
+//	Player.Pawn.SetRotation(PlayerInfo.R);
+
 	// Mods don't need the extension.
 	FileName -= SAVE_FILE_EXTENSION;
 	GRI.RootMod.GameLoaded(FileName);
@@ -205,12 +223,28 @@ final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> 
 	}
 }
 
+final function bool CheckSaveExist(string FileName)
+{
+	local TowerSaveSystem TestSaveSystem;
+	TestSaveSystem = new class'TowerSaveSystem';
+	FileName $= SAVE_FILE_EXTENSION;
+	if(Saves.find('FileName', FileName) != INDEX_NONE)
+	{
+		return true;
+	}
+	else if(class'Engine'.static.BasicLoadObject(TestSaveSystem, FileName, true, SAVE_FILE_VERSION))
+	{
+		AddToSaves(FileName);
+		return true;
+	}
+	return false;
+}
+
 final function AddToSaves(out string FileName)
 {
 	local int Index;
 	local SaveInfo Info;
 	Info.FileName = Filename;
-	Info.TimeStamp = TimeStamp();
 	Info.bVisible = true;
 
 	Index = Saves.Find('FileName', FileName);
@@ -241,4 +275,9 @@ final function CleanupSaveLoadVariables()
 	Blocks.Remove(0, Blocks.Length);
 	SaveMods.Remove(0, SaveMods.Length);
 	SaveTowerName = "MAKE_SURE_I_GET_SET";
+}
+
+DefaultProperties
+{
+	bLoaded=false
 }

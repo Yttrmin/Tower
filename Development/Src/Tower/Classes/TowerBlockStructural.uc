@@ -1,7 +1,5 @@
 class TowerBlockStructural extends TowerBlock;
 
-//@TODO - Move allllllllll of TowerBlock's dropping code and whatnot here.
-
 var repnotify bool bFalling;
 
 replication
@@ -40,6 +38,7 @@ function bool IsTouchingGround(bool bChildrenCheck)
 	SetGridLocation(false);
 	if(GridLocation.Z == 0)
 	{
+		`log(Self@"is touching the ground!");
 		return true;
 	}
 	if(bChildrenCheck)
@@ -71,8 +70,13 @@ simulated state Unstable
 {
 	simulated event Destroyed()
 	{
-		TowerBlockStructural(GetBaseMost()).LostOrphan();
+		local TowerBlock BaseMost;
+		BaseMost = TowerBlock(GetBaseMost());
+		SetBase(None);
+		`log(Self@"saying LostOrphan!");
+		BaseMost.LostOrphan();
 		Super.Destroyed();
+		`log(Self@"destroying.");
 	}
 };
 
@@ -87,10 +91,6 @@ simulated state UnstableParent extends Unstable
 		NewLocation.Y = Location.Y;
 		NewLocation.Z = Location.Z - (DropRate * DeltaTime);
 
-		/*SetCollision(false, false, true);
-		SetPhysics(PHYS_Falling);
-		Velocity.Z = 128;*/
-
 		SetLocation(NewLocation);
 	}
 
@@ -98,16 +98,13 @@ simulated state UnstableParent extends Unstable
 	/** Called after block should have dropped 256 units.  */
 	event DroppedSpace()
 	{
-//		`log(Self@"Dropped space");
-		// SetRelativeLocation here to be sure?
-		//SetFullLocation(Location, false);
-//		`log(Self@"GridLocation Z:"@GridLocation.Z);
 		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
 			bFalling = false;
 		}
-		if(OwnerPRI.Tower.FindNewParent(Self))
+		// Make sure our children check for bases too.
+		if(OwnerPRI.Tower.FindNewParent(Self, None, true))
 		{
 //			`log("Found parent:"@Base);
 			GotoState('Stable');

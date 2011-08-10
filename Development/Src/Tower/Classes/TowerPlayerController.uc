@@ -129,32 +129,31 @@ exec function SetTowerName(string NewName)
 	ServerSetTowerName(NewName);
 }
 
-exec function bool SaveGame(string FileName)
+exec function QuickSave();
+
+exec function QuickLoad();
+
+exec function SaveGame(string FileName)
 {
 	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
 	// stuff publically.
 	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
 		`log("Trying to save while the round is in progress! This isn't allowed!");
-		return false;
-	}
-	else if(FileName == "")
-	{
-		return false;
 	}
 	SaveSystem.SaveGame(FileName, false, self);
-	return true;
 }
 
 exec function LoadGame(string FileName/*, bool bTowerOnly*/)
 {
-	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
-	// stuff publically.
-	if(FileName == "")
+	if(SaveSystem.CheckSaveExist(FileName))
 	{
-		return;
+		ConsoleCommand("open"@WorldInfo.GetMapName(true)$"?LoadGame="$FileName);
 	}
-	ConsoleCommand("open"@WorldInfo.GetMapName(true)$"?LoadGame="$FileName);
+	else
+	{
+		`log("Save file:"@"'"$FileName$"'"@"does not exist.",,'Loading');
+	}
 //	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
@@ -419,7 +418,7 @@ exec function DebugListSaveGames()
 	local SaveInfo Info;
 	foreach SaveSystem.Saves(Info)
 	{
-		`log(Info.FileName@Info.Timestamp@Info.bVisible);
+		`log(Info.FileName@Info.bVisible);
 	}
 }
 `endif
