@@ -177,9 +177,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 		GridLocation.X = SpawnLocation.X / 256;
 		GridLocation.Y = SpawnLocation.Y / 256;
 		GridLocation.Z = SpawnLocation.Z / 256;
-		//@TODO - NO MORE TOWERTREE.
 		BlockArchetype = ModsArray[TranslatedMods[BlockInfo.M]].ModBlocks[BlockInfo.I];
-		// Without a parent no block will get spawned.
 		Block = Player.GetTower().AddBlock(BlockArchetype, None, SpawnLocation, GridLocation, false);
 		Block.Initialize(BlockInfo.G, BlockInfo.P, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
 		if(BlockArchetype == TowerGame(Player.WorldInfo.Game).RootArchetype)
@@ -198,16 +196,16 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 		if(Block.class != class'TowerBlockRoot')
 		{
 			Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+			TowerBlockStructural(Block).ReplicatedBase = TowerBlock(Block.Base);
+			Player.GetTower().CalculateBlockRotation(Block);
 		}
 		Player.GetTower().CreateSurroundingAir(Block);
 	}
-	// Put player where they saved.
-//	Player.Pawn.SetLocation(PlayerInfo.L);
-//	Player.Pawn.SetRotation(PlayerInfo.R);
 
 	// Mods don't need the extension.
 	FileName -= SAVE_FILE_EXTENSION;
 	GRI.RootMod.GameLoaded(FileName);
+	return true;
 }
 
 final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> ModArray)

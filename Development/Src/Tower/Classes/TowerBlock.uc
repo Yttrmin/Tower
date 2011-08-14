@@ -7,12 +7,14 @@ Keep in mind this class and its children will likely be opened up to modding!
 */
 class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
 	config(Tower)
-	HideCategories(Movement,Attachment,Collision,Physics,Advanced,Object)
+	HideCategories(Attachment,Collision,Physics,Advanced,Object)
 	AutoExpandCategories(TowerBlock)
 	dependson(TowerGame)
 	ClassGroup(Tower)
 	placeable
 	abstract;
+
+var repnotify bool bUpdateRotation;
 
 //=========================================================
 // Used in archetypes when creating new blocks.
@@ -48,7 +50,7 @@ var private const globalconfig bool bEnableNavMeshObstacleGeneration;
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
 var protectedwrite editconst IVector ParentDirection;
 /** Block's position on the grid. */
-var protectedwrite editconst IVector GridLocation;
+var(InGame) repnotify protectedwrite editconst IVector GridLocation;
 
 var protected MaterialInstanceConstant MaterialInstance;
 var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
@@ -61,7 +63,33 @@ var int ModIndex, ModBlockIndex;
 replication
 {
 	if(bNetInitial)
-		GridLocation, OwnerPRI;
+		OwnerPRI, bUpdateRotation;
+	if(bNetDirty || bNetInitial)
+		GridLocation;
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	if(VarName == 'GridLocation')
+	{
+		SetGridLocation(true, false);
+	}
+	else if(VarName == 'bUpdateRotation')
+	{
+		//@FIXME - Race condition!
+		//`assert(OwnerPRI.Tower != None);
+		if(OwnerPRI.Tower == None)
+		{
+			OwnerPRI.bBlocksNeedRotation = true;
+			`log(Self@"No Tower"@Location);
+		}
+		else
+		{
+			`log(Self@"Tower"@Location);
+			OwnerPRI.Tower.CalculateBlockRotation(self);
+		}
+	}
+	Super.ReplicatedEvent(VarName);
 }
 
 simulated function StaticMesh GetStaticMesh()
@@ -85,7 +113,6 @@ simulated event PostBeginPlay()
 	local Vector ObstacleLocation;
 	Super.PostBeginPlay();
 	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
-	
 	if(bEnableNavMeshObstacleGeneration && Location.Z == 128 && Role == Role_Authority)
 	{
 		Obstacle = Spawn(class'DynamicNavMeshObstacle');
@@ -120,34 +147,17 @@ final function TowerBlock GetParent()
 	return TowerBlock(Base);
 }
 
-function SetFullLocation(Vector NewLocation, bool bRelative, 
-	optional Vector BaseLocation)
-{
-	local Vector NewRelativeLocation;
-	if(bRelative)
-	{
-		NewRelativeLocation.X = NewLocation.X - BaseLocation.X;
-		NewRelativeLocation.Y = NewLocation.Y - BaseLocation.Y;
-		NewRelativeLocation.Z = NewLocation.Z - BaseLocation.Z;
-		SetRelativeLocation(NewRelativeLocation);
-	}
-	else
-	{
-		SetLocation(NewLocation);
-		GridLocation.X = NewLocation.X / 256;
-		GridLocation.Y = NewLocation.Y / 256;
-		GridLocation.Z = NewLocation.Z / 256;
-	}
-}
-
 //@TODO - UpdateGridLocation()?
-final function SetGridLocation(optional bool bUpdateRelativeLocation=true)
+simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=true, optional bool bUpdateGridLocation=true)
 {
 	local Vector NewLocation;
 	local Actor TempBase;
-	GridLocation.X = Round(int(Location.X) / 256);
-	GridLocation.Y = Round(int(Location.Y) / 256);
-	GridLocation.Z = Round(int(Location.Z) / 256);
+	if(bUpdateGridLocation)
+	{
+		GridLocation.X = Round(int(Location.X) / 256);
+		GridLocation.Y = Round(int(Location.Y) / 256);
+		GridLocation.Z = Round(int(Location.Z) / 256);
+	}
 	if(bUpdateRelativeLocation)
 	{
 		NewLocation.X = 256 * (GridLocation.X);

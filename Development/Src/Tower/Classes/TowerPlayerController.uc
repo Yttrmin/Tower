@@ -402,7 +402,7 @@ exec function DebugLookingAt()
 	}
 	else if(LookingBlock != None)
 	{
-		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"GL:"
+		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"B:"@LookingBlock.Base@"GL:"
 			@"("$LookingBlock.GridLocation.X$","@LookingBlock.GridLocation.Y$","@LookingBlock.GridLocation.Z$")"@"L:"
 			@LookingBlock.Location,,'LookingAt');
 	}
@@ -419,6 +419,29 @@ exec function DebugListSaveGames()
 	foreach SaveSystem.Saves(Info)
 	{
 		`log(Info.FileName@Info.bVisible);
+	}
+}
+
+exec function DebugTryClientSideHierarchyDrawing()
+{
+	GetTower().Initialize();
+}
+
+exec function DebugReCalculateBlockRotations()
+{
+	local TowerBlockStructural Block;
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		GetTower().CalculateBlockRotation(Block);
+	}
+}
+
+exec function DebugReCalculateBlockLocations()
+{
+	local TowerBlockStructural Block;
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		Block.SetGridLocation(true, false);
 	}
 }
 `endif
@@ -467,7 +490,7 @@ reliable client function OnMusicEvent(MusicEvent Event)
 	MusicManager.OnMusicEvent(Event);
 }
 
-function Tower GetTower()
+simulated function Tower GetTower()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower;
 }
