@@ -72,12 +72,6 @@ event UnTouch(Actor Other)
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 
 	bool bVehicleNotify, bool bProjectileNotify)
 {
-	`log("Adding range callback for Infantry:"@bInfantryNotify@"Projectile:"@bProjectileNotify@"Vehicle:"@bVehicleNotify);
-//	if(bInfantryNotify && bProjectileNotify && bVehicleNotify)
-//	{
-//		AllRangeNotify.AddItem(Callback);
-//		return;
-//	}
 	if(bInfantryNotify)
 	{
 		InfantryRangeNotify.AddItem(Callback);

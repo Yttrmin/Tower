@@ -7,6 +7,12 @@ class Tower extends TowerFaction
 	config(Tower)
 	dependson(TowerBlock);
 
+`if(`isdefined(debug)) 
+	`define simulateddebug simulated 
+	`else 
+	`define simulateddebug 
+`endif
+
 var privatewrite TowerBlockRoot Root;
 
 /** Array of existing blocks ONLY used to ease debugging purposes. This should never be used for any
@@ -49,34 +55,20 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 {
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
-	local rotator NewRotation;
 	if((Parent != None && !Parent.IsA('TowerBlockModule') && Parent.IsInState('Stable')) 
 		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
 	{
 		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 		if(Parent != None)
 		{
-			ParentDir = FromVect(Normal(Parent.Location - SpawnLocation));
-			if(ParentDir.Z == 0)
-			{
-				NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
-				NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
-				NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
-			}
-			else if(ParentDir.Z == -1)
-			{
-	//			NewRotation.Roll = -180 * DegToUnrRot;
-			}
-			else if(ParentDir.Z == 1)
-			{
-				NewRotation.Roll = 180 * DegToUnrRot;
-			}
-			else
-			{
-				NewRotation = NewBlock.Rotation;
-			}
 			NewBlock.SetBase(Parent);
-			NewBlock.SetRelativeRotation(NewRotation);
+			if(NewBlock.class != class'TowerBlockAir')
+			{
+				TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
+				NewBlock.bUpdateRotation = true;
+				CalculateBlockRotation(NewBlock);
+			}
+			ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
 		}
 		NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
 		if(bAddAir && NewBlock.class != class'TowerBlockAir')
@@ -87,6 +79,42 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	
 	//@TODO - Tell AI about this?
 	return NewBlock;
+}
+
+simulated function CalculateBlockRotation(TowerBlock Block)
+{
+	local Rotator NewRotation;
+	local TowerBlock TempBase;
+	local IVector ParentDir;
+	TempBase = TowerBlock(Block.Base);
+	if(TempBase != None)
+	{
+		ParentDir = FromVect(Normal(TempBase.Location - Block.Location));
+		if(ParentDir.Z == 0)
+		{
+			NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
+			NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
+			NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
+		}
+		else if(ParentDir.Z == -1)
+		{
+//			NewRotation.Roll = -180 * DegToUnrRot;
+		}
+		else if(ParentDir.Z == 1)
+		{
+			NewRotation.Roll = 180 * DegToUnrRot;
+		}
+		else
+		{
+//			NewRotation = Block.Rotation;
+		}
+		Block.SetRotation(NewRotation);
+		Block.SetBase(TempBase);
+	}
+	else
+	{
+		`warn("Tried to CalculateBlockRotation of"@Block@"which has no parent! This should never happen! Role:"@Block.Role);
+	}
 }
 
 function DestroyOccupiedAir(TowerBlock Block, TowerBlock NewBlock)
@@ -222,7 +250,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 //	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 	if(!bChild)
 	{
-		Node.SetBase(None); // Why.
+		Node.SetBase(None); // Redundant with the last SetBase?
 	}
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
@@ -230,6 +258,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			Node.SetBase(Block);
+			TowerBlockStructural(Node).ReplicatedBase = Block;
 			Node.AdoptedParent();
 //			`log("And it's good!");
 			return TRUE;
@@ -255,7 +284,8 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	{
 //		`log("No parents available,"@Node@"is an orphan. Handle this.");
 		// True orphan.
-		Node.SetBase(None); // Why.
+		Node.SetBase(None);
+		TowerBlockStructural(Node).ReplicatedBase = None;
 		Node.OrphanedParent();
 	}
 	return false;

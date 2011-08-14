@@ -1,27 +1,58 @@
+//=============================================================================
+// TowerBlockStructural
+// 
+// Base class for blocks that provide support for other blocks, can have modules attached to them,
+// and fall if they're not connected to any blocks that have a path to the root block.
+// While the root block meets some of these criteria, it is considered a special type and is not
+// a subclass of this.
+//=============================================================================
 class TowerBlockStructural extends TowerBlock;
 
-var repnotify bool bFalling;
+/** Tells the client what state this block should enter. */
+var repnotify bool bFallingParent, bFallingChild;
+/** This block's current base, only used by clients since Base isn't replicated. */
+var repnotify TowerBlock ReplicatedBase;
 
+//=============================================================================
+// Replication Notes
+//
+// TowerBlockStructurals have bReplicateMovement set to false. This means the following variables aren't replicated:
+// Location, Rotation, Base, RelativeRotation, RelativeLocation, Velocity, and Physics.
+//=============================================================================
 replication
 {
 	if(bNetDirty)
-		bFalling;
+		bFallingParent, bFallingChild, ReplicatedBase;
 }
 
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
-	if(VarName == 'bFalling')
+	if(VarName == 'bFallingParent')
 	{
-		if(bFalling)
+		if(bFallingParent)
 		{
-			//@BUG
+			GotoState('UnstableParent');
+		}
+		else
+		{
+			GotoState('Stable');
+		}
+	}
+	else if(VarName == 'bFallingChild')
+	{
+		if(bFallingChild)
+		{
 			GotoState('Unstable');
 		}
 		else
 		{
 			GotoState('Stable');
 		}
+	}
+	else if(VarName == 'ReplicatedBase')
+	{
+		SetBase(ReplicatedBase);
 	}
 }
 
@@ -60,7 +91,7 @@ auto simulated state Stable
 	{
 		if(PreviousStateName == 'Unstable')
 		{
-			bReplicateMovement = true;
+//			bReplicateMovement = true;
 		}
 	}
 }
@@ -101,14 +132,14 @@ simulated state UnstableParent extends Unstable
 		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
-			bFalling = false;
+			bFallingParent = false;
 		}
 		// Make sure our children check for bases too.
 		if(OwnerPRI.Tower.FindNewParent(Self, None, true))
 		{
 //			`log("Found parent:"@Base);
 			GotoState('Stable');
-			bFalling = false;
+			bFallingParent = false;
 		}
 		//@TODO - NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
 		
@@ -118,11 +149,11 @@ simulated state UnstableParent extends Unstable
 		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
-			bFalling = false;
+			bFallingParent = false;
 		}
 		else
 		{
-			bReplicateMovement = false;
+//			bReplicateMovement = false;
 			SetTimer(TimeToDrop(), true, 'DroppedSpace');
 		}
 	}
@@ -160,7 +191,7 @@ Begin:
 event OrphanedParent()
 {
 	local TowerBlock Node;
-	bFalling = true;
+	bFallingParent = true;
 	GotoState('UnstableParent');
 	OwnerPRI.Tower.OrphanRoots.AddItem(Self);
 	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
@@ -175,6 +206,7 @@ event OrphanedParent()
 event OrphanedChild()
 {
 	local TowerBlock Node;
+	bFallingChild = true;
 	GotoState('Unstable');
 	foreach BasedActors(class'TowerBlock', Node)
 	{
@@ -189,6 +221,7 @@ event AdoptedParent()
 	local TowerBlockStructural Node;
 	SetGridLocation(true);
 	GotoState('Stable');
+	bFallingParent = false;
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
 	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
@@ -201,6 +234,7 @@ event AdoptedChild()
 	local TowerBlockStructural Node;
 	SetGridLocation(false);
 	GotoState('Stable');
+	bFallingChild = false;
 	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
 		Node.AdoptedChild();
@@ -210,5 +244,6 @@ event AdoptedChild()
 DefaultProperties
 {
 	bAddToBuildList=true
+	bReplicateMovement=false
 }
 
