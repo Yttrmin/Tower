@@ -183,6 +183,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 		if(BlockArchetype == TowerGame(Player.WorldInfo.Game).RootArchetype)
 		{
 			Player.GetTower().SetRootBlock(TowerBlockRoot(Block));
+			TowerGame(Player.WorldInfo.Game).Hivemind.OnRootBlockSpawn(TowerBlockRoot(Block));
 		}
 		Block.GotoState(BlockInfo.S);
 	}
@@ -196,8 +197,11 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 		if(Block.class != class'TowerBlockRoot')
 		{
 			Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
-			TowerBlockStructural(Block).ReplicatedBase = TowerBlock(Block.Base);
 			Player.GetTower().CalculateBlockRotation(Block);
+			if(Block.class == class'TowerBlockStructural')
+			{
+				TowerBlockStructural(Block).ReplicatedBase = TowerBlock(Block.Base);
+			}
 		}
 		Player.GetTower().CreateSurroundingAir(Block);
 	}

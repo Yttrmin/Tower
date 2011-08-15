@@ -8,8 +8,9 @@ enum TargetType
 };
 
 var privatewrite Volume RadarVolume;
-var array<delegate<OnEnterRange> > InfantryRangeNotify, ProjectileRangeNotify, VehicleRangeNotify,
+var private array<delegate<OnEnterRange> > InfantryRangeNotify, ProjectileRangeNotify, VehicleRangeNotify,
 	AllRangeNotify;
+var privatewrite array<TowerTargetable> Infantry, Vehicles, Projectiles;
 
 simulated delegate OnEnterRange(TowerTargetable Targetable);
 
@@ -49,14 +50,17 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 //			@"Vehicle:"@Targetable.IsVehicle());
 		if(Targetable.IsInfantry())
 		{
+			Infantry.AddItem(Targetable);
 			ExecuteCallbacks(TT_Infantry, Targetable);
 		}
 		else if(Targetable.IsProjectile())
 		{
+			Projectiles.AddItem(Targetable);
 			ExecuteCallbacks(TT_Projectile, Targetable);
 		}
 		else if(Targetable.IsVehicle())
 		{
+			Vehicles.AddItem(Targetable);
 			ExecuteCallbacks(TT_Vehicle, Targetable);
 		}
 	}
@@ -65,8 +69,23 @@ event Touch(Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vecto
 /** RadarVolume's UnTouch. */
 event UnTouch(Actor Other)
 {
-	// Do things dying trigger an UnTouch?
-//	`log(Self@"untouched by"@Other);
+	local TowerTargetable Targetable;
+	Targetable = TowerTargetable(Other);
+	if(Targetable != None)
+	{
+		if(Targetable.IsInfantry())
+		{
+			Infantry.RemoveItem(Targetable);
+		}
+		else if(Targetable.IsProjectile())
+		{
+			Projectiles.RemoveItem(Targetable);
+		}
+		else if(Targetable.IsVehicle())
+		{
+			Vehicles.RemoveItem(Targetable);
+		}
+	}
 }
 
 function AddRangeNotifyCallback(delegate<OnEnterRange> Callback, bool bInfantryNotify, 

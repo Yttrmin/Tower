@@ -19,7 +19,7 @@ state Leading
 {
 Begin:
 	BeginCheckFireTimer();
-	`log(Self@"Trying to path to Squad.SquadObjective!"@Squad.SquadObjective);
+//	`log(Self@"Trying to path to Squad.SquadObjective!"@Squad.SquadObjective,,'SLeader');
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
@@ -29,24 +29,24 @@ Begin:
 	}
 	else if(GeneratePathTo(Squad.SquadObjective, 500))
 	{
-		`log("Trying to generate a path!");
+//		`log(Self@"Trying to generate a path!",,'SLeader');
 		NavigationHandle.SetFinalDestination(Squad.SquadObjective.Location);
 		NavigationHandle.DrawPathCache(,true);
 
 		if(NavigationHandle.GetNextMoveLocation(NextMoveLocation, Pawn.GetCollisionRadius()))
 		{
-			`log("Moving to NextMoveLocation!");
+//			`log(Self@"Moving to NextMoveLocation!",,'SLeader');
 			MoveTo(NextMoveLocation, Squad.SquadObjective);
 		}
 	}
 	else
 	{
-		`log(Self@"can't path at all! Idling!");
+//		`log(Self@"can't path at all! Idling!",,'SLeader');
 		GotoState('Idle');
 	}
 	if(VSizeSq(Squad.SquadObjective.Location - Pawn.Location) <= 2500**2)
 	{
-		`log(Self@"Close enough, idling!");
+//		`log(Self@"Close enough, idling!",,'SLeader');
 		GotoState('Idle');
 	}
 	goto 'Begin';
@@ -104,7 +104,7 @@ function DebugCheckForOrphans()
 	{
 		if(Controller.Squad == None && !Controller.bDeleteMe && Controller.Pawn.Health > 0)
 		{
-			`log("Controller has no squad! Squad:"@Controller.Squad@"bDeleteMe:"@Controller.bDeleteMe@"Health:"@Controller.Pawn.Health);
+			`warn("Controller has no squad! Squad:"@Controller.Squad@"bDeleteMe:"@Controller.bDeleteMe@"Health:"@Controller.Pawn.Health);
 		}
 	}
 }
