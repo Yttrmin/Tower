@@ -268,7 +268,7 @@ state Active
 		Squad = Spawn(class'TowerFormationAI');
 		Squad.SquadObjective = Hivemind.RootBlock;
 		// Handle when all points are occupied?
-		`log("Spawning formation:"@Formations[Index].Name);
+//		`log("Spawning formation:"@Formations[Index].Name);
 
 		// Actually calculate this.
 		FormationCost = CalculateBaseFormationCost(Index);
@@ -354,7 +354,7 @@ state Active
 				Cost += CheapestInfantry.GetCost(CheapestInfantry);
 			}
 		}
-		`log("CalculateBaseFormationCost:"@FormationIndex);
+//		`log("CalculateBaseFormationCost:"@FormationIndex);
 		return Cost;
 	}
 
@@ -500,7 +500,6 @@ function CheckActivity()
 	//@TODO - Should be Budget < CheapestTargetable, or a special check to ask the AI if it wants to stay active.
 	if(UnitsOut <= 0 && Budget <= CheapestTargetable)
 	{
-		`log(Self@"is inactive! Notifying TowerGame!");
 		Game.FactionInactive(Self);
 	}
 }

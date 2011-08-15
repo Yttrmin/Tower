@@ -392,6 +392,58 @@ exec function DebugServerMusicForceStop()
 {
 
 }
+
+exec function DebugListSpawnPoints()
+{
+	local TowerSpawnPoint Point;
+	local array<TowerSpawnPoint> PosX, NegX, PosY, NegY;
+	foreach WorldInfo.AllNavigationPoints(class'TowerSpawnPoint', Point)
+	{
+		switch(Point.Faction)
+		{
+		case FL_PosX:
+			PosX.AddItem(Point);
+			break;
+		case FL_PosY:
+			PosY.AddItem(Point);
+			break;
+		case FL_NegX:
+			NegX.AddItem(Point);
+			break;
+		case FL_NegY:
+			NegY.AddItem(Point);
+			break;
+		default:
+			`log(Point@"has no assigned faction!"@Point.Location);
+			break;
+		}
+	}
+	`log("=============================================================================");
+	`log("FL_PosX Points:");
+	foreach PosX(Point)
+	{
+		`log(Point@Point.Location);
+	}
+	`log("-----------------------------------------------------------------------------");
+	`log("FL_PosY Points:");
+	foreach PosY(Point)
+	{
+		`log(Point@Point.Location);
+	}
+	`log("-----------------------------------------------------------------------------");
+	`log("FL_NegX Points:");
+	foreach NegX(Point)
+	{
+		`log(Point@Point.Location);
+	}
+	`log("-----------------------------------------------------------------------------");
+	`log("FL_NegY Points:");
+	foreach NegY(Point)
+	{
+		`log(Point@Point.Location);
+	}
+	`log("=============================================================================");
+}
 `endif
 
 exec function StartGame()
@@ -401,13 +453,15 @@ exec function StartGame()
 
 function StartMatch()
 {
+	local byte i;
 	`log("StartMatch!");
 	Super.StartMatch();
 	AddFactionHuman(0);
+	//;PosX, PosY, NegX, NegY
 	//@TODO
-	if(FactionAIs.Length > 0)
+	for(i = 0; i < 4 && i+1 <= FactionAIs.length; i++)
 	{
-		AddFactionAI(5, TowerFactionAI(DynamicLoadObject(FactionAIs[0], class'TowerFactionAI', true)), FL_NegX);
+		AddFactionAI(5+i, TowerFactionAI(DynamicLoadObject(FactionAIs[i], class'TowerFactionAI', true)), FactionLocation(1+i));
 	}
 	GotoState('CoolDown');
 }
@@ -547,11 +601,11 @@ state RoundInProgress
 	/** */
 	event FactionInactive(TowerFactionAI Faction)
 	{
-		`log(Faction@"now claims to be inactive.");
+		`log(Faction@"is now inactive. RemainingActiveFactions:"@RemainingActiveFactions,,'Round');
 		RemainingActiveFactions--;
 		if(RemainingActiveFactions <= 0)
 		{
-			`log("No more active factions, cooling down!");
+			`log("No more active factions, cooling down!",,'Round');
 			GotoState('CoolDown');
 		}
 	}

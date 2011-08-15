@@ -9,6 +9,32 @@ simulated event PostBeginPlay()
 	SetTimer(3, true, 'Think');
 }
 
+simulated event OnEnterRange(TowerTargetable Targetable)
+{
+	if((Target == None || Actor(Target).bDeleteMe || !HasLineOfSight(Actor(Target))) && HasLineOfSight(Actor(Targetable)))
+	{
+		Target = Targetable;
+		Think();
+		SetTimer(3, true, 'Think');
+	}
+}
+
+function bool HasLineOfSight(Actor Actor)
+{
+	local Vector HitLoc, HitNorm;
+	if(Trace(HitLoc, HitNorm, Actor.Location, Location, true) == Actor)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+/** Returns TRUE if Actor is in our FactionLocation. */
+function bool IsFacing(Actor Actor);
+
 event Think()
 {
 	if(Target == None || Actor(Target).bDeleteMe)
@@ -19,15 +45,27 @@ event Think()
 	{
 		Shoot(Normal(Actor(Target).Location - Location));
 	}
+	else
+	{
+		ClearTimer('Think');
+	}
 }
 
 function GetNewTarget()
 {
-	local TowerEnemyPawn Targetable;
-	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Targetable)
+	//@TODO - If multiple callbacks, pick at random.
+	//@TODO - Pick random array member?
+	if(Callbacks.bInfantry && OwnerPRI.Tower.Root.Infantry.Length > 0)
 	{
-		Target = Targetable;
-		return;
+		Target = OwnerPRI.Tower.Root.Infantry[0];
+	}
+	else if(Callbacks.bVehicle && OwnerPRI.Tower.Root.Vehicles.Length > 0)
+	{
+		Target = OwnerPRI.Tower.Root.Vehicles[0];
+	}
+	else if(Callbacks.bProjectile && OwnerPRI.Tower.Root.Projectiles.Length > 0)
+	{
+		Target = OwnerPRI.Tower.Root.Projectiles[0];
 	}
 }
 
@@ -52,10 +90,10 @@ function Shoot(Vector Direction)
 	DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
 	
 //	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
-	if(HitActor != None)
+	if(HitActor != None && !HitActor.IsA('TowerBlock'))
 	{
 		// Call TakeDamage();
-		HitActor.TakeDamage(20, None, HitLocation, HitLocation, class'UTDmgType_ShockPrimary',,Self);
+		HitActor.TakeDamage(4, None, HitLocation, HitLocation, class'UTDmgType_ShockPrimary',,Self);
 		//HitActor.Destroy();
 	}
 }
