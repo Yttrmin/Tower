@@ -51,6 +51,10 @@ final function PreInitialize(int ModIndex)
 	local int i;
 	for(i = 0; i < ModBlocks.Length; i++)
 	{
+		if(ModBlocks[i].PurchasableComponent != None)
+		{
+			ModBlocks[i].PurchasableComponent.CalculateCost(1);
+		}
 		ModBlocks[i].ModIndex = ModIndex;
 		ModBlocks[i].ModBlockIndex = i;
 	}

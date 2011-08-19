@@ -66,7 +66,14 @@ DefaultProperties
 	Begin Object Name=CollisionCylinder
 		BlockZeroExtent=false
 	End Object
+
+	Begin Object Class=StaticMeshComponent Name=PlayerMesh
+		StaticMesh=StaticMesh'EditorMeshes.MatineeCam_SM'
+		bOwnerNoSee=true
+	End Object
+	Components.Add(PlayerMesh)
+
 	AirSpeed = 600;
 
-	RemoteRole=ROLE_None
+	RemoteRole=ROLE_SimulatedProxy
 }

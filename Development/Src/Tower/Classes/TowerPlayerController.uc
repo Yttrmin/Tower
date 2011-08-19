@@ -444,6 +444,11 @@ exec function DebugReCalculateBlockLocations()
 		Block.SetGridLocation(true, false);
 	}
 }
+
+exec function DebugKillRootBlock()
+{
+	GetTower().Root.TakeDamage(99999, Self, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+}
 `endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
@@ -454,11 +459,11 @@ function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector Grid
 
 reliable server function ServerAddBlock(TowerBlock BlockArchetype, TowerBlock Parent, IVector GridLocation)
 {
-	if(GetTower().HasBudget(BlockArchetype.Cost))
+	if(GetTower().HasBudget(BlockArchetype.PurchasableComponent.Cost))
 	{
 		if(TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockArchetype, Parent, GridLocation) != None)
 		{
-			GetTower().ConsumeBudget(BlockArchetype.Cost);
+			GetTower().ConsumeBudget(BlockArchetype.PurchasableComponent.Cost);
 		}
 	}
 }

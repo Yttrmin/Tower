@@ -6,9 +6,9 @@ Class of infantry units sent in by enemies.
 class TowerEnemyPawn extends TowerPawn
 	implements(TowerTargetable);
 
-var() const int Cost;
-var() editconst TowerFaction OwnerFaction;
-var() editconst byte TeamIndex;
+var() editinline TowerPurchasableComponent PurchasableComponent;
+var(InGame) editconst TowerFaction OwnerFaction;
+var(InGame) editconst byte TeamIndex;
 
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
 
@@ -28,6 +28,8 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	Weapon.Activate();
 	WeaponAttachment = Spawn(TowerWeapon(Weapon).AttachmentClass, self);
 	WeaponAttachment.AttachTo(Self);
+	// Non-archetypes don't need this, let it get garbage collected.
+	PurchasableComponent = None;
 	if(PreviousSquadMember != None)
 	{
 		TowerEnemyController(PreviousSquadMember.Controller).NextSquadMember = TowerEnemyController(Controller);
@@ -97,6 +99,11 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	return Pawn;
 }
 
+static function TowerPurchasableComponent GetPurchasableComponent(TowerTargetable Archetype)
+{
+	return TowerEnemyPawn(Archetype).PurchasableComponent;
+}
+
 simulated event byte ScriptGetTeamNum()
 {
 	return TeamIndex;
@@ -129,7 +136,7 @@ function bool IsInfantry()
 
 static function int GetCost(TowerTargetable SelfArchetype)
 {
-	return TowerEnemyPawn(SelfArchetype).Cost;
+	return TowerEnemyPawn(SelfArchetype).PurchasableComponent.Cost;
 }
 
 //@TODO - Combine interface and component instead?

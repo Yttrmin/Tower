@@ -154,6 +154,7 @@ function CreateSurroundingAir(TowerBlock Block)
 			EmptyDirections.RemoveItem(GetBlockDirection(Block, IteratorBlock));
 		}
 	}
+	`assert(EmptyDirections.Length <= 5);
 	while(EmptyDirections.Length > 0)
 	{
 		AirGridLocation = Block.GridLocation + EmptyDirections[0];
@@ -168,9 +169,10 @@ function CreateSurroundingAir(TowerBlock Block)
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
-	Difference.X = (Abs(Origin.GridLocation.X) - Abs(Other.GridLocation.X));
-	Difference.Y = (Abs(Origin.GridLocation.Y) - Abs(Other.GridLocation.Y));
-	Difference.Z = (Abs(Other.GridLocation.Z) - Abs(Origin.GridLocation.Z));
+	Difference = INormal(Other.GridLocation - Origin.GridLocation);
+//	Difference.X = (Abs(Origin.GridLocation.X) - Abs(Other.GridLocation.X));
+//	Difference.Y = (Abs(Origin.GridLocation.Y) - Abs(Other.GridLocation.Y));
+//	Difference.Z = (Abs(Other.GridLocation.Z) - Abs(Origin.GridLocation.Z));
 	return Difference;
 }
 

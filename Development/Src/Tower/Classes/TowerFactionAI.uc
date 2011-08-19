@@ -421,8 +421,10 @@ function CalculateAllCosts()
 {
 	local int i;
 	CheapestInfantry = UnitList.InfantryArchetypes[i];
+	CheapestInfantry.GetPurchasableComponent(CheapestInfantry).CalculateCost(1);
 	for(i = 1; i < UnitList.InfantryArchetypes.Length; i++)
 	{
+		UnitList.InfantryArchetypes[i].GetPurchasableComponent(UnitList.InfantryArchetypes[i]).CalculateCost(1);
 		if(CheapestInfantry.GetCost(CheapestInfantry) > UnitList.InfantryArchetypes[i].GetCost(UnitList.InfantryArchetypes[i]))
 		{
 			CheapestInfantry = UnitList.InfantryArchetypes[i];
