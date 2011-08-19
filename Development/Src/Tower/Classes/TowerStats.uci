@@ -1,0 +1,14 @@
+// Change this or predefine it to your class type
+`if(`notdefined(StatsClass))
+	`define StatsClass class'TowerGameplayEventsWriter'
+`endif
+
+/** Used so that gamespecific ones can start here */
+	//const GAMEEVENT_GAME_SPECIFIC =				1000; //from GameplayEvents
+const GAMEEVENT_PLAYER_SPAWNED_BLOCK = 1100;
+
+//`define RecordGamePositionStat(Id,Position,Value) if(`ValidStatsContext){`StatsContext.LogGamePositionEvent(`StatId(`Id),`Position,`Value);}
+`define RecordGamePositionStringStat(Id,Position,Value) if(`ValidStatsContext){`StatsContext.LogGamePositionStringEvent(`StatId(`Id),`Position,`Value);}
+
+// Include this last to get the benefits of the above defines
+`include(Engine\Classes\GameStats.uci);

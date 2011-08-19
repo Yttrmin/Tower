@@ -11,6 +11,9 @@ class TowerGame extends FrameworkGame
 
 `define debugconfig `if(`isdefined(debug)) config `else `define debugconfig `endif
 `define releasedefault x `if(`notdefined(debug)) x `else `define releasedefault `endif
+`define GAMEINFO(dummy)
+	`include(Tower\Classes\TowerStats.uci);
+`undefine(GAMEINFO)
 
 enum FactionLocation
 {
@@ -22,10 +25,23 @@ enum FactionLocation
 	FL_All
 };
 
+enum DifficultyLevel
+{
+	DL_Easy,
+	DL_Normal,
+	DL_Hard,
+	DL_Impossible
+};
+
 struct ModCheck
 {
 	var String ModName;
 	var byte MajorVersion, MinorVersion;
+};
+
+struct DifficultySettings
+{
+	var int BlockPriceMultiplier;
 };
 
 /** Used to compare to ?Mod= strings passed in during PreLogin(). Can be used after CheckForMods(). */
@@ -33,12 +49,16 @@ var array<ModCheck> LoadedMods;
 
 var array<TowerFaction> Factions;
 var TowerFactionAIHivemind Hivemind;
+var TowerGameplayEventsWriter GameplayEventsWriter;
 var byte FactionCount;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var private byte RemainingActiveFactions;
 var protected byte Round;
+var privatewrite DifficultyLevel Difficulty;
 var const config float CoolDownTime;
 var const config array<String> FactionAIs;
+var const config bool bLogGameplayEvents;
+var const config float GameplayEventsHeartbeatDelta;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -71,6 +91,13 @@ event PostBeginPlay()
 {
 //	local TowerModInfo ZMOd;
 	Super.PostBeginPlay();
+	if(bLogGameplayEvents)
+	{
+		GameplayEventsWriter = new(Self) class'TowerGameplayEventsWriter';
+		GameplayEventsWriter.StartLogging(GameplayEventsHeartbeatDelta);
+		`log("Gameplay logging enabled.");
+		`RecordGameIntStat(MAX_EVENTID, 12345);
+	}
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 	PopulateSpawnPointArrays();
@@ -85,6 +112,10 @@ event PostBeginPlay()
 
 event PreExit()
 {
+	if(GameplayEventsWriter != None)
+	{
+		GameplayEventsWriter.EndLogging();
+	}
 	`log("Shutting down!");
 }
 
@@ -154,7 +185,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 {
 	local string LoadString;
 	LoadString = ParseOption(Options, "LoadGame");
-	`log("LoadString:"@LoadString);
+//	`log("LoadString:"@LoadString);
 	if(LoadString != "")
 	{
 		`log("Load from file:"@LoadString);
@@ -180,6 +211,7 @@ event PostLogin(PlayerController NewPlayer)
 			AddRootBlock(TowerPlayerController(NewPlayer));
 		}
 		bPendingLoad = false;
+		PendingLoadFile = "";
 	}
 	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
 	if(NewPlayer.Pawn == None)
@@ -444,6 +476,20 @@ exec function DebugListSpawnPoints()
 	}
 	`log("=============================================================================");
 }
+
+exec function DebugKillAllRootBlocks()
+{
+	local TowerPlayerController Controller;
+	foreach WorldInfo.AllControllers(class'TowerPlayerController', Controller)
+	{
+		Controller.GetTower().Root.TakeDamage(99999, Controller, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+	}
+}
+
+exec function DebugForceGarbageCollection(optional bool bFullPurge)
+{
+	WorldInfo.ForceGarbageCollection(bFullPurge);
+}
 `endif
 
 exec function StartGame()
@@ -603,6 +649,7 @@ state RoundInProgress
 	{
 		`log(Faction@"is now inactive. RemainingActiveFactions:"@RemainingActiveFactions,,'Round');
 		RemainingActiveFactions--;
+		TriggerGlobalEventClass(class'SeqEvent_FactionInactive', Faction, 0);
 		if(RemainingActiveFactions <= 0)
 		{
 			`log("No more active factions, cooling down!",,'Round');
@@ -657,18 +704,20 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 	out IVector GridLocation)
 {
 	local Vector SpawnLocation;
+	local TowerBlock Block;
 	SpawnLocation = GridLocationToVector(GridLocation);
 	// Pivot point in middle, bump up.
 	SpawnLocation.Z += 128;
 	`assert(BlockArchetype != None);
 	if(CanAddBlock(GridLocation, Parent))
 	{
-		return Tower.AddBlock(BlockArchetype, Parent, SpawnLocation, GridLocation);
+		Block = Tower.AddBlock(BlockArchetype, Parent, SpawnLocation, GridLocation);
+		if(Block != None)
+		{
+			`RecordGamePositionStat(PLAYER_SPAWNED_BLOCK, SpawnLocation, 5);
+		}
 	}
-	else
-	{
-		return None;
-	}
+	return Block;
 }
 
 function RemoveBlock(Tower Tower, TowerBlock Block)
@@ -679,7 +728,7 @@ function RemoveBlock(Tower Tower, TowerBlock Block)
 /** Returns TRUE if GridLocation is on the grid and there's no Unstable blocks currently falling into GridLocation. */
 function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent)
 {
-	return (IsGridLocationOnGrid(GridLocation) && !IsBlockFallingOntoBlock(GridLocation, Parent));
+	return (IsGridLocationOnGrid(GridLocation) && (Parent == None || !IsBlockFallingOntoBlock(GridLocation, Parent)));
 }
 
 static function Vector GridLocationToVector(out const IVector GridLocation, optional class<TowerBlock> BlockClass)

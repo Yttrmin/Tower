@@ -27,14 +27,15 @@ var() const bool bAddToBuildList;
 /** Maximum health of this block, and what value the block will lerp to during construction. 
 May be modified for difficulty. */
 var() int HealthMax;
-/** Cost for the player to construct this block. Modifiers are applied directly to this value in the archetype. */
-var() int Cost;
+/**  */
+var() editinline TowerPurchasableComponent PurchasableComponent;
 //=========================================================
 
 //=========================================================
 // A*-related
+/** Base cost to go "through" (destroy) this block in A*. */
 var() int BaseCost;
-var() int GoalCost, HeuristicCost, Fitness;
+var(InGame) int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
 
@@ -122,6 +123,7 @@ simulated event PostBeginPlay()
 		Obstacle.SetAsSquare(128);
 		Obstacle.RegisterObstacle();
 	}
+	PurchasableComponent = None;
 }
 
 simulated event Destroyed()
@@ -140,6 +142,11 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
 //	SetOwner(OwnerPRI);
+}
+
+static function TowerPurchasableComponent GetPurchasableComponent(TowerBlock Archetype)
+{
+	return Archetype.PurchasableComponent;
 }
 
 final function TowerBlock GetParent()
