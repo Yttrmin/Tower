@@ -197,7 +197,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 		if(Block.class != class'TowerBlockRoot')
 		{
 			Block.SetBase(Player.GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
-			Player.GetTower().CalculateBlockRotation(Block);
+			Block.CalculateBlockRotation();
 			if(Block.class == class'TowerBlockStructural')
 			{
 				TowerBlockStructural(Block).ReplicatedBase = TowerBlock(Block.Base);

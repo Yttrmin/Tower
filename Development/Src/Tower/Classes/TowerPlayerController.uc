@@ -94,15 +94,23 @@ state PlayerFlying
 	}
 }
 
-exec function ClickDown(int ButtonID)
+/**
+//@LOOKATME - Too much hassle. I can't think of a simple way to associate a TowerPlayerController
+with its PRI, so this might conflict with split-screen.
+state PlayerInactive extends PlayerFlying
 {
-	TowerHUD(myHUD).OnMouseClick(ButtonID);
+	ignores AddBlock, RemoveBlock;
+}
+*/
+
+exec function StartFire(optional byte FireModeNum)
+{
+	TowerHUD(myHUD).OnMouseClick(FireModeNum);
 }
 
-/** Called when mouse button is released. */
-exec function ClickUp(int ButtonID)
+exec function StopFire(optional byte FireModeNum)
 {
-	TowerHUD(myHUD).OnMouseRelease(ButtonID);
+	TowerHUD(myHUD).OnMouseRelease(FireModeNum);
 }
 
 exec function ToggleBuildMenu(bool Toggle)
@@ -432,7 +440,7 @@ exec function DebugReCalculateBlockRotations()
 	local TowerBlockStructural Block;
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{
-		GetTower().CalculateBlockRotation(Block);
+		Block.CalculateBlockRotation();
 	}
 }
 
@@ -445,6 +453,75 @@ exec function DebugReCalculateBlockLocations()
 	}
 }
 
+exec function DebugReCalculateBlockLocationsRecursive(optional TowerBlock FromBlock)
+{
+	local TowerBlockStructural Block;
+	if(FromBlock == None)
+	{
+		FromBlock = DebugGetNotMyTower().Root;
+		`log("Got"@FromBlock);
+	}
+	FromBlock.SetGridLocation(true, false);
+	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
+	{
+		if(!Block.IsA('TowerBlockAir'))
+		{
+			DebugReCalculateBlockLocationsRecursive(Block);
+		}
+	}
+}
+
+exec function DebugReCalculateBlockLocationsRecursiveEx(optional TowerBlock FromBlock)
+{
+	local TowerBlockStructural Block;
+	if(FromBlock == None)
+	{
+		FromBlock = DebugGetNotMyTower().Root;
+		`log("Got"@FromBlock);
+	}
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+//		Block.ParentDirection = INormal(Other.GridLocation - Origin.GridLocation);
+		Block.SetBase(None);
+	}
+	DebugReCalculateBlockLocations();
+	/*
+	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
+	{
+		if(!Block.IsA('TowerBlockAir'))
+		{
+			Block.SetGridLocation(true, false);
+		}
+	}
+	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
+	{
+		if(!Block.IsA('TowerBlockAir'))
+		{
+			DebugReCalculateBlockLocationsRecursive(Block);
+		}
+	}
+	*/
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		Block.SetBase(GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+	}
+}
+
+function Tower DebugGetNotMyTower()
+{
+	local Tower Tower;
+	foreach DynamicActors(class'Tower', Tower)
+	{
+		if(Tower.Name == 'Tower_0')
+		{
+			`log("Returning"@Tower);
+			return Tower;
+		}
+	}
+	`warn("No other towers?");
+	return None;
+}
+
 exec function DebugKillRootBlock()
 {
 	GetTower().Root.TakeDamage(99999, Self, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
@@ -453,7 +530,10 @@ exec function DebugKillRootBlock()
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
-	ServerAddBlock(BlockArchetype, Parent, GridLocation);
+	if(!GetTPRI().Tower.IsInState('Inactive'))
+	{
+		ServerAddBlock(BlockArchetype, Parent, GridLocation);
+	}
 	//TowerGame(WorldInfo.Game).AddPlaceable(GetTower(), Placeable, Parent, GridLocation);
 }
 
@@ -469,9 +549,12 @@ reliable server function ServerAddBlock(TowerBlock BlockArchetype, TowerBlock Pa
 }
 
 /** Called from TowerHUD::OnMouseClick if a valid TowerPlaceable is selected for removal. */
-simulated function RemoveBlock(TowerBlock Block)
+function RemoveBlock(TowerBlock Block)
 {
-	ServerRemoveBlock(Block);
+	if(!GetTPRI().Tower.IsInState('Inactive'))
+	{
+		ServerRemoveBlock(Block);
+	}
 }
 
 reliable server function ServerRemoveBlock(TowerBlock Block)

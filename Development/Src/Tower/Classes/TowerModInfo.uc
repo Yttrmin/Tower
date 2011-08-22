@@ -30,6 +30,9 @@ var() privatewrite const array<TowerMusicList> ModMusicLists;
 
 var privatewrite repnotify TowerModInfo NextMod;
 
+/** Client-only variable. Used to avoid race conditions between (believe it or not) ReplicatedEvent and NextMod being valid... */
+var bool bLoaded;
+
 replication
 {
 	if(bNetInitial)
@@ -41,6 +44,7 @@ simulated event ReplicatedEvent(name VarName)
 	Super.ReplicatedEvent(VarName);
 	if(VarName == 'NextMod')
 	{
+		`log(ModName@"has its NextMod replicated,"@NextMod.ModName$"!");
 		TowerGameReplicationInfo(WorldInfo.GRI).OnModReplicated(NextMod);
 	}
 }
@@ -77,12 +81,14 @@ final function AddMod(TowerModInfo Mod)
 final simulated function int GetModCount(optional int Count=0)
 {
 	Count++;
-	if(NextMod != None)
+	if(NextMod != None && (Role == Role_Authority || NextMod.bLoaded))
 	{
+		`log(ModName@"Current ModCount is"@Count@"and we have a NextMod"@NextMod.ModName);
 		return NextMod.GetModCount(Count);
 	}
 	else
 	{
+		`log(ModName@"Current ModCount is"@Count@"and we have no NextMod. Returning.");
 		return Count;
 	}
 }

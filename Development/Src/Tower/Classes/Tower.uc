@@ -64,9 +64,17 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 			NewBlock.SetBase(Parent);
 			if(NewBlock.class != class'TowerBlockAir')
 			{
-				TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
-				NewBlock.bUpdateRotation = true;
-				CalculateBlockRotation(NewBlock);
+				if(TowerBlockStructural(NewBlock) != None)
+				{
+					// Why do only TBS get this?
+					// Because they don't replicate actor stuff IDIOT.
+					TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
+				}
+				else
+				{
+					NewBlock.bUpdateRotation = true;
+				}
+				NewBlock.CalculateBlockRotation();
 			}
 			ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
 		}
@@ -79,42 +87,6 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	
 	//@TODO - Tell AI about this?
 	return NewBlock;
-}
-
-simulated function CalculateBlockRotation(TowerBlock Block)
-{
-	local Rotator NewRotation;
-	local TowerBlock TempBase;
-	local IVector ParentDir;
-	TempBase = TowerBlock(Block.Base);
-	if(TempBase != None)
-	{
-		ParentDir = FromVect(Normal(TempBase.Location - Block.Location));
-		if(ParentDir.Z == 0)
-		{
-			NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
-			NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
-			NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
-		}
-		else if(ParentDir.Z == -1)
-		{
-//			NewRotation.Roll = -180 * DegToUnrRot;
-		}
-		else if(ParentDir.Z == 1)
-		{
-			NewRotation.Roll = 180 * DegToUnrRot;
-		}
-		else
-		{
-//			NewRotation = Block.Rotation;
-		}
-		Block.SetRotation(NewRotation);
-		Block.SetBase(TempBase);
-	}
-	else
-	{
-		`warn("Tried to CalculateBlockRotation of"@Block@"which has no parent! This should never happen! Role:"@Block.Role);
-	}
 }
 
 function DestroyOccupiedAir(TowerBlock Block, TowerBlock NewBlock)
@@ -340,6 +312,64 @@ function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, Color
 		}
 		DrawDebugRelationship(Canvas, Block, DrawColor);
 	}
+}
+
+function DestroyAllBlocks()
+{
+	local TowerBlockStructural Block;
+	// Either this or BasedActors.
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		if(Block.OwnerPRI.Tower == Self)
+		{
+			Block.TakeDamage(99999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+		}
+	}
+}
+
+event Disabled()
+{
+	DestroyAllBlocks();
+	GotoState('Inactive');
+	ClientDisabled();
+}
+
+event Enabled()
+{
+	SetInitialState();
+	ClientEnabled();
+}
+
+reliable client event ClientDisabled()
+{
+	GotoState('Inactive');
+}
+reliable client event ClientEnabled()
+{
+	SetInitialState();
+}
+
+/** State for towers who have had their root blocks destroyed. */
+simulated state Inactive
+{
+	`if(`isdefined(final_release))
+	ignores AddBlock, RemoveBlock, PostRenderFor, OnTargetableDeath;
+	`else
+	function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
+		out Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
+	{
+		`warn("AddBlock called during Inactive! How could this happen?!");
+		return None;
+	}
+
+	function bool RemoveBlock(TowerBlock Block)
+	{
+		`warn("RemoveBlock called during Inactive! How could this happen?!");
+		return false;
+	}
+	`endif
+Begin:
+	//@TODO - Remove from PostRenderFor.
 }
 
 DefaultProperties

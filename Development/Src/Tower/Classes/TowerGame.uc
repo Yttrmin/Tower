@@ -490,6 +490,19 @@ exec function DebugForceGarbageCollection(optional bool bFullPurge)
 {
 	WorldInfo.ForceGarbageCollection(bFullPurge);
 }
+
+exec function DebugAllBlocksToKActor()
+{
+	local TowerBlockStructural Block;
+	local StaticMeshComponent ToKactor;
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		`log(Block@Block.StaticMeshComponent@"GO");
+		TOKactor = Block.StaticMeshComponent;
+		class'KActorFromStatic'.static.MakeDynamic(TOKactor)
+			.ApplyImpulse(Vect(0,0,1), 25000, Vect(0,0,0));
+	}
+}
 `endif
 
 exec function StartGame()
@@ -589,6 +602,29 @@ event FactionInactive(TowerFactionAI Faction)
 	`warn("FactionInactive called when not in RoundInProgress!");
 }
 
+event RootDestroyed(TowerPlayerReplicationInfo PRI)
+{
+	PRI.Tower.Disabled();
+	if(!AnyActiveTowers())
+	{
+		GotoState('GameOver');
+	}
+}
+
+function bool AnyActiveTowers()
+{
+	// If this is slow try looking through PRIs instead or something.
+	local Tower Tower;
+	foreach DynamicActors(class'Tower', Tower)
+	{
+		if(!Tower.IsInState('Inactive'))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 function bool IsRoundInProgress()
 {
 	`log("RoundInProgress called outside proper states!"@GetStateName());
@@ -673,6 +709,12 @@ state RoundInProgress
 	{
 		return true;
 	}
+}
+
+state GameOver
+{
+Begin:
+	`log("GAME OVER. IMAGINE A COOL CINEMATIC HERE.");
 }
 
 function SendMusicEvent(MusicEvent Event)
