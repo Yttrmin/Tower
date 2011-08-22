@@ -27,7 +27,6 @@ replication
 
 simulated event ReplicatedEvent(name VarName)
 {
-	Super.ReplicatedEvent(VarName);
 	if(VarName == 'bFallingParent')
 	{
 		if(bFallingParent)
@@ -52,8 +51,24 @@ simulated event ReplicatedEvent(name VarName)
 	}
 	else if(VarName == 'ReplicatedBase')
 	{
-		SetBase(ReplicatedBase);
+		if(GridLocation != default.GridLocation)
+		{
+			SetGridLocation(true, false);
+			SetBase(ReplicatedBase);
+			//@BUG I DONT UNDERSTAND
+//			CalculateBlockRotation();
+		}
 	}
+	else if(VarName == 'GridLocation')
+	{
+		SetGridLocation(true, false);
+		if(ReplicatedBase != None)
+		{
+			ReplicatedEvent('ReplicatedBase');
+		}
+		return;
+	}
+	Super.ReplicatedEvent(VarName);
 }
 
 final function float TimeToDrop()
@@ -245,5 +260,6 @@ DefaultProperties
 {
 	bAddToBuildList=true
 	bReplicateMovement=false
+	GridLocation=(X=-1,Y=-1,Z=-1)
 }
 

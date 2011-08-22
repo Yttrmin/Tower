@@ -16,6 +16,10 @@ var repnotify byte Round;
 
 var TowerPlayerReplicationInfo ServerTPRI;
 
+// For clients.
+/** For whatever reason beyond my control, RootMod is replicated several times. Let's stop loading it. */
+var private bool bRootModReplicated;
+
 replication
 {
 	if(bNetDirty)
@@ -46,7 +50,6 @@ simulated event ReplicatedEvent(name VarName)
 	}
 	else if(VarName == 'RootMod')
 	{
-		`log("RootMod replicated!");
 		OnModReplicated(RootMod);
 	}
 }
@@ -59,28 +62,50 @@ simulated function OnModReplicated(TowerModInfo Mod)
 		if(Mod != None)
 		{
 			Loadmod(Mod);
-			`log(Mod.ModName@"loaded and ready!");
 		}
 		// We always assume TowerMod exists or will exist, so a ModCount of 0 means the value wasn't replicated yet!
-		if(!bModsLoaded && ModCount > 0)
+		if(!bModsLoaded)
 		{
+			if(ModCount == 0)
+			{
+				PushState('WaitForModCount');
+			}
 			// Watch out in case RootMod is replicated after another mod (very possible).
 			if(RootMod != None && RootMod.GetModCount() == ModCount)
 			{
 				`log("All mods are loaded!");
 				bModsLoaded = true;
 				ConstructBuildList();
+				class'Engine'.static.StopMovie(true);
 			}
 		}
 	}
 }
 
-simulated function LoadMod(TowerModInfo Mod)
+simulated state WaitForModCount
+{
+Begin:
+	`log("WAITFORMODCOUNT");
+	if(ModCount == 0)
+	{
+		`log("LOOP AGAIN");
+		goto 'Begin';
+	}
+	OnModReplicated(None);
+	PopState();
+}
+
+/**private*/ simulated function LoadMod(TowerModInfo Mod)
 {
 	local TowerBlock Block;
-	foreach Mod.ModBlocks(Block)
+	if(!Mod.bLoaded)
 	{
-		Blocks.AddItem(Block);
+		foreach Mod.ModBlocks(Block)
+		{
+			Blocks.AddItem(Block);
+		}
+		Mod.bLoaded = true;
+		`log("Loaded Mod:"@Mod@Mod.AuthorName@Mod.Contact@Mod.Website@Mod.Description@Mod.MajorVersion$"."$Mod.MinorVersion);
 	}
 }
 

@@ -23,7 +23,8 @@ simulated event PostBeginPlay()
 event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 {
 	// Game Over?
-//	Super.Died(Killer, DamageType, HitLocation);
+	Super.Died(Killer, DamageType, HitLocation);
+	TowerGame(WorldInfo.Game).RootDestroyed(OwnerPRI);
 }
 
 function ServerInitialize()

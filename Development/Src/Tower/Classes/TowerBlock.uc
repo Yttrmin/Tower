@@ -64,7 +64,7 @@ var int ModIndex, ModBlockIndex;
 replication
 {
 	if(bNetInitial)
-		OwnerPRI, bUpdateRotation;
+		OwnerPRI, bUpdateRotation, ParentDirection;
 	if(bNetDirty || bNetInitial)
 		GridLocation;
 }
@@ -77,8 +77,11 @@ simulated event ReplicatedEvent(name VarName)
 	}
 	else if(VarName == 'bUpdateRotation')
 	{
-		//@FIXME - Race condition!
+		//@FIXME - Race condition!?
+		// Only a problem with blocks there before joining.
 		//`assert(OwnerPRI.Tower != None);
+		CalculateBlockRotation();
+		/*
 		if(OwnerPRI.Tower == None)
 		{
 			OwnerPRI.bBlocksNeedRotation = true;
@@ -89,6 +92,7 @@ simulated event ReplicatedEvent(name VarName)
 			`log(Self@"Tower"@Location);
 			OwnerPRI.Tower.CalculateBlockRotation(self);
 		}
+		*/
 	}
 	Super.ReplicatedEvent(VarName);
 }
@@ -178,6 +182,43 @@ simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=t
 	}
 }
 
+simulated function CalculateBlockRotation()
+{
+	local Rotator NewRotation;
+	local TowerBlock TempBase;
+	local IVector ParentDir;
+	TempBase = TowerBlock(Base);
+	if(TempBase != None)
+	{
+		ParentDir = FromVect(Normal(TempBase.Location - Location));
+		if(ParentDir.Z == 0)
+		{
+			NewRotation.Pitch = ParentDir.X * (90 * DegToUnrRot);
+			NewRotation.Roll = ParentDir.Y * (-90 * DegToUnrRot);
+			NewRotation.Yaw = ParentDir.Z * (-90 * DegToUnrRot);
+		}
+		else if(ParentDir.Z == -1)
+		{
+//			NewRotation.Roll = -180 * DegToUnrRot;
+		}
+		else if(ParentDir.Z == 1)
+		{
+			NewRotation.Roll = 180 * DegToUnrRot;
+		}
+		else
+		{
+//			NewRotation = Block.Rotation;
+		}
+		SetBase(None);
+		SetRotation(NewRotation);
+		SetBase(TempBase);
+	}
+	else
+	{
+		`warn("Tried to CalculateBlockRotation of"@Self@"which has no parent! Role:"@Self.Role);
+	}
+}
+
 final simulated function Highlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', 
@@ -221,10 +262,10 @@ simulated function OnEnterRange(TowerTargetable Targetable)
 event TakeDamage(int Damage, Controller EventInstigator, vector HitLocation, vector Momentum, 
 class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
-//	`log("Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
 	Max(0, Damage);
 	Super.TakeDamage(Damage, EventInstigator, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 	Health -= Damage;
+//	`log(Self@"Took damage"@Damage@DamageType@DamageCauser@EventInstigator);
 	if(Health <= 0)
 	{
 		Died(EventInstigator, DamageType, HitLocation);
@@ -233,7 +274,7 @@ class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor Dama
 
 /** Called when this block reaches 0 health. Just tells the Tower to remove it.
 Should be overridden in a subclass to add any effects and the Super version called to remove it. */
-event Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
+function Died(Controller Killer, class<DamageType> DamageType, vector HitLocation)
 {
 	OwnerPRI.Tower.RemoveBlock(self);
 }

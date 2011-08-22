@@ -32,10 +32,14 @@ replication
 
 simulated event ReplicatedEvent(Name VarName)
 {
-	if(VarName == 'Tower' && bBlocksNeedRotation)
+	if(VarName == 'Tower')
 	{
-		`log("Tower replicated and updating block rotations");
-//		UpdateAllBlockRotations();
+		`log("Tower replicated.");
+		if(bBlocksNeedRotation)
+		{
+			`log("Tower replicated and updating block rotations");
+//			UpdateAllBlockRotations();
+		}
 	}
 	Super.ReplicatedEvent(VarName);
 }
@@ -45,7 +49,7 @@ simulated function UpdateAllBlockRotations()
 	local TowerBlockStructural Block;
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{
-		Tower.CalculateBlockRotation(Block);
+		Block.CalculateBlockRotation();
 	}
 }
 
