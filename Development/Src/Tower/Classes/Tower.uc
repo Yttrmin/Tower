@@ -51,7 +51,7 @@ final function SetRootBlock(TowerBlockRoot RootBlock)
 
 //@TODO - We really only need one of the locations. Probably Grid.
 function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
-	out Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
+	out const Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
 {
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
@@ -89,12 +89,50 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	return NewBlock;
 }
 
-function DestroyOccupiedAir(TowerBlock Block, TowerBlock NewBlock)
+function bool RemoveBlock(TowerBlock Block)
+{
+	local TowerBlock IteratorBlock;
+	local TowerBlockAir ITeratorAir;
+	local array<TowerBlockAir> ToDelete;
+	local array<TowerBlock> ToIterate;
+	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
+	{
+		if(IteratorBlock.class != class'TowerBlockAir')
+		{
+			if(IteratorBlock.IsA('TowerBlockModule'))
+			{
+				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
+				// being modified, right?
+				IteratorBlock.OrphanedParent();
+				continue;
+			}
+			ToIterate.AddItem(IteratorBlock);
+			//@README DON'T DO THIS YOU IDIOT, FINDNEWPARENT CHANGES BASES, AND WE'RE IN A BASEDACTORS() ITERATOR. THINK.
+			//FindNewParent(IteratorBlock, Block, true);
+		}
+		else
+		{
+			ToDelete.AddItem(TowerBlockAir(IteratorBlock));
+		}
+	}
+	foreach ToIterate(IteratorBlock)
+	{
+		FindNewParent(IteratorBlock, Block, true);
+	}
+	foreach ToDelete(IteratorAir)
+	{
+		IteratorAir.Destroy();
+	}
+	Block.Destroy();
+	return true;
+}
+
+function DestroyOccupiedAir(TowerBlock BlockToDestroyAirs, TowerBlock BlockToTestIfOccupying)
 {
 	local TowerBlockAir AirBlock;
-	foreach Block.BasedActors(class'TowerBlockAir', Airblock)
+	foreach BlockToDestroyAirs.BasedActors(class'TowerBlockAir', Airblock)
 	{
-		if(AirBlock.GridLocation == NewBlock.GridLocation)
+		if(AirBlock.GridLocation == BlockToTestIfOccupying.GridLocation)
 		{
 			AirBlock.Destroy();
 		}
@@ -137,7 +175,6 @@ function CreateSurroundingAir(TowerBlock Block)
 	}
 }
 
-//@BUG - Sticking a block +Y of another results in an air at -Y (WRONG) and no air at +Y (ALSO WRONG).
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
@@ -149,44 +186,6 @@ function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 }
 
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller);
-
-function bool RemoveBlock(TowerBlock Block)
-{
-	local TowerBlock IteratorBlock;
-	local TowerBlockAir ITeratorAir;
-	local array<TowerBlockAir> ToDelete;
-	local array<TowerBlock> ToIterate;
-	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
-	{
-		if(IteratorBlock.class != class'TowerBlockAir')
-		{
-			if(IteratorBlock.IsA('TowerBlockModule'))
-			{
-				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
-				// being modified, right?
-				IteratorBlock.OrphanedParent();
-				continue;
-			}
-			ToIterate.AddItem(IteratorBlock);
-			//@README DON'T DO THIS YOU IDIOT, FINDNEWPARENT CHANGES BASES, AND WE'RE IN A BASEDACTORS() ITERATOR. THINK.
-			//FindNewParent(IteratorBlock, Block, true);
-		}
-		else
-		{
-			ToDelete.AddItem(TowerBlockAir(IteratorBlock));
-		}
-	}
-	foreach ToIterate(IteratorBlock)
-	{
-		FindNewParent(IteratorBlock, Block, true);
-	}
-	foreach ToDelete(IteratorAir)
-	{
-		IteratorAir.Destroy();
-	}
-	Block.Destroy();
-	return true;
-}
 
 function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocation, const out IVector ParentDirection)
 {
@@ -232,6 +231,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
 		{
 			Node.SetBase(Block);
+			Node.SetOwner(Block);
 			TowerBlockStructural(Node).ReplicatedBase = Block;
 			Node.AdoptedParent();
 //			`log("And it's good!");
@@ -344,6 +344,7 @@ reliable client event ClientDisabled()
 {
 	GotoState('Inactive');
 }
+
 reliable client event ClientEnabled()
 {
 	SetInitialState();
@@ -356,7 +357,7 @@ simulated state Inactive
 	ignores AddBlock, RemoveBlock, PostRenderFor, OnTargetableDeath;
 	`else
 	function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
-		out Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
+		out const Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
 	{
 		`warn("AddBlock called during Inactive! How could this happen?!");
 		return None;
@@ -369,7 +370,7 @@ simulated state Inactive
 	}
 	`endif
 Begin:
-	//@TODO - Remove from PostRenderFor.
+	TowerPlayerController(GetALocalPlayerController()).myHUD.RemovePostRenderedActor(Self);
 }
 
 DefaultProperties

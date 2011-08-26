@@ -3,7 +3,7 @@ class TowerFaction extends TeamInfo
 
 var(InGame) editconst int Budget;
 var() protectedwrite const name FactionName;
-var() editconst FactionLocation Faction;
+var(InGame) editconst FactionLocation Faction;
 
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller);
 

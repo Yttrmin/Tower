@@ -64,7 +64,7 @@ var int ModIndex, ModBlockIndex;
 replication
 {
 	if(bNetInitial)
-		OwnerPRI, bUpdateRotation, ParentDirection;
+		OwnerPRI, bUpdateRotation/*, ParentDirection*/;
 	if(bNetDirty || bNetInitial)
 		GridLocation;
 }
@@ -184,6 +184,7 @@ simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=t
 
 simulated function CalculateBlockRotation()
 {
+	//@TODO - Use ParentDirection?
 	local Rotator NewRotation;
 	local TowerBlock TempBase;
 	local IVector ParentDir;
@@ -287,6 +288,26 @@ auto simulated state Stable
 simulated state InActive
 {
 };
+
+/** Called on blocks who's child is getting destroyed. */
+event LostChild(Actor Other)
+{
+	local TowerBlock Block;
+	Block = TowerBlock(Other);
+	if(Block.IsA('TowerBlockAir'))
+	{
+		return;
+	}
+	OwnerPRI.Tower.AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Self, Block.Location, Block.GridLocation);
+}
+
+event GainedChild(Actor Other)
+{
+	if(!TowerBlock(Other).IsA('TowerBlockAir'))
+	{
+		OwnerPRI.Tower.DestroyOccupiedAir(Self, TowerBlock(Other));
+	}
+}
 
 /** Called on root blocks of an orphan branch that lost an orphan child. */
 event LostOrphan();

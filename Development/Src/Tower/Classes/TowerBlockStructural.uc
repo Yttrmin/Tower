@@ -140,7 +140,6 @@ simulated state UnstableParent extends Unstable
 		SetLocation(NewLocation);
 	}
 
-	//@TODO - Experiment with Move() function.
 	/** Called after block should have dropped 256 units.  */
 	event DroppedSpace()
 	{
@@ -201,7 +200,6 @@ Begin:
 	Goto('Begin');
 }
 
-//@TODO - Convert from recursion to iteration!
 /** Called on TowerBlocks that are the root node of an orphan branch. */
 event OrphanedParent()
 {
@@ -209,7 +207,6 @@ event OrphanedParent()
 	bFallingParent = true;
 	GotoState('UnstableParent');
 	OwnerPRI.Tower.OrphanRoots.AddItem(Self);
-	//@TODO - Use attachments instead of having EVERY block start timers and change physics and all that.
 	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.OrphanedChild();

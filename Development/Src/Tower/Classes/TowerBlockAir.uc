@@ -9,14 +9,19 @@ class TowerBlockAir extends TowerBlock;
 
 DefaultProperties
 {
-	DisplayName="Air" //@TODO - Make me "".
+	Begin Object Class=StaticMeshComponent Name=DebugMesh
+		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_AutoAdjust'
+	End Object
+	Components.Add(DebugMesh)
+
+	DisplayName=""
 	bTickIsDisabled=true
 	bCollideActors=false
 	bCollideWorld=false
 	Components.Remove(MyLightEnvironment)
 	Components.Remove(StaticMeshComponent0)
 	CollisionComponent=None
-	bAddToBuildList=true //@TODO - Make me false
+	bAddToBuildList=false
 	RemoteRole=ROLE_None
 	bProjTarget=false
 	BaseCost=1

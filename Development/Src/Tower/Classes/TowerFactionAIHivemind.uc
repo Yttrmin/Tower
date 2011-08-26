@@ -41,7 +41,9 @@ struct TowerBlockAir extends BlockNode
 	var IVector GridLocation;
 };
 
-var config bool bSaveToDisk;
+
+//@TODO - Transient? Will it still be saved to config?
+var private config bool bSaveToDisk;
 
 var array<AIBlockInfo> Blocks;
 //@TODO - Doesn't handle multiplayer.
@@ -106,6 +108,7 @@ function SaveToDisk()
 	else
 	{
 		// Saving failed.
+		`warn("Failed to save Hivemind data!",,'Hivemind');
 	}
 }
 
@@ -118,10 +121,12 @@ function LoadFromDisk()
 	else
 	{
 		// Loading failed.
+		`warn("Failed to load Hivemind data!",,'Hivemind');
 	}
 }
 
 DefaultProperties
 {
 	TickGroup=TG_DuringAsyncWork
+	RemoteRole=ROLE_None
 }

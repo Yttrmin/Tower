@@ -3,7 +3,7 @@ class TowerHUD extends HUD;
 var TowerHUDMoviePlayer HUDMovie;
 var TowerBlock LastHighlightedBlock;
 
-var private TowerBlock PlaceBlock;
+var privatewrite TowerBlock PlaceBlock;
 
 event PreBeginPlay()
 {
@@ -148,9 +148,9 @@ function Place()
 }
 
 /** Sets the TowerBlock that the game will attempt to place when the user clicks on a block. */
-function SetPlaceBlock(TowerBlock NewBlock)
+function SetPlaceBlock(TowerBlock NewBlockArchetype)
 {
-	Self.PlaceBlock = NewBlock;
+	Self.PlaceBlock = NewBlockArchetype;
 }
 
 function ExpandBuildMenu()

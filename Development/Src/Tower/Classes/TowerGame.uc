@@ -198,7 +198,6 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 event PostLogin(PlayerController NewPlayer)
 {
 	Super.PostLogin(NewPlayer);
-	//@TODO - Maybe not make this automatic?
 	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
 	if(bPendingLoad)
 	{
@@ -272,7 +271,6 @@ function RestartPlayer(Controller NewPlayer)
 final function CheckForMods()
 {
 	`if(`notdefined(DEMO))
-	//@TODO - Convert package name to class name and such.
 	local int i;
 	local ModCheck Check;
 	local TowerModInfo LoadedMod;
@@ -503,6 +501,253 @@ exec function DebugAllBlocksToKActor()
 			.ApplyImpulse(Vect(0,0,1), 25000, Vect(0,0,0));
 	}
 }
+
+/** Checks parts of the gamestate to see it matches the rules. Very brute-force. Slow and has potential to crash if 
+there are lots of blocks. */
+exec function DebugUberBlockTest()
+{
+	local int i, TotalErrorCount, LocalErrorCount;
+	local float Duration;
+	// NEVER MODIFY THIS, USED INTERNALLY BY DebugDecrementIVector!
+	local byte bHitExtent;
+	local IVector Extent, NegativeExtent;
+	local IVector TestGridLocation;
+	local TowerBlock Block;
+	// Faster than DynamicActors.
+	local array<TowerBlock> AllBlocks;
+	local array<TowerBlock> OccupyingSpace;
+	// X, Y, Z.
+	local TowerBlock PosMost[3], NegMost[3];
+	`log("=============================================================================",,'UberTest');
+	`log("Starting DebugUberBlockTest! Calculating extent...",,'UberTest');
+	Clock(Duration);
+	`log("=============================================================================",,'UberTest');
+	for(i = 0; i < 3; i++)
+	{
+		PosMost[i] = TowerPlayerController(GetALocalPlayerController()).GetTower().Root;
+		NegMost[i] = TowerPlayerController(GetALocalPlayerController()).GetTower().Root;
+	}
+	foreach DynamicActors(class'TowerBlock', Block)
+	{
+		AllBlocks.AddItem(Block);
+		// Check if it's the farthest on any positive axis.
+		if(Block.GridLocation.X > PosMost[0].GridLocation.X)
+		{
+			PosMost[0] = Block;
+		}
+		if(Block.GridLocation.Y > PosMost[1].GridLocation.Y)
+		{
+			PosMost[1] = Block;
+		}
+		if(Block.GridLocation.Z > PosMost[2].GridLocation.Z)
+		{
+			PosMost[2] = Block;
+		}
+
+		// Check if it's the farthest on any negative axis.
+		if(Block.GridLocation.X < NegMost[0].GridLocation.X)
+		{
+			NegMost[0] = Block;
+		}
+		if(Block.GridLocation.Y < NegMost[1].GridLocation.Y)
+		{
+			NegMost[1] = Block;
+		}
+		if(Block.GridLocation.Z < NegMost[2].GridLocation.Z)
+		{
+			NegMost[2] = Block;
+		}
+	}
+	//===================================================
+	// Calculate extent.
+	if(Abs(PosMost[0].GridLocation.X) > Abs(NegMost[0].GridLocation.X))
+	{
+		Extent.X = PosMost[0].GridLocation.X;
+	}
+	else if(Abs(PosMost[0].GridLocation.X) < Abs(NegMost[0].GridLocation.X))
+	{
+		Extent.X = NegMost[0].GridLocation.X;
+	}
+	else
+	{
+		Extent.X = NegMost[0].GridLocation.X;
+	}
+
+	if(Abs(PosMost[1].GridLocation.Y) > Abs(NegMost[1].GridLocation.Y))
+	{
+		Extent.Y = PosMost[1].GridLocation.Y;
+	}
+	else if(Abs(PosMost[1].GridLocation.Y) < Abs(NegMost[1].GridLocation.Y))
+	{
+		Extent.Y = NegMost[1].GridLocation.Y;
+	}
+	else
+	{
+		Extent.Y = NegMost[1].GridLocation.Y;
+	}
+
+	if(Abs(PosMost[2].GridLocation.Z) > Abs(NegMost[2].GridLocation.Z))
+	{
+		Extent.Z = PosMost[2].GridLocation.Z;
+	}
+	else if(Abs(PosMost[2].GridLocation.Z) < Abs(NegMost[2].GridLocation.Z))
+	{
+		Extent.Z = NegMost[2].GridLocation.Z;
+	}
+	else
+	{
+		Extent.Z = NegMost[2].GridLocation.Z;
+	}
+	NegativeExtent = -Extent;
+	i = (Abs(Extent.X)*2+1) * (Abs(Extent.Y)*2+1) * (Abs(Extent.Z)*2+1);
+	`log("Extent is:"@Extent.X$","@Extent.Y$","@Extent.Z@"(~"$i@"iterations)",,'UberTest');
+	if(i >= 999975)
+	{
+		`log("Iteration count very close to or greater than 1,000,000! This could crash!",,'Warning');
+	}
+	i = 0;
+	//===================================================
+	// COMMENCE CHECKING
+	TestGridLocation = Extent;
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("Testing multiple blocks in same location...",,'UberTest');
+	do
+	{
+		OccupyingSpace.Remove(0, OccupyingSpace.Length);
+//		`log("("$TestGridLocation.X$","@TestGridLocation.Y$","@TestGridLocation.Z$")");
+		foreach AllBlocks(Block)
+		{
+			if(Block.GridLocation == TestGridLocation)
+			{
+				OccupyingSpace.AddItem(Block);
+			}
+		}
+		if(OccupyingSpace.Length > 1)
+		{
+			LocalErrorCount++;
+			`log(OccupyingSpace.Length@"blocks occupying"@"("$TestGridLocation.X$","@TestGridLocation.Y$","@TestGridLocation.Z$")!:",,'Error');
+			foreach OccupyingSpace(Block)
+			{
+				`log("     "$Block,,'Error');
+			}
+		}
+	} until(!DebugDecrementIVector(TestGridLocation, NegativeExtent, bHitExtent));
+	if(LocalErrorCount == 0)
+	{
+		`log("...OK!",,'UberTest');
+	}
+	TotalErrorCount += LocalErrorCount;
+	LocalErrorCount = 0;
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("Testing blocks with no parents, yet not in UnstableParent (exclude TowerBlockRoots)...",,'UberTest');
+	foreach AllBlocks(Block)
+	{
+		if(Block.Base == None && !Block.IsInState('UnstableParent') && !Block.IsA('TowerBlockRoot'))
+		{
+			LocalErrorCount++;
+			`log(Block@"at"@"("$Block.GridLocation.X$","@Block.GridLocation.Y$","@Block.GridLocation.Z$") fails!",,'Error');
+		}
+	}
+	if(LocalErrorCount == 0)
+	{
+		`log("...OK!",,'UberTest');
+	}
+	TotalErrorCount += LocalErrorCount;
+	LocalErrorCount = 0;
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("=============================================================================",,'UberTest');
+	UnClock(Duration);
+	`log("DebugUberBlockTest over! Errors:"@TotalErrorCount@"Test Duration:"@Duration@"ms!",,'UberTest');
+	`log("=============================================================================",,'UberTest');
+}
+
+/** Moves ToDecrement closer to its opposite extent. Returns TRUE if it can still be decremented, or FALSE if its equal
+to its opposite extent (and thus has traversed its whole extent). NEVER MODIFY bHitExtent, IT'S USED INTERNALLY!
+Easier to describe with example:
+
+ToDecrement = (1, -1, 1), Extent = (1, -1, 1)
+1. (1, -1, 0) - ALL RETURN TRUE.
+2. (1, -1, -1)
+
+3. (1, 0, 1)
+4. (1, 0, 0)
+5. (1, 0, -1)
+
+6. (1, 1, 1)
+7. (1, 1, 0)
+8. (1, 1, -1)
+
+9. (0, -1, 1)
+...
+?: (-1, 1, 0)
+?: (-1, 1, -1) - RETURNS FALSE. */
+private final function bool DebugDecrementIVector(out IVector ToDecrement, out const IVector Extent, out byte bHitExtent)
+{
+	if(bHitExtent == 1)
+	{
+		return false;
+	}
+	// We absolutely need to decrement Z (or anything). But what if its 0?
+	ToDecrement.Z < Extent.Z ? ToDecrement.Z++ : ToDecrement.Z--;
+	// If Z has reached its opposite extent, (MAYBE(?)) roll it back to the original and carry-over to Y.
+	if(-Extent.Z < Extent.Z ? ToDecrement.Z > Extent.Z : ToDecrement.Z < Extent.Z)
+	{
+		// Decrement/increment Y however so it gets closer to -Extent.Y.
+		// If Extent.Y is 0, we can't do anything with it so go to X.
+		if(Extent.Y != 0)
+		{
+			-Extent.Y < Extent.Y ? ToDecrement.Y++ : ToDecrement.Y--;
+			// Since Extent.Y is non-zero, we can roll Z over and carry over to Y.
+			ToDecrement.Z = -Extent.Z;
+		}
+		else if(Extent.X != 0)
+		{
+			ToDecrement.X < Extent.X ? ToDecrement.X++ : ToDecrement.X--;
+			// Since Extent.X is non-zero, we can roll Z over and carry over to X.
+			ToDecrement.Z = -Extent.Z;
+		}
+		else
+		{
+			// Can't change anything! Guess we're done!
+			return true;
+		}
+	}
+	if(-Extent.Y < Extent.Y ? ToDecrement.Y > Extent.Y : ToDecrement.Y < Extent.Y)
+	{
+		// Decrement/increment X however so it gets closer to -Extent.X.
+		// If Extent.Y is 0, we can't do anything with it so go to X.
+		if(Extent.X != 0)
+		{
+			ToDecrement.X < Extent.X ? ToDecrement.X++ : ToDecrement.X--;
+			// Since Extent.Y is non-zero, we can roll Y over and carry over to X.
+			ToDecrement.Y = -Extent.Y;
+		}
+		else
+		{
+			// Can't change anything! Guess we're done!
+			return false;
+		}
+	}
+	if(ToDecrement.X == Extent.X)
+	{
+		// Uhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh.
+		// Well X can't roll over right?
+		// Because if it did then you'd like... Reset ToDecrement I guess...?
+		// So do nothing?
+	}
+	if(ToDecrement == Extent)
+	{
+		bHitExtent = 1;
+	}
+	return true;
+	/*
+	else if(ToDecrement.Y == -Extent.Y)
+	{
+		ToDecrement.Y = Extent.Y;
+//		ToDecrement.X--;
+	}*/
+}
 `endif
 
 exec function StartGame()
@@ -517,7 +762,6 @@ function StartMatch()
 	Super.StartMatch();
 	AddFactionHuman(0);
 	//;PosX, PosY, NegX, NegY
-	//@TODO
 	for(i = 0; i < 4 && i+1 <= FactionAIs.length; i++)
 	{
 		AddFactionAI(5+i, TowerFactionAI(DynamicLoadObject(FactionAIs[i], class'TowerFactionAI', true)), FactionLocation(1+i));
@@ -554,17 +798,16 @@ function AddFactionHuman(int TeamIndex)
 	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
 }
 
-//@TODO - Need Tower, not TPRI.
 function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
 {
-	local TowerPlayerReplicationInfo TPRI;
+	local Tower Tower;
 	
-	TPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
-	TPRI.Tower = Spawn(class'Tower', self);
-	TPRI.Tower.OwnerPRI = TPRI;
+	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower = Spawn(class'Tower', self);
+	Tower = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower;
+	Tower.OwnerPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	// Initial budget!
 	//@FIXME
-	TPRI.Tower.Budget = 99999;
+	Tower.Budget = 99999;
 //	TPRI.Tower.Initialize(TPRI);
 	if(bAddRootBlock)
 	{
@@ -573,23 +816,23 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 //	AddBlock(TPRI.Tower, class'TowerModInfo_Tower'.default.ModBlockInfo[0], None, GridLocation, true);
 	if(TowerName != "")
 	{
-		SetTowerName(TPRI.Tower, TowerName);
+		SetTowerName(Tower, TowerName);
 	}
-	TPRI.Tower.Initialize();
+	Tower.Initialize();
 }
 
-//@TODO - Need Tower, not TPRI.
 function AddRootBlock(TowerPlayerController Player)
 {
+	local Tower Tower;
 	local IVector GridLocation;
 	// Need to make this dependent on player count in future.
 	//@FIXME - This can be done a bit more cleanly and safely. Define in map maybe?
 	GridLocation.X = 4*(NumPlayers-1);
 	
-	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower
-		.SetRootBlock(TowerBlockRoot(AddBlock(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower, RootArchetype, None, GridLocation)));
+	Tower = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower;
+	Tower.SetRootBlock(TowerBlockRoot(AddBlock(Tower, RootArchetype, None, GridLocation)));
 	//@FIXME - Have Root do this by itself?
-	Hivemind.OnRootBlockSpawn(TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower.Root);
+	Hivemind.OnRootBlockSpawn(Tower.Root);
 }
 
 function SetTowerName(Tower Tower, string NewTowerName)
@@ -637,6 +880,12 @@ state CoolDown
 	{
 		SetTimer(CoolDownTime, false);
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
+	}
+
+	exec function SkipCoolDown()
+	{
+		ClearTimer();
+		Timer();
 	}
 
 	event Timer()
