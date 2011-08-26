@@ -48,6 +48,7 @@ function ExpandBuildMenu()
 	bInMenu = TRUE;
 	UnlockMouse(true);
 	MoveCursor();
+	SetBuildMenuInfo(HUD.PlaceBlock);
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
 }
 

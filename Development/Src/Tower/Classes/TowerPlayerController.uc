@@ -416,6 +416,25 @@ exec function DebugLookingAt()
 	}
 }
 
+exec function DebugListBlocksAt(IVector GridLocation)
+{
+	local TowerBlock Block;
+	local array<TowerBlock> Blocks;
+	foreach DynamicActors(class'TowerBlock', Block)
+	{
+		if(Block.GridLocation == GridLocation)
+		{
+			Blocks.AddItem(Block);
+		}
+	}
+	`log("=============================================================================");
+	foreach Blocks(Block)
+	{
+		`log(Block);
+	}
+	`log("=============================================================================");
+}
+
 exec function DebugTestRenderTime()
 {
 	`log(GetTower().Root.LastRenderTime@WorldInfo.TimeSeconds@GetTower().Root.LastRenderTime==WorldInfo.TimeSeconds);
@@ -525,6 +544,12 @@ function Tower DebugGetNotMyTower()
 exec function DebugKillRootBlock()
 {
 	GetTower().Root.TakeDamage(99999, Self, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+}
+
+/** Similar to TowerGame::DebugUberBlockTest(), although less extensive since clients don't have as much info. */
+exec function DebugUberBlockTestPLAYER()
+{
+
 }
 `endif
 

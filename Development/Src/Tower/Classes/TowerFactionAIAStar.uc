@@ -21,11 +21,20 @@ var config float DesiredPathfindTime;
 var array<TowerAIObjective> Paths;
 var TowerBlock DebugStart, DebugFinish;
 var bool bDrewPath;
+var bool bDrawNames;
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	SetTimer(10, false, 'Start');
+}
+
+auto state Inactive
+{
+	event RoundStarted(const int AwardedBudget)
+	{
+		Super.RoundStarted(AwardedBudget);
+		Start();
+	}
 }
 
 function Start()
@@ -69,7 +78,7 @@ final function GeneratePath(TowerBlock Start, TowerBlock Finish)
 		}
 		else if(BestBlock == None)
 		{
-			// No path?! How?!
+			// No path?! How?! What?
 		}
 		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish);
 		OpenList.RemoveItem(BestBlock);
@@ -84,7 +93,7 @@ final function TowerBlock GetBestBlock(out array<TowerBlock> OpenList, TowerBloc
 	local TowerBlock BestBlock, IteratorBlock;
 	foreach OpenList(IteratorBlock)
 	{
-		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness);
+		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness,,'AStar');
 		if(BestBlock == None)
 		{
 			BestBlock = IteratorBlock;
@@ -437,7 +446,10 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 {
 	Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
 	//@TODO - Move me somewhere appropriate.
-	DebugDrawNames(Canvas);
+	if(bDrawNames)
+	{
+		DebugDrawNames(Canvas);
+	}
 	if(Paths.Length > 0)
 	{
 		DebugDrawPath(DebugStart, DebugFinish, Canvas);
