@@ -551,6 +551,15 @@ exec function DebugUberBlockTestPLAYER()
 {
 
 }
+
+exec function WhereIs(int X, int Y, int Z)
+{
+	local Vector SpawnLocation;
+	SpawnLocation.X = X * 256;
+	SpawnLocation.Y = Y * 256;
+	SpawnLocation.Z = Z * 256 + 128;
+	Spawn(class'TowerDebugMarker',,,SpawnLocation);
+}
 `endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)

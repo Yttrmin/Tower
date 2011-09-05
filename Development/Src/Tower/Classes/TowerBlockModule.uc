@@ -1,4 +1,5 @@
 class TowerBlockModule extends TowerBlock
+	abstract
 	AutoExpandCategories(TowerBlockModule);
 
 /**
@@ -21,8 +22,6 @@ struct RangeCallbacks
 /** Whichever variables are TRUE will result in this object getting OnEnterRange() called on it when such an enemy comes
 in range. */ 
 var() protected const RangeCallbacks Callbacks;
-var() private const bool bUsesProjectile;
-var() private const class<TowerProjectile> ProjectileClass<EditCondition=bUsesProjectile>;
 
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)

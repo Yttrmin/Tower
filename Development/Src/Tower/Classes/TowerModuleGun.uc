@@ -2,6 +2,9 @@ class TowerModuleGun extends TowerBlockModule;
 
 var SkelControlLookAt Barrel;
 var TowerTargetable Target;
+var() private const bool bUsesProjectile;
+var() private const class<TowerProjectile> ProjectileClass<EditCondition=bUsesProjectile>;
+var() private const class<TowerDamageType> DamageTypeClass; 
 
 simulated event PostBeginPlay()
 {
@@ -93,7 +96,7 @@ function Shoot(Vector Direction)
 	if(HitActor != None && !HitActor.IsA('TowerBlock'))
 	{
 		// Call TakeDamage();
-		HitActor.TakeDamage(4, None, HitLocation, HitLocation, class'UTDmgType_ShockPrimary',,Self);
+		HitActor.TakeDamage(4, None, HitLocation, HitLocation, class'TowerDmgType_Rifle',,Self);
 		//HitActor.Destroy();
 	}
 }

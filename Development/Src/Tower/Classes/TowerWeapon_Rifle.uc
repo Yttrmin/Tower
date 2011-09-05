@@ -43,12 +43,12 @@ DefaultProperties
 	FireInterval(0)=1
 	Spread(0)=10.0
 	WeaponFireTypes(0)=EWFT_InstantHit
-	WeaponProjectiles(0)=class'UTGame.UTProj_LinkPlasma'
+//	WeaponProjectiles(0)=class'UTGame.UTProj_LinkPlasma'
 
 	WeaponFireTypes(1)=EWFT_InstantHit
 	InstantHitDamage(1)=20
 	InstantHitMomentum(1)=100
-	InstantHitDamageTypes(1)=class'UTDmgType_ShockPrimary'
-	InstantHitDamageTypes(0)=class'UTDmgType_ShockPrimary'
+	InstantHitDamageTypes(1)=class'TowerDmgType_Rifle'
+	InstantHitDamageTypes(0)=class'TowerDmgType_Rifle'
 //	bAlwaysRelevant=true
 }
