@@ -23,6 +23,22 @@ var TowerBlock DebugStart, DebugFinish;
 var bool bDrewPath;
 var bool bDrawNames;
 
+var config bool bDeferSearching;
+var config bool bStepSearch;
+var config bool bDrawStepInfo;
+var config int IterationsPerTick;
+//=============================================================================
+// Deferred search variables.
+var bool bDeferred;
+var bool bDeferredDone;
+// To step or not. Used when step searching.
+var bool bStep;
+var array<TowerBlock> DeferredOpenList, DeferredClosedList;
+var TowerBlock StepBestBlock;
+var array<TowerAIObjective> StepMarkers;
+var int Iteration;
+
+
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
@@ -53,26 +69,77 @@ final function GeneratePath(TowerBlock Start, TowerBlock Finish)
 	// References whichever Block in the OpenList that has the lowest Fitness.
 	local TowerBlock BestBlock;
 	local int i;
-
-	`log("================== STARTING A* ==================",,'AStar');
-	`log("Start:"@Start@" "@"Finish:"@Finish,,'AStar');
-	Start.BaseCost = 0;
-	// DebugStart/Finish are used for keeping track of the Start/Finish so we can draw the path later.
-	DebugStart = Start;
-	DebugFinish = Finish;
-	// #2
-	CalculateCosts(Start, Finish, GetGoalCost(Start));
-	// Add our Starting block to the OpenList and start pathfinding!
-	// #3
-	OpenList.AddItem(Start);
+	// To avoid warning with using variable before assigned.
+	BestBlock = None;
+	//@TODO - `if `isdefined debug
+	if(bStepSearch && !bStep)
+	{
+		return;
+	}
+	else
+	{
+		bStep = false;
+	}
+	if(bDeferSearching && bDeferred)
+	{
+		OpenList = DeferredOpenList;
+		ClosedList = DeferredClosedList;
+		bDeferred = false;
+	}
+	else
+	{
+		Iteration = 0;
+		`log("================== STARTING A* ==================",,'AStar');
+		`log("Start:"@Start@" "@"Finish:"@Finish,,'AStar');
+		Start.BaseCost = 0;
+		// DebugStart/Finish are used for keeping track of the Start/Finish so we can draw the path later.
+		DebugStart = Start;
+		DebugFinish = Finish;
+		// #2
+		CalculateCosts(Start, Finish, GetGoalCost(Start));
+		// Add our Starting block to the OpenList and start pathfinding!
+		// #3
+		OpenList.AddItem(Start);
+	}
 	while(OpenList.Length > 0)
 	{
-		i++;
+		if(bDeferSearching && i >= IterationsPerTick)
+		{
+			// Defer.
+			StepBestBlock = BestBlock;
+			if(bStepSearch)
+			{
+				// If we're stepping, draw debug information.
+				DebugCreateStepMarkers(OpenList, ClosedList);
+			}
+			bDeferred = true;
+			DeferredOpenList = OpenList;
+			DeferredClosedList = ClosedList;
+			return;
+		}
+		if(!bDeferredDone)
+		{
+			i++;
+			Iteration++;
+		}
 		BestBlock = GetBestBlock(OpenList, Finish);
-		`log("Iteration"@i$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,,'AStar');
+		`log("Iteration"@Iteration$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,!bDeferredDone,'AStar');
 		if(BestBlock == Finish)
 		{
 			// We're done.
+			bDeferredDone = !bDeferredDone;
+			if(bStepSearch && bDeferredDone)
+			{
+				StepBestBlock = BestBlock;
+				// If we're stepping, draw debug information.
+				DebugCreateStepMarkers(OpenList, ClosedList);
+				// Defer one last time so we can see the end.
+				bDeferred = true;
+				DeferredOpenList = OpenList;
+				DeferredClosedList = ClosedList;
+				return;
+			}
+			bDeferredDone = false;
 			ConstructPath(Finish);
 			break;
 		}
@@ -84,8 +151,51 @@ final function GeneratePath(TowerBlock Start, TowerBlock Finish)
 		OpenList.RemoveItem(BestBlock);
 		ClosedList.AddItem(BestBlock);
 	}
-
 	`log("================== FINISHED A* ==================",,'AStar');
+}
+
+final function Step()
+{
+	local TowerAIObjective Marker;
+	// Clean out old markers since we can't during AsyncTick.
+	foreach StepMarkers(Marker)
+	{
+		Marker.Destroy();
+	}
+	bStep = true;
+}
+
+final function DebugCreateStepMarkers(out array<TowerBlock> OpenList, out array<TowerBlock> ClosedList)
+{
+	local TowerAIObjective Marker;
+	local TowerBlock Block;
+	StepMarkers.Remove(0, StepMarkers.Length);
+	foreach OpenList(Block)
+	{
+		if(Block == StepBestBlock)
+		{
+			continue;
+		}
+		Marker = Spawn(class'TowerAIObjective',,,Block.Location);
+		Marker.Mesh.SetMaterial(0, Material'EditorMaterials.WidgetMaterial_Y');
+		StepMarkers.AddItem(Marker);
+	}
+	foreach ClosedList(Block)
+	{
+		if(Block == StepBestBlock)
+		{
+			continue;
+		}
+		Marker = Spawn(class'TowerAIObjective',,,Block.Location);
+		Marker.Mesh.SetMaterial(0, Material'NodeBuddies.Materials.NodeBuddy_Brown1');
+		StepMarkers.AddItem(Marker);
+	}
+	if(StepBestBlock != None)
+	{
+		Marker = Spawn(class'TowerAIObjective',,,StepBestBlock.Location);
+		Marker.Mesh.SetMaterial(0, Material'EditorMaterials.WidgetMaterial_Z');
+		StepMarkers.AddItem(Marker);
+	}
 }
 
 final function TowerBlock GetBestBlock(out array<TowerBlock> OpenList, TowerBlock Finish)
@@ -150,7 +260,7 @@ final function ConstructPath(TowerBlock Finish)
 
 	for(Block = Finish; Block != None; Block = Block.AStarParent)
 	{
-		`log("Adding block to PathToRoot..."@Block);
+		`log("Adding block to PathToRoot..."@Block,,'AStar');
 		PathToRoot.AddItem(Block);
 	}
 
@@ -158,7 +268,6 @@ final function ConstructPath(TowerBlock Finish)
 	foreach PathToRoot(Block)
 	{
 		Objective = Spawn(class'TowerAIObjective',,, Block.Location);
-		`log("Spawn and initialize:"@Objective@Block);
 		InitializeObjective(Objective, Block, PreviousObjective);
 	}
 	`log("Path construction complete!",,'AStar');
@@ -280,7 +389,7 @@ final function UpdateParents(TowerBlock Block, TowerBlock Finish)
 	local array<TowerBlock> AdjacentList;
 	local int GoalCost;
 	GoalCost = Block.GoalCost;
-	`log("UPDATEPARENTD* **********************");
+	`log("UPDATEPARENTD* **********************",,'AStar');
 	ScriptTrace();
 	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
 	{
@@ -430,21 +539,57 @@ final function DebugLogPaths()
 {
 	local int i;
 	local TowerAIObjective RootObjective, ChildObjective;
-	`log("=================================================");
+	`log("=================================================",,'AStar');
 	foreach Paths(RootObjective, i)
 	{
-		`log("-------------------------------------------------");
-		`log("Path"@i$":"@RootObjective@"("$RootObjective.Target$")");
+		`log("-------------------------------------------------",,'AStar');
+		`log("Path"@i$":"@RootObjective@"("$RootObjective.Target$")",,'AStar');
 		for(ChildObjective = RootObjective.NextObjective; ChildObjective != None; ChildObjective = ChildObjective.NextObjective)
 		{
-			`log(ChildObjective@"("$ChildObjective.Target$")");
+			`log(ChildObjective@"("$ChildObjective.Target$")",,'AStar');
 		}
 	}
 }
 
+final function DebugDrawStepInfo(Canvas Canvas)
+{
+	local TowerBlock Block;
+	local int i;
+	Canvas.SetDrawColor(255,255,255);
+	Canvas.SetPos(0,0);
+	Canvas.SetPos(0,50);
+	Canvas.DrawText("OpenList:");
+	i = 62;
+	foreach DeferredOpenList(Block)
+	{
+		Canvas.SetPos(0, i);
+		Canvas.DrawText(Block.Name);
+		i += 12;
+	}
+	Canvas.SetPos(200, 50);
+	Canvas.DrawText("ClosedList:");
+	i = 62;
+	foreach DeferredClosedList(Block)
+	{
+		Canvas.SetPos(200, i);
+		Canvas.DrawText(Block.Name);
+		i += 12;
+	}
+	Canvas.SetPos(400, 50);
+	Canvas.DrawText("BestBlock:"@StepBestBlock.Name);
+
+}
+
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
 {
-	Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
+	if(!bStepSearch || !bDeferred)
+	{
+		Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
+	}
+	else if(bStepSearch && bDeferred && bDrawStepInfo)
+	{
+		DebugDrawStepInfo(Canvas);
+	}
 	//@TODO - Move me somewhere appropriate.
 	if(bDrawNames)
 	{

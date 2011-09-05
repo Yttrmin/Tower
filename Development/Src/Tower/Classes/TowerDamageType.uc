@@ -1,0 +1,1 @@
+class TowerDamageType extends DamageType;

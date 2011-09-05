@@ -16,11 +16,12 @@ enum ObjectiveType
 var privatewrite TowerBlock Target;
 var privatewrite TowerAIObjective NextObjective;
 var privatewrite ObjectiveType Type;
+var privatewrite StaticMeshComponent Mesh;
 
-final function TowerShootPoint GetShootPoint(FactionLocation Faction)
+/*final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
 	return None;
-}
+}*/
 
 // Convenience function to work around some potential bug with interface casting.
 final function Actor GetTargetActor()
@@ -54,4 +55,15 @@ DefaultProperties
 		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
 	End Object
 	Components.Add(MarkerMesh)
+	DrawScale3D=(X=2,Y=2,Z=2)
+	Mesh = MarkerMesh;
+	//Material'NodeBuddies.Materials.NodeBuddy_Brown1'
+	// light pink
+	//Material'NodeBuddies.Materials.NodeBuddy_Text1'
+	// green
+	//Material'EditorMaterials.WidgetMaterial_Y'
+	// blue
+	//Material'EditorMaterials.WidgetMaterial_Z'
+	// yellow
+	//Material'EditorMaterials.WidgetMaterial_Current'
 }

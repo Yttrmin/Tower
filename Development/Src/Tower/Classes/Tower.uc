@@ -168,11 +168,35 @@ function CreateSurroundingAir(TowerBlock Block)
 	while(EmptyDirections.Length > 0)
 	{
 		AirGridLocation = Block.GridLocation + EmptyDirections[0];
-		AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
-		AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirSpawnLocation,
-			AirGridLocation);
+		if(!IsThereAir(AirGridLocation))
+		{
+			AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
+			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirSpawnLocation,
+				AirGridLocation);
+		}
 		EmptyDirections.Remove(0, 1);
 	}
+}
+
+private function bool IsThereAir(out IVector GridLocation)
+{
+	local TowerBlock Block;
+	local TowerBlockAir Air;
+	local Vector StartLocation;
+	StartLocation = ToVect(GridLocation)*256;
+	StartLocation.Z += 128;
+	//@TODO - If there's a block adjacent to the air assume there must be air?
+	foreach OverlappingActors(class'TowerBlock', Block, 130,StartLocation,true)
+	{
+		foreach Block.BasedActors(class'TowerBlockAir', Air)
+		{
+			if(Air.GridLocation == GridLocation)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
