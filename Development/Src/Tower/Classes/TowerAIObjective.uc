@@ -6,11 +6,16 @@ Used to mark a TowerBlock target for AI, and stores points where units should go
 class TowerAIObjective extends UDKGameObjective
 	dependson(TowerGame);
 
+/** Represents what you'll have to pull of to get to THIS objective!
+So a OT_ClimbUp objective means you have to climb up to achieve it/get to THIS! */
 enum ObjectiveType
 {
+	/** Not set. A fully initialized objective should NEVER be OT_NULL! */
 	OT_NULL,
 	OT_Destroy,
-	OT_GoTo
+	OT_GoTo,
+	OT_ClimbUp,
+	OT_ClimbDown
 };
 
 var privatewrite TowerBlock Target;
@@ -52,11 +57,13 @@ DefaultProperties
 	bBlockActors=false
 
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
-		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
+		StaticMesh=StaticMesh'DebugMeshes.DebugRectangle'
 	End Object
 	Components.Add(MarkerMesh)
 	DrawScale3D=(X=2,Y=2,Z=2)
 	Mesh = MarkerMesh;
+
+	Type=OT_NULL
 	//Material'NodeBuddies.Materials.NodeBuddy_Brown1'
 	// light pink
 	//Material'NodeBuddies.Materials.NodeBuddy_Text1'

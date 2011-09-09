@@ -11,7 +11,7 @@ DefaultProperties
 
 	/*
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
-		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy__BASE_SHORT'
+		StaticMesh'DebugMeshes.DebugRectangle'
 	End Object
 	Components.Add(MarkerMesh)
 	*/
