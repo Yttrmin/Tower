@@ -47,6 +47,7 @@ var private TowerBlock StepBestBlock;
 var private array<TowerAIObjective> StepMarkers;
 /** The ACTUAL iteration we're on, regardless of whether we defer or not. */
 var private int Iteration;
+var private bool bGo;
 
 
 event PostBeginPlay()
@@ -62,6 +63,20 @@ event PostBeginPlay()
 	AStarComponent.bDeferSearching = bDeferSearching;
 	AStarComponent.IterationsPerTick = IterationsPertick;
 	AStarComponent.bDrawStepInfo = bDrawStepInfo;
+	AStarComponent.AddOnPathGeneratedDelegate(OnPathGenerated);
+}
+
+// Called when all human players have lost.
+event OnGameOver()
+{
+	local TowerEnemyController Controller;
+	foreach WorldInfo.AllControllers(class'TowerEnemyController', Controller)
+	{
+		if(TowerEnemyPawn(Controller.Pawn).OwnerFaction == Self)
+		{
+			Controller.GotoState('Celebrating');
+		}
+	}
 }
 
 auto state Inactive
@@ -89,9 +104,27 @@ final function GenerateObjectives()
 
 }
 
-event Think()
+event OnPathGenerated(const bool bSuccessful, TowerAIObjective Root)
 {
+	`warn(self@"ONPATHGENERATED CALLED OUTSIDE ACTIVE");
+}
 
+state Active
+{
+	event Think()
+	{
+		if(bGo)
+		{
+			SpawnFormation(0, SpawnPoints[0], AStarComponent.Paths[0]);
+			bGo = false;
+		}
+	}
+
+	event OnPathGenerated(const bool bSuccessful, TowerAIObjective Root)
+	{
+		`log("Path generated! GO GO GO! BUT ONLY DO SO NEXT TICK@#J");
+		bGo=true;
+	}
 }
 
 final function TowerBlockAir GetStartingBlock()
@@ -159,13 +192,14 @@ final function Vector GetFactionLocationDirection()
 	}
 }
 
+//@TODO - Cut out middleman, have AStarComponent register for AsyncTick.
 event AsyncTick(float DeltaTime)
 {
 	if(AStarComponent.Paths.Length == 0)
 	{
 		if(AStarComponent.GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target))
 		{
-			`log("DONE!");
+			`log("DONE! (BUT NOT REALLY (WAIT FOR THE DELEGATE YOU LAZY JERK))");
 		}
 	}
 }

@@ -483,10 +483,7 @@ exec function DebugReCalculateBlockLocationsRecursive(optional TowerBlock FromBl
 	FromBlock.SetGridLocation(true, false);
 	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
 	{
-		if(!Block.IsA('TowerBlockAir'))
-		{
-			DebugReCalculateBlockLocationsRecursive(Block);
-		}
+		DebugReCalculateBlockLocationsRecursive(Block);
 	}
 }
 
@@ -507,14 +504,14 @@ exec function DebugReCalculateBlockLocationsRecursiveEx(optional TowerBlock From
 	/*
 	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
 	{
-		if(!Block.IsA('TowerBlockAir'))
+		if(TowerBlockAir(Block) == None)
 		{
 			Block.SetGridLocation(true, false);
 		}
 	}
 	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
 	{
-		if(!Block.IsA('TowerBlockAir'))
+		if(TowerBlockAir(Block) == None)
 		{
 			DebugReCalculateBlockLocationsRecursive(Block);
 		}

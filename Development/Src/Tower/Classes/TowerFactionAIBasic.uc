@@ -66,7 +66,6 @@ state CollectData extends Active
 			{
 				OrderQueue.Remove(0, 1);
 			}
-
 		}
 	}
 

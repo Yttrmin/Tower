@@ -55,7 +55,7 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 {
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
-	if((Parent != None && !Parent.IsA('TowerBlockModule') && Parent.IsInState('Stable')) 
+	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
 		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
 	{
 		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
@@ -99,7 +99,7 @@ function bool RemoveBlock(TowerBlock Block)
 	{
 		if(IteratorBlock.class != class'TowerBlockAir')
 		{
-			if(IteratorBlock.IsA('TowerBlockModule'))
+			if(TowerBlockModule(IteratorBlock) != None)
 			{
 				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
 				// being modified, right?
@@ -252,7 +252,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
 //		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
-		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block && !HitInfo.HitComponent.isA('TowerModule'))
+		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
 		{
 			Node.SetBase(Block);
 			Node.SetOwner(Block);
@@ -268,7 +268,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 		foreach Node.BasedActors(class'TowerBlock', Block)
 		{
 			// We don't want air or modules looking for parents.
-			if(Block.IsA('TowerBlockStructural'))
+			if(TowerBlockStructural(Block) != None)
 			{
 				//@TODO - Make me iterative instead of recursive!
 				if(FindNewParent(Block, OldParent, bChildrenFindParent, true) && !bChild)

@@ -9,6 +9,7 @@ class TowerEnemyPawn extends TowerPawn
 var() editinline TowerPurchasableComponent PurchasableComponent;
 var(InGame) editconst TowerFaction OwnerFaction;
 var(InGame) editconst byte TeamIndex;
+var	AnimNodeAimOffset		AimNode;
 
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
 
@@ -34,6 +35,13 @@ event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 	{
 		TowerEnemyController(PreviousSquadMember.Controller).NextSquadMember = TowerEnemyController(Controller);
 	}
+}
+
+simulated event PostInitAnimTree(SkeletalMeshComponent SkelComp)
+{
+	// This is indeed called.
+	AimNode = AnimNodeAimOffset( mesh.FindAnimNode('AimNode') );
+	AimNode.SetActiveProfileByName('SinglePistol');
 }
 
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
@@ -68,6 +76,11 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 //	ScriptTrace();
 }
 
+function bool DoJump(bool bUpdating)
+{
+	return Super.DoJump(bUpdating);
+}
+
 function bool OnSameFaction(TowerEnemyPawn Other)
 {
 	return Other.ScriptGetTeamNum() == ScriptGetTeamNum();
@@ -79,12 +92,77 @@ function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLo
 //	`log(Self@"died. He owned"@Weapon);
 	Value = Super.Died(Killer, DamageType, HitLocation);
 	OwnerFaction.OnTargetableDeath(Self, None, None);
-	Destroy();
+//	Destroy();
+	Ragdoll();
+	// Set the actor to automatically destroy in ten seconds. 
+	LifeSpan = 10.f;
 	if(Weapon != None)
 	{
 		Weapon.Destroy();
 	}
 	return Value;
+}
+
+function Ragdoll()
+{
+	Mesh.MinDistFactorForKinematicUpdate = 0.f;
+//	SetPawnRBChannels(true);
+	Mesh.ForceSkelUpdate();
+	Mesh.SetTickGroup(TG_PostAsyncWork);
+	CollisionComponent = Mesh;
+//	CylinderComponent.SetActorCollision(false, false);
+//	Mesh.SetActorCollision(true, true);
+//	Mesh.SetTraceBlocking(true, true);
+	SetPhysics(PHYS_RigidBody);
+	Mesh.PhysicsWeight = 1.0;
+
+	if (Mesh.bNotUpdatingKinematicDueToDistance)
+	{
+		Mesh.UpdateRBBonesFromSpaceBases(true, true);
+	}
+
+	Mesh.PhysicsAssetInstance.SetAllBodiesFixed(false);
+	Mesh.bUpdateKinematicBonesFromAnimation = false;
+	Mesh.SetRBLinearVelocity(Velocity, false);
+	Mesh.ScriptRigidBodyCollisionThreshold = MaxFallSpeed;
+	Mesh.SetNotifyRigidBodyCollision(true);
+	Mesh.WakeRigidBody();
+}
+
+function UnRagdoll()
+{
+	Mesh.MinDistFactorForKinematicUpdate = Mesh.default.MinDistFactorForKinematicUpdate;
+	SetPawnRBChannels(false);
+	Mesh.ForceSkelUpdate();
+	Mesh.SetTickGroup(Mesh.default.TickGroup);
+	CollisionComponent = default.CollisionComponent;
+	CylinderComponent.SetActorCollision(true, true);
+	Mesh.SetActorCollision(true, false);
+	Mesh.SetTraceBlocking(true, true);
+	SetPhysics(PHYS_Falling);
+	Mesh.PhysicsWeight = Mesh.default.PhysicsWeight;
+
+	if (Mesh.bNotUpdatingKinematicDueToDistance)
+	{
+		Mesh.UpdateRBBonesFromSpaceBases(true, true);
+	}
+
+	Mesh.PhysicsAssetInstance.SetAllBodiesFixed(true);
+	Mesh.bUpdateKinematicBonesFromAnimation = Mesh.default.bUpdateKinematicBonesFromAnimation;
+	Mesh.SetRBLinearVelocity(Vect(0,0,0), false);
+	Mesh.ScriptRigidBodyCollisionThreshold = Mesh.default.ScriptRigidBodyCollisionThreshold;
+	Mesh.SetNotifyRigidBodyCollision(Mesh.default.bNotifyRigidBodyCollision);
+//	Mesh.WakeRigidBody();
+}
+
+simulated function SetPawnRBChannels(bool bRagdollMode)
+{
+	Mesh.SetRBChannel((bRagdollMode) ? RBCC_Pawn : RBCC_Untitled3);
+	Mesh.SetRBCollidesWithChannel(RBCC_Default, bRagdollMode);
+	Mesh.SetRBCollidesWithChannel(RBCC_Pawn, bRagdollMode);
+	Mesh.SetRBCollidesWithChannel(RBCC_Vehicle, bRagdollMode);
+	Mesh.SetRBCollidesWithChannel(RBCC_Untitled3, !bRagdollMode);
+	Mesh.SetRBCollidesWithChannel(RBCC_BlockingVolume, bRagdollMode);
 }
 
 static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,
@@ -144,7 +222,8 @@ function TowerFaction GetOwningFaction();
 
 DefaultProperties
 {
-	bCanJump=false
-	bJumpCapable=false
+	bCanJump=true
+	bJumpCapable=true
+	JumpZ = 1680
 	ControllerClass=class'Tower.TowerEnemyController'
 }

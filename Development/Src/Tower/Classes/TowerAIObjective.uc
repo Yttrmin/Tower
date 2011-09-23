@@ -22,11 +22,25 @@ var privatewrite TowerBlock Target;
 var privatewrite TowerAIObjective NextObjective;
 var privatewrite ObjectiveType Type;
 var privatewrite StaticMeshComponent Mesh;
+var privatewrite int CompletionRadius;
+var private Vector GoalPoint;
+var private Vector ShootPoint;
 
 /*final function TowerShootPoint GetShootPoint(FactionLocation Faction)
 {
 	return None;
 }*/
+
+function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	GoalPoint = Location;
+}
+
+final function Vector GetGoalPoint()
+{
+	return Location;
+}
 
 // Convenience function to work around some potential bug with interface casting.
 final function Actor GetTargetActor()
@@ -49,18 +63,56 @@ final function SetNextObjective(TowerAIObjective NewNextObjective)
 	NextObjective = NewNextObjective;
 }
 
+final function SetCompletionRadius(int NewCompletionRadius)
+{
+	CompletionRadius = NewCompletionRadius;
+}
+
+final function MoveToEdgeOfTarget(IVector Edge)
+{
+	local Vector NewLocation;
+	NewLocation = Location;
+	NewLocation += ToVect(Edge) * 128;
+//	SetLocation(NewLocation);
+	CompletionRadius = 256;
+	GoalPoint += NewLocation;
+	`log("MTEOT"@Edge.X@Edge.Y@Edge.Z);
+}
+
+//@TODO - Disable tick.
+event Tick(float DeltaTime);
+
+event Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
+{
+	`log(Other@OtherComp);
+	`assert(true);
+}
+
+event bool Completed(UDKSquadAI Formation)
+{
+	if(NextObjective != None)
+	{
+		Formation.SquadObjective = NextObjective;
+		return true;
+	}
+	return false;
+}
+
 DefaultProperties
 {
 	bStatic=false
 	bNoDelete=false
 	bCollideActors=false
 	bBlockActors=false
+	bNoEncroachCheck=true
+
+	CompletionRadius = 64
 
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
 		StaticMesh=StaticMesh'DebugMeshes.DebugRectangle'
 	End Object
 	Components.Add(MarkerMesh)
-	DrawScale3D=(X=2,Y=2,Z=2)
+	DrawScale3D=(X=0.5,Y=0.5,Z=0.5)
 	Mesh = MarkerMesh;
 
 	Type=OT_NULL

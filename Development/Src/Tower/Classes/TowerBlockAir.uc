@@ -9,10 +9,12 @@ class TowerBlockAir extends TowerBlock;
 
 DefaultProperties
 {
+	/*
 	Begin Object Class=StaticMeshComponent Name=DebugMesh
 		StaticMesh=StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_AutoAdjust'
 	End Object
 	Components.Add(DebugMesh)
+	*/
 
 	DisplayName=""
 	bTickIsDisabled=true

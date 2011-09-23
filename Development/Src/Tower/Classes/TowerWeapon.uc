@@ -22,7 +22,8 @@ simulated function Projectile ProjectileFire()
 	{
 		// This is where we would start an instant trace. (what CalcWeaponFire uses)
 		StartTrace = TowerEnemyPawn(Owner).GetWeaponStartTraceLocation();//Owner.Location;//Vect(0,0,0);//Instigator.GetWeaponStartTraceLocation();
-		AimDir = Vector(Instigator.Rotation);//Vector(GetAdjustedAim( StartTrace ));
+		AimDir = TowerEnemyController(AIController).GetAimPoint
+			(TowerEnemyController(AIController).GetSquadObjective().Target) - StartTrace;//TowerEnemyController(AIController).GetSquadObjective().Location - AIController.Pawn.Location;//Vector(GetAdjustedAim( StartTrace ));//Vector(Instigator.Rotation);
 
 		// this is the location where the projectile is spawned.
 		TowerEnemyPawn(Owner).WeaponAttachment.Mesh.GetSocketWorldLocationAndRotation('MussleFlashSocket', RealStartLoc);
@@ -177,7 +178,7 @@ simulated function ImpactInfo CalcWeaponFire(vector StartTrace, vector EndTrace,
 			HitActor.bProjTarget = false;
 			bOldCollideActors = HitActor.bCollideActors;
 			bOldBlockActors = HitActor.bBlockActors;
-			if (HitActor.IsA('Pawn'))
+			if (Pawn(HitActor) != None)
 			{
 				bOldBlockZeroExtent = Pawn(HitActor).CollisionComponent.BlockZeroExtent;
 				// Set the pawn to ignore zero extent traces.

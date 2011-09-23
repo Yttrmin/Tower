@@ -53,7 +53,7 @@ var protectedwrite editconst IVector ParentDirection;
 /** Block's position on the grid. */
 var(InGame) repnotify protectedwrite editconst IVector GridLocation;
 
-var protected MaterialInstanceConstant MaterialInstance;
+var protectedwrite MaterialInstanceConstant MaterialInstance;
 var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
@@ -96,6 +96,9 @@ simulated event ReplicatedEvent(name VarName)
 	}
 	Super.ReplicatedEvent(VarName);
 }
+
+//@FIXED - Normally Detach turns rigid body physics for some insane reason. Let's not do that.
+event Detach(Actor Other){}
 
 simulated function StaticMesh GetStaticMesh()
 {
@@ -294,7 +297,7 @@ event LostChild(Actor Other)
 {
 	local TowerBlock Block;
 	Block = TowerBlock(Other);
-	if(Block.IsA('TowerBlockAir'))
+	if(TowerBlockAir(Block) != None)
 	{
 		return;
 	}
@@ -303,7 +306,7 @@ event LostChild(Actor Other)
 
 event GainedChild(Actor Other)
 {
-	if(!TowerBlock(Other).IsA('TowerBlockAir'))
+	if(TowerBlockAir(Other) == None)
 	{
 		OwnerPRI.Tower.DestroyOccupiedAir(Self, TowerBlock(Other));
 	}
@@ -325,10 +328,7 @@ event AdoptedChild();
 event RigidBodyCollision( PrimitiveComponent HitComponent, PrimitiveComponent OtherComponent,
 				const out CollisionImpactData RigidCollisionData, int ContactIndex )
 {
-	ScriptTrace();
-	`log("IS THIS EVEN USED?!");
-	`log("BLOCK IN COLLISION!"@HitComponent@OtherComponent);
-	`assert(false);
+	`log("IS THIS EVEN USED?! BLOCK IN COLLISION!"@HitComponent@OtherComponent);
 }
 
 DefaultProperties
@@ -359,11 +359,11 @@ DefaultProperties
 
 	 // 256x256x256 cube.
 	Begin Object Name=StaticMeshComponent0
-		ScriptRigidBodyCollisionThreshold=0.01
+		ScriptRigidBodyCollisionThreshold=999999
 		BlockActors=true
 		RBChannel=RBCC_GameplayPhysics
 		RBCollideWithChannels=(Default=TRUE,BlockingVolume=TRUE,GameplayPhysics=TRUE,EffectPhysics=TRUE)
-		bNotifyRigidBodyCollision=TRUE
+		bNotifyRigidBodyCollision=false
 		BlockRigidBody=true
 		BlockNonZeroExtent=true
 	End Object
