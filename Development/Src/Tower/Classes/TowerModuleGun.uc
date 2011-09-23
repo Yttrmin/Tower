@@ -93,7 +93,7 @@ function Shoot(Vector Direction)
 	DrawDebugLine(ShotOrigin, ShotOrigin+Direction*10000, 1, 0, 0, True);
 	
 //	`log(Self@"shot"@HitActor@"through the path ending at"@ShotOrigin+Direction*10000$"!");
-	if(HitActor != None && !HitActor.IsA('TowerBlock'))
+	if(HitActor != None && TowerBlock(HitActor) == None)
 	{
 		// Call TakeDamage();
 		HitActor.TakeDamage(4, None, HitLocation, HitLocation, class'TowerDmgType_Rifle',,Self);

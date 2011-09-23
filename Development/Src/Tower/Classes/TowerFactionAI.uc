@@ -171,6 +171,21 @@ event PostBeginPlay()
 	CalculateAllCosts();
 }
 
+// Called when skipping a round. All subclasses should implement this properly.
+event GoInActive()
+{
+	local TowerEnemyPawn Pawn;
+	Budget = -1;
+	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
+	{
+		if(Pawn.OwnerFaction == Self)
+		{
+			Pawn.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+		}
+	}
+	CheckActivity();
+}
+
 event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 {
 	ScriptTrace();
@@ -196,6 +211,12 @@ event CooledDown()
 event RoundEnded()
 {
 	`warn("RoundEnded not called in Active state!");
+}
+
+function bool SpawnFormation(int Index, TowerSpawnPoint SpawnPoint, TowerAIObjective Target)
+{
+	`warn("TRIED TO SPAWNFORMATION OUTSIDE ACTIVE");
+	return false;
 }
 
 auto state InActive
@@ -266,7 +287,7 @@ state Active
 		local TowerTargetable PreviousTargetable;
 
 		Squad = Spawn(class'TowerFormationAI');
-		Squad.SquadObjective = Hivemind.RootBlock;
+		Squad.SquadObjective = Target;
 		// Handle when all points are occupied?
 //		`log("Spawning formation:"@Formations[Index].Name);
 
@@ -474,12 +495,14 @@ final function TowerSpawnPoint GetSpawnPoint(int FormationIndex)
 	return PotentialPoints[Rand(PotentialPoints.Length-1)];
 }
 
+//@TODO - Private to force formation usage?
 event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint SpawnPoint, const TroopInfo UnitTroopInfo)
 {
 	local Vector SpawnLocation;
 	local TowerTargetable Targetable;
 
 	SpawnLocation = GetSpawnLocation(UnitTroopInfo, SpawnPoint.Location, SpawnPoint.Rotation);
+	SpawnLocation.Z += 100;
 //	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
 	Targetable = UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
 	TowerEnemyPawn(Targetable).TeamIndex = TeamIndex;

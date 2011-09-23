@@ -12,6 +12,9 @@ var bool bStepSearch;
 var bool bDrawStepInfo;
 /** How many iterations to do before deferring to the next tick. */
 var int IterationsPerTick;
+var bool bLogIterationTime;
+var private array<delegate<OnPathGenerated> > PathGeneratedDelegates;
+
 //=============================================================================
 // Deferred search variables.
 /** Are we currently deferring to next tick? */
@@ -29,6 +32,8 @@ var private array<TowerAIObjective> StepMarkers;
 /** The ACTUAL iteration we're on, regardless of whether we defer or not. */
 var private int Iteration;
 
+delegate OnPathGenerated(const bool bSuccessful, TowerAIObjective Root);
+
 final function Step()
 {
 	local TowerAIObjective Marker;
@@ -40,6 +45,27 @@ final function Step()
 	bStep = true;
 }
 
+final function AddOnPathGeneratedDelegate(delegate<OnPathGenerated> ToAdd)
+{
+	if(PathGeneratedDelegates.Find(ToAdd) == INDEX_NONE)
+	{
+		PathGeneratedDelegates.AddItem(ToAdd);
+	}
+}
+
+final function RemoveOnPathGeneratedDelegate(delegate<OnPathGenerated> ToRemove)
+{
+	local int RemoveIndex;
+
+	RemoveIndex = PathGeneratedDelegates.Find(ToRemove);
+	if(RemoveIndex != INDEX_NONE)
+	{
+		PathGeneratedDelegates.Remove(RemoveIndex, 1);
+	}
+}
+
+/** Runs the A* search from Start to Finish.
+Can kinda consider it a pseudo-latent function. */
 final function bool GeneratePath(TowerBlock Start, TowerBlock Finish)
 {
 	/** OpenList = Blocks that haven't been explored yet. ClosedList = Blocks that have been explored.
@@ -255,11 +281,7 @@ final function int GetGoalCost(TowerBlock Block)
 
 final function int GetHeuristicCost(TowerBlock Block, TowerBlock Finish)
 {
-	local IVector Comparison;
-	Comparison.X = Abs(Abs(Block.GridLocation.X) - Abs(Finish.GridLocation.X));
-	Comparison.Y = Abs(Abs(Block.GridLocation.Y) - Abs(Finish.GridLocation.Y));
-	Comparison.Z = Abs(Abs(Block.GridLocation.Z) - Abs(Finish.GridLocation.Z));
-	return (Comparison.X+Comparison.Y+Comparison.Z)*2;
+	return ISizeSq(Block.GridLocation - Finish.GridLocation);
 }
 
 /** The best block in a list is whichever has the lowest score. */
@@ -290,8 +312,10 @@ final function TowerBlock GetBestBlock(out array<TowerBlock> OpenList, TowerBloc
 final function ConstructPath(TowerBlock Finish)
 {
 	local TowerBlock Block;
+	local Vector SpawnLocation;
 	local array<TowerBlock> PathToRoot;
 	local TowerAIObjective PreviousObjective, Objective;
+	local delegate<OnPathGenerated> ToCall;
 	`log("* * Path complete, constructing!",,'AStar');
 
 	for(Block = Finish; Block != None; Block = Block.AStarParent)
@@ -303,17 +327,24 @@ final function ConstructPath(TowerBlock Finish)
 	ReverseArray(PathToRoot);
 	foreach PathToRoot(Block)
 	{
-		Objective = Owner.Spawn(class'TowerAIObjective',,, Block.Location);
+		SpawnLocation = Block.Location;
+		SpawnLocation.Z -= 70;
+		Objective = Owner.Spawn(class'TowerAIObjective',,, SpawnLocation,,,true);
 		InitializeObjective(Objective, Block, PreviousObjective);
 	}
 	`log("Path construction complete!",,'AStar');
 	DebugLogPaths();
+	foreach PathGeneratedDelegates(ToCall)
+	{
+		ToCall(true, Paths[Paths.Length-1]);
+	}
 }
 
 final function InitializeObjective(TowerAIObjective Objective, TowerBlock Block, out TowerAIObjective PreviousObjective)
 {
+	local IVector Edge;
 	Objective.SetTarget(Block);
-	if(Block.IsA('TowerBlockStructural') || Block.IsA('TowerBlockAir'))
+	if(TowerBlockStructural(Block) != None || TowerBlockRoot(Block) != None)
 	{
 		Objective.SetType(OT_Destroy);
 	}
@@ -325,6 +356,10 @@ final function InitializeObjective(TowerAIObjective Objective, TowerBlock Block,
 			{
 				// This block is 1 higher.
 				Objective.SetType(OT_ClimbUp);
+				Edge = Objective.Target.GridLocation - PreviousObjective.Target.GridLocation;
+				Edge.Z = 0;
+				`assert(ISize(Edge) > 0);
+				PreviousObjective.MoveToEdgeOfTarget(Edge);
 			}
 			else if(Block.GridLocation.Z == PreviousObjective.Target.GridLocation.Z-1)
 			{

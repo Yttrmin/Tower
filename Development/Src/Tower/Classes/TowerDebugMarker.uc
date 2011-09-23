@@ -2,16 +2,6 @@ class TowerDebugMarker extends DynamicSMActor_Spawnable;
 
 `define SCALE 2
 
-simulated event PostBeginPlay()
-{
-	SetTimer(5.0);
-}
-
-simulated event Timer()
-{
-	Destroy();
-}
-
 DefaultProperties
 {
 	//StaticMesh'NodeBuddies.NodeBuddy_PerchUp'
@@ -57,4 +47,5 @@ DefaultProperties
 	Physics=PHYS_Rotating
 	RotationRate=(Yaw=32768)
 	bCollideActors=false
+	LifeSpan=5
 }

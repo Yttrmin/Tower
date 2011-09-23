@@ -523,6 +523,115 @@ exec function DebugStep()
 		}
 	}
 }
+
+/** STEAM */
+
+final function OnReadFriends(bool bWasSuccessful)
+{
+	local array<OnlineFriend> Friends;
+	local array<UniqueNetID> ToSpam;
+	local OnlineFriend Friend;
+	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).GetFriendsList(0, Friends));
+	//EOnlineFriendState always offline? Only refers to Cube Defense games? bIsOnline accurate.
+	foreach Friends(Friend)
+	{
+		`log(Friend.NickName@Friend.FriendState@Friend.UniqueID.UID.A@Friend.UniqueID.UID.B@Friend.bIsOnline@Friend.bHasVoiceSupport);
+		if(Friend.NickName == "TestBot 300")
+		{
+			/** Nope. Opens up their steam community page in the overlay. */
+//			OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).RemoveFriend(0,Friend.UniqueID);
+		}
+		else if(Friend.NickName == "{Dic6} Galactic Pretty Boy")
+		{
+			ToSpam.AddItem(Friend.UniqueId);
+			`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).SendGameInviteToFriends(0,ToSpam,"MYKE DID YOU GET THIS!?"));
+		}
+	}
+}
+
+final function OnReadFriendsForAvatars(bool bWasSuccessful)
+{
+	local array<OnlineFriend> Friends;
+	local OnlineFriend Friend;
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).GetFriendsList(0, Friends);
+	foreach Friends(Friend)
+	{
+		if(Friend.NickName != "[Lurking] KNAPKINATOR")
+		OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(Friend.UniqueID, OnReadAvatar);
+	}
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(LocalPlayer(GetALocalPlayerController().Player).GetUniqueNetID(), OnReadAvatar);
+}
+
+final function OnReadAvatar(const UniqueNetId PlayerNetId, Texture2D Avatar)
+{
+	local TowerBlockStructural Block;
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		if(bool(Rand(2)))
+		{
+			Block.MaterialInstance.SetTextureParameterValue('BlockTexture', Avatar);
+		}
+	}
+}
+
+
+/** Steam is smart and won't just let you screw up people's stuff.
+SendMessageToFriend() just opens the steam overlay with a chat window to whoever. */
+final function AskMyke(out OnlineFriend Myke)
+{
+	local int i;
+	for(i = 0; i < 5; i++)
+	{
+		`log(Myke.NickName@OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).
+			SendMessageToFriend(0, Myke.UniqueID, "BEEP BOOP MYKE DID YOU GET THIS?!?!?!"));
+	}
+}
+exec function DebugSteamUnlockAchievement(int AchievementID)
+{
+	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).UnlockAchievement(0,AchievementID));
+}
+
+exec function DebugSteamShowAchievementsUI()
+{
+	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ShowAchievementsUI(0));
+}
+
+exec function DebugSteamResetAchievements()
+{
+	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ResetStats(true));
+}
+
+exec function DebugSteamListFriends()
+{
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AddReadFriendsCompleteDelegate(0, OnReadFriends);
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadFriendsList(0, 0);
+}
+
+exec function DebugSteamAddAvatars()
+{
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AddReadFriendsCompleteDelegate(0, OnReadFriendsForAvatars);
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadFriendsList(0, 0);
+}
+
+/** /STEAM */
+
+exec function DebugJump()
+{
+	local TowerEnemyPawn Pawn;
+	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
+	{
+		Pawn.DoJump(false);
+	}
+}
+
+exec function DebugAITaunt()
+{
+	local TowerEnemyPawn Pawn;
+	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
+	{
+		TowerEnemyController(Pawn.Controller).GotoState('Celebrating');
+	}
+}
 `endif
 
 exec function StartGame()
@@ -617,7 +726,7 @@ function SetTowerName(Tower Tower, string NewTowerName)
 
 event FactionInactive(TowerFactionAI Faction)
 {
-	`warn("FactionInactive called when not in RoundInProgress!");
+	`warn(Faction@"called FactionInactive when not in RoundInProgress!");
 }
 
 event RootDestroyed(TowerPlayerReplicationInfo PRI)
@@ -657,6 +766,7 @@ state CoolDown
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 	}
 
+	//@DEBUG
 	exec function SkipCoolDown()
 	{
 		ClearTimer();
@@ -692,6 +802,16 @@ state RoundInProgress
 			{
 				TowerFactionAI(Faction).RoundStarted(BudgetPerFaction);
 			}
+		}
+	}
+
+	//@DEBUG
+	exec function SkipRound()
+	{
+		local TowerFaction Faction;
+		foreach Factions(Faction)
+		{
+			Faction.GoInActive();
 		}
 	}
 
@@ -737,8 +857,19 @@ state RoundInProgress
 
 state GameOver
 {
+	final function NotifyGameOver()
+	{
+		local TowerFaction Faction;
+		foreach Factions(Faction)
+		{
+			Faction.OnGameOver();
+		}
+	}
 Begin:
 	`log("GAME OVER. IMAGINE A COOL CINEMATIC HERE.");
+	NotifyGameOver();
+	DrawDebugString(Vect(0,0,400), "GAME OVER");
+	DrawDebugString(Vect(0,0,256), "* IMAGINE A COOL GAME OVER CINEMATIC HERE *");
 }
 
 function SendMusicEvent(MusicEvent Event)

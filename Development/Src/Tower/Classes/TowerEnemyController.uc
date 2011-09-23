@@ -6,6 +6,7 @@ var TowerFormationMarker Marker;
 var TowerEnemyController NextSquadMember;
 
 var Vector NextMoveLocation;
+var Vector JumpVector; 
 
 auto state Idle
 {
@@ -14,20 +15,60 @@ Begin:
 //	Pawn.SetTickIsDisabled(true);
 };
 
+function Rotator GetAdjustedAimFor( Weapon W, vector StartFireLoc )
+{
+	return Rotator(Normal(GetSquadObjective().Location - Pawn.Location));
+}
+
+final function Vector GetAimPoint(Actor Block)
+{
+	local Vector HitLocation, HitNormal, TraceEnd, Temp;
+	TraceEnd = Block.Location;
+	DrawDebugLine(Pawn.GetWeaponStartTraceLocation(), TraceEnd, 255, 0, 0, true);
+	if(Pawn.Trace(HitLocation, HitNormal, TraceEnd, Pawn.GetWeaponStartTraceLocation()) == Block)
+	{
+//		`log(Self@"aiming for center!");
+		return HitLocation;
+	}
+	// Bounds are slightly off of 128. Like 129.014~.
+	TraceEnd += Vect(0,0,128);
+	DrawDebugLine(Pawn.GetWeaponStartTraceLocation(), TraceEnd, 0, 255, 0, true);
+	if(Pawn.Trace(HitLocation, HitNormal, TraceEnd, Pawn.GetWeaponStartTraceLocation()) == Block)
+	{
+//		`log(Self@"aiming for top-center!");
+		return HitLocation;
+	}
+	Temp = Normal(Block.Location - Pawn.Location);
+	Temp.Z = TraceEnd.Z;
+	Temp *= 128;
+	TraceEnd +=  Temp;
+	DrawDebugLine(Pawn.GetWeaponStartTraceLocation(), TraceEnd, 0, 0, 255, true);
+	if(Pawn.Trace(HitLocation, HitNormal, TraceEnd, Pawn.GetWeaponStartTraceLocation()) == Block)
+	{
+//		`log(Self@"aiming for top-away!");
+		return HitLocation;
+	}
+	return Vect(0,0,0);
+}
+
 // Squad leader's state.
 state Leading
 {
+	event EndState(Name NextStateName)
+	{
+		EndCheckFireTimer();
+	}
 Begin:
-	BeginCheckFireTimer();
+//	BeginCheckFireTimer();
 //	`log(Self@"Trying to path to Squad.SquadObjective!"@Squad.SquadObjective,,'SLeader');
 	Pawn.SetPhysics(PHYS_Walking);
 	if(NavigationHandle.ActorReachable(Squad.SquadObjective))
 	{
-//		`log("Moving straight towards it!");
-		MoveToward(Squad.SquadObjective, GetSquadObjective().GetTargetActor(), 512);
+		`log("Moving straight towards it!"@GetSquadObjective().CompletionRadius-30@GetSquadObjective().GetGoalPoint());
+		MoveTo(GetSquadObjective().GetGoalPoint(), GetSquadObjective().GetTargetActor(), GetSquadObjective().CompletionRadius-30);
 //		Pawn.Acceleration = Vect(0,0,0);
 	}
-	else if(GeneratePathTo(Squad.SquadObjective, 500))
+	else if(GeneratePathTo(GetSquadObjective(), GetSquadObjective().CompletionRadius))
 	{
 //		`log(Self@"Trying to generate a path!",,'SLeader');
 		NavigationHandle.SetFinalDestination(Squad.SquadObjective.Location);
@@ -41,20 +82,74 @@ Begin:
 	}
 	else
 	{
+		`log("Moving straight towards it IDLEs!"@GetSquadObjective().CompletionRadius-30);
+		MoveTo(GetSquadObjective().GetGoalPoint(), GetSquadObjective().GetTargetActor(), GetSquadObjective().CompletionRadius-30);
 //		`log(Self@"can't path at all! Idling!",,'SLeader');
-		GotoState('Idle');
+//		GotoState('Idle');
 	}
-	if(VSizeSq(Squad.SquadObjective.Location - Pawn.Location) <= 2500**2)
+	`log(VSizeSq(GetSquadObjective().GetGoalPoint() - Pawn.Location)@"vs"@GetSquadObjective().CompletionRadius**2);
+	if(VSizeSq(GetSquadObjective().GetGoalPoint() - Pawn.Location) <= GetSquadObjective().CompletionRadius**2)
 	{
-//		`log(Self@"Close enough, idling!",,'SLeader');
-		GotoState('Idle');
+		`log(Self@"Close enough, do something!",,'SLeader');
+		goto 'UpdateObjective';
 	}
 	goto 'Begin';
+AtObjective:
+UpdateObjective:
+	if(GetSquadObjective().Completed(Squad))
+	{
+		switch(GetSquadObjective().Type)
+		{
+		case OT_ClimbUp:
+			goto 'ToClimbUp';
+		case OT_GoTo:
+			goto 'ToGoTo';
+		case OT_Destroy:
+			goto 'ToDestroy';
+		default:
+			GotoState('Idle');
+		}
+	}
+	else
+	{
+		GotoState('Idle');
+	}
+ToClimbUp:
+	PushState('ClimbBlock', 'Begin');
+	`log("JUMPED?!");
+	goto 'Begin';
+ToGoTo:
+	goto 'Begin';
+ToDestroy:
+	BeginCheckFireTimer();
 };
+
+state ClimbBlock
+{
+Begin:
+	`log(self@"climbing!");
+	/*
+	`log(Pawn.SuggestJumpVelocity(JumpVector, GetSquadObjective().Location, Pawn.Location, true));
+	`log(JumpVector);
+	if(JumpVector != Vect(0,0,0))
+	{
+		Pawn.Velocity = JumpVector;
+		Pawn.SetPhysics(PHYS_Falling);
+	}
+	*/
+	Pawn.DoJump(false);
+	Sleep(0.75);
+	PopState();
+}
 
 // Other squad members' state.
 state Following
 {
+	//@TODO @BUG - What if going to LEader? 
+	event EndState(Name NextStateName)
+	{
+		EndCheckFireTimer();
+	}
 Begin:
 	BeginCheckFireTimer();
 	Pawn.SetPhysics(PHYS_Walking);
@@ -68,9 +163,23 @@ Move:
 	goto 'Move';
 };
 
+// Player lost, celebrate!
+state Celebrating
+{
+Begin:
+	AnimNodeSlot(Pawn.Mesh.FindAnimNode('FullBodySlot')).PlayCustomAnim('Taunt_FB_Pelvic_Thrust_A', 1.0, 0.2, 0.2, FALSE, TRUE);
+	Sleep(3);
+	goto 'Begin';
+};
+
 function BeginCheckFireTimer()
 {
 	SetTimer(1 + (Rand(-1) + Rand(1)), true, 'CheckFiring');
+}
+
+function EndCheckFireTimer()
+{
+	ClearTimer('CheckFiring');
 }
 
 function PawnDied(Pawn inPawn)
