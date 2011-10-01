@@ -49,6 +49,7 @@ var array<AIBlockInfo> Blocks;
 //@TODO - Doesn't handle multiplayer.
 var TowerAIObjective RootBlock;
 
+/** Allows Actors to register for a TG_DuringAsyncWork. Useful for when an AI thinks. */
 var privatewrite array<delegate<AsyncTick> > ToTick;
 
 delegate AsyncTick(float DeltaTime);

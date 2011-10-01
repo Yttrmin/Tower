@@ -45,15 +45,16 @@ var private array<TowerBlock> DeferredOpenList, DeferredClosedList;
 var private TowerBlock StepBestBlock;
 /** Used to represent the different nodes when stepping. */
 var private array<TowerAIObjective> StepMarkers;
-/** The ACTUAL iteration we're on, regardless of whether we defer or not. */
-var private int Iteration;
-var private bool bGo;
+
+var private int DesiredPath;
 
 
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	IterationsPerTick = Clamp(IterationsPerTick, 0, 999999);
+	AStarComponent.Initialize(OnPathGenerated);
+	/*
+	IterationsPerTick = Clamp(IterationsPerTick, 0, MaxInt);
 	if(bStepSearch)
 	{
 		bDeferSearching = true;
@@ -64,6 +65,7 @@ event PostBeginPlay()
 	AStarComponent.IterationsPerTick = IterationsPertick;
 	AStarComponent.bDrawStepInfo = bDrawStepInfo;
 	AStarComponent.AddOnPathGeneratedDelegate(OnPathGenerated);
+	*/
 }
 
 // Called when all human players have lost.
@@ -96,7 +98,7 @@ final function Step()
 function Start()
 {
 	`log("Starting"@self);
-	Hivemind.RegisterForAsyncTick(AsyncTick);
+	DesiredPath = AStarComponent.GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target);
 }
 
 final function GenerateObjectives()
@@ -104,7 +106,7 @@ final function GenerateObjectives()
 
 }
 
-event OnPathGenerated(const bool bSuccessful, TowerAIObjective Root)
+event OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root)
 {
 	`warn(self@"ONPATHGENERATED CALLED OUTSIDE ACTIVE");
 }
@@ -113,17 +115,19 @@ state Active
 {
 	event Think()
 	{
-		if(bGo)
-		{
-			SpawnFormation(0, SpawnPoints[0], AStarComponent.Paths[0]);
-			bGo = false;
-		}
+		
 	}
 
-	event OnPathGenerated(const bool bSuccessful, TowerAIObjective Root)
+	event OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root)
 	{
-		`log("Path generated! GO GO GO! BUT ONLY DO SO NEXT TICK@#J");
-		bGo=true;
+		`log("Path generated! GO GO GO!");
+		SpawnFormation(0, SpawnPoints[0], AStarComponent.Paths[0]);
+	}
+
+	event RoundEnded()
+	{
+		AStarComponent.Clear();
+		Super.RoundEnded();
 	}
 }
 
@@ -189,18 +193,6 @@ final function Vector GetFactionLocationDirection()
 	default:
 		`warn(Self@"has a FactionLocation unsupported for AIs!:"@Faction);
 		return Vect(0,0,0);
-	}
-}
-
-//@TODO - Cut out middleman, have AStarComponent register for AsyncTick.
-event AsyncTick(float DeltaTime)
-{
-	if(AStarComponent.Paths.Length == 0)
-	{
-		if(AStarComponent.GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target))
-		{
-			`log("DONE! (BUT NOT REALLY (WAIT FOR THE DELEGATE YOU LAZY JERK))");
-		}
 	}
 }
 
