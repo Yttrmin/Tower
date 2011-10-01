@@ -59,6 +59,7 @@ var const config float CoolDownTime;
 var const config array<String> FactionAIs;
 var const config bool bLogGameplayEvents;
 var const config float GameplayEventsHeartbeatDelta;
+var private array<delegate<TickDelegate> > ToTick;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -80,6 +81,8 @@ var bool bPendingLoad;
 var string PendingLoadFile;
 
 var const Vector Borders[4];
+
+delegate TickDelegate(float DeltaTime);
 
 event PreBeginPlay()
 {
@@ -872,10 +875,42 @@ Begin:
 	DrawDebugString(Vect(0,0,256), "* IMAGINE A COOL GAME OVER CINEMATIC HERE *");
 }
 
+event Tick(float DeltaTime)
+{
+	local delegate<TickDelegate> ToTickDelegate;
+	if(ToTick.Length == 0)
+	{
+		return;
+	}
+	foreach ToTick(ToTickDelegate)
+	{
+		ToTickDelegate(DeltaTime);
+	}
+}
+
+final function RegisterForPreAsyncTick(delegate<TickDelegate> Tick)
+{
+	if(ToTick.Find(Tick) == INDEX_NONE)
+	{
+		ToTick.AddItem(Tick);
+	}
+}
+
+final function UnRegisterForPreAsyncTick(delegate<TickDelegate> Tick)
+{
+	local int RemoveIndex;
+	RemoveIndex = ToTick.Find(Tick);
+	if(RemoveIndex != INDEX_NONE)
+	{
+		ToTick.Remove(RemoveIndex, 1);
+	}
+	// Don't disable Tick since TowerGame has timers!
+}
+
 function SendMusicEvent(MusicEvent Event)
 {
 	TowerGameReplicationInfo(GameReplicationInfo).MusicEvent = Event;
-	TowergameReplicationInfo(GameReplicationInfo).ReplicatedEvent('MusicEvent');
+	TowerGameReplicationInfo(GameReplicationInfo).ReplicatedEvent('MusicEvent');
 }
 
 function byte GetFactionAICount()

@@ -4,6 +4,7 @@ TowerFactionInfo
 Provides a common interface for each AI to deal with its faction's own infantry, missiles, etc.
 */
 class TowerFactionInfo extends ActorComponent
+	deprecated
 	HideCategories(Object)
 	AutoExpandCategories(TowerFactionInfo);
 
