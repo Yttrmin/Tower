@@ -21,7 +21,7 @@ enum ObjectiveType
 var privatewrite TowerBlock Target;
 var privatewrite TowerAIObjective NextObjective;
 var privatewrite ObjectiveType Type;
-var privatewrite StaticMeshComponent Mesh;
+var privatewrite StaticMeshComponent Mesh, TypeMesh;
 var privatewrite int CompletionRadius;
 var private Vector GoalPoint;
 var private Vector ShootPoint;
@@ -56,6 +56,21 @@ final function SetTarget(TowerBlock NewTarget)
 final function SetType(ObjectiveType NewType)
 {
 	Type = NewType;
+	switch(Type)
+	{
+	case OT_GoTo:
+		TypeMesh.SetStaticMesh(StaticMesh'NodeBuddies.NodeBuddy_PerchMantle');
+		break;
+	case OT_ClimbUp:
+		TypeMesh.SetStaticMesh(StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_Climb');
+		break;
+	case OT_Destroy:
+		TypeMesh.SetStaticMesh(StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_PopUp');
+		break;
+	default:
+		TypeMesh.SetStaticMesh(StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_Enabled');
+		break;
+	}
 }
 
 final function SetNextObjective(TowerAIObjective NewNextObjective)
@@ -110,10 +125,22 @@ DefaultProperties
 
 	Begin Object Class=StaticMeshComponent Name=MarkerMesh
 		StaticMesh=StaticMesh'DebugMeshes.DebugRectangle'
+		Scale3D=(X=0.5,Y=0.5,Z=0.5)
 	End Object
 	Components.Add(MarkerMesh)
-	DrawScale3D=(X=0.5,Y=0.5,Z=0.5)
-	Mesh = MarkerMesh;
+	Begin Object Class=StaticMeshComponent Name=TypeMarkerMesh
+		//StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_Climb'
+			// OT_ClimbUp
+		//StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_Enabled' // Circle crossed out. No backfacing.
+		//StaticMesh'NodeBuddies.3D_Icons.NodeBuddy_PopUp' // Bullseye with arrow.
+			// OT_Destroy
+		//StaticMesh'NodeBuddies.NodeBuddy_PerchMantle'
+			// OT_GoTo
+		Translation=(Z=-64)
+	End Object
+	Components.Add(TypeMarkerMesh)
+	Mesh = MarkerMesh
+	TypeMesh = TypeMarkerMesh
 
 	Type=OT_NULL
 	//Material'NodeBuddies.Materials.NodeBuddy_Brown1'
