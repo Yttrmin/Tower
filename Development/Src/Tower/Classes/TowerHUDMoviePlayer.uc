@@ -112,7 +112,7 @@ event OnMouseMove(float DeltaX, float DeltaY)
 
 function SetBuildMenuInfo(TowerBlock BlockArchetype)
 {
-	SetVariableString("_root.BuildMenu.BlockName.text", string(BlockArchetype.DisplayName));
+	SetVariableString("_root.BuildMenu.BlockName.text", BlockArchetype.DisplayName);
 	SetVariableString("_root.BuildMenu.BlockDescription.text", BlockArchetype.Description);
 	SetVariableString("_root.BuildMenu.BlockCost.text", "$"$BlockArchetype.PurchasableComponent.Cost);
 	SetVariableString("_root.BuildMenu.BlockHealth.text", "+"$BlockArchetype.HealthMax);

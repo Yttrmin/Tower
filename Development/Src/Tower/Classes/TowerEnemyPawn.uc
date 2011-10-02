@@ -4,12 +4,16 @@ TowerEnemyPawn
 Class of infantry units sent in by enemies.
 */
 class TowerEnemyPawn extends TowerPawn
+	config(Tower)
 	implements(TowerTargetable);
 
 var() editinline TowerPurchasableComponent PurchasableComponent;
 var(InGame) editconst TowerFaction OwnerFaction;
 var(InGame) editconst byte TeamIndex;
 var	AnimNodeAimOffset		AimNode;
+
+var const globalconfig bool bRagdollOnDeath;
+var const globalconfig float RagdollLifespan;
 
 var protectedwrite TowerWeaponAttachment WeaponAttachment;
 
@@ -93,9 +97,16 @@ function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLo
 	Value = Super.Died(Killer, DamageType, HitLocation);
 	OwnerFaction.OnTargetableDeath(Self, None, None);
 //	Destroy();
-	Ragdoll();
-	// Set the actor to automatically destroy in ten seconds. 
-	LifeSpan = 10.f;
+	if(bRagdollOnDeath)
+	{
+		Ragdoll();
+		// Set the actor to automatically destroy in ten seconds. 
+		LifeSpan = RagdollLifeSpan;
+	}
+	else
+	{
+		Destroy();
+	}
 	if(Weapon != None)
 	{
 		Weapon.Destroy();
@@ -105,16 +116,16 @@ function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLo
 
 function Ragdoll()
 {
-	Mesh.MinDistFactorForKinematicUpdate = 0.f;
-//	SetPawnRBChannels(true);
+	Mesh.MinDistFactorForKinematicUpdate = 0.0;
 	Mesh.ForceSkelUpdate();
 	Mesh.SetTickGroup(TG_PostAsyncWork);
 	CollisionComponent = Mesh;
-//	CylinderComponent.SetActorCollision(false, false);
-//	Mesh.SetActorCollision(true, true);
-//	Mesh.SetTraceBlocking(true, true);
+	CylinderComponent.SetActorCollision(false, false);
+	Mesh.SetActorCollision(true, false);
+	Mesh.SetTraceBlocking(true, true);
+	SetPawnRBChannels(true);
 	SetPhysics(PHYS_RigidBody);
-	Mesh.PhysicsWeight = 1.0;
+	Mesh.PhysicsWeight = 1.f;
 
 	if (Mesh.bNotUpdatingKinematicDueToDistance)
 	{
@@ -123,10 +134,10 @@ function Ragdoll()
 
 	Mesh.PhysicsAssetInstance.SetAllBodiesFixed(false);
 	Mesh.bUpdateKinematicBonesFromAnimation = false;
-	Mesh.SetRBLinearVelocity(Velocity, false);
-	Mesh.ScriptRigidBodyCollisionThreshold = MaxFallSpeed;
-	Mesh.SetNotifyRigidBodyCollision(true);
 	Mesh.WakeRigidBody();
+
+	// Set the actor to automatically destroy in ten seconds.
+	LifeSpan = 10.f;
 }
 
 function UnRagdoll()

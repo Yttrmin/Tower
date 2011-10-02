@@ -18,8 +18,9 @@ var repnotify bool bUpdateRotation;
 
 //=========================================================
 // Used in archetypes when creating new blocks.
-/** User-friendly name. Used for things like the build menu. */
-var() const Name DisplayName;
+/** User-friendly name. Used for things like the build menu. 
+Non-const and string so players can nickname blocks. */
+var() String DisplayName;
 /** Description used when selected in the build menu. */
 var() edittextbox const String Description;
 /** If TRUE, this block will be in the player's build list. */

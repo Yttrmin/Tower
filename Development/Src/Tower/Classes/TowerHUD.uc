@@ -109,7 +109,7 @@ function SetupBuildList()
 		if(IteratedBlock.bAddToBuildList)
 		{
 			`assert(IteratedBlock.PurchasableComponent != None);
-			BuildStrings.AddItem(String(IteratedBlock.DisplayName));
+			BuildStrings.AddItem(IteratedBlock.DisplayName);
 			HUDMovie.BuildIndexes.AddItem(i);
 		}
 	}
