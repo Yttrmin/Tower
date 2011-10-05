@@ -8,6 +8,7 @@ class TowerEnemyPawn extends TowerPawn
 	implements(TowerTargetable);
 
 var() editinline TowerPurchasableComponent PurchasableComponent;
+var(InGame) editconst TowerDamageTrackerComponent DamageTracker;
 var(InGame) editconst TowerFaction OwnerFaction;
 var(InGame) editconst byte TeamIndex;
 var	AnimNodeAimOffset		AimNode;
@@ -76,7 +77,15 @@ function bool BotFire(bool bFinished)
 
 event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
+	local int ActualDamage;
+	//@TODO - Cap damage for damage tracking.
+	`log(Self@"InstigatedBy:"@InstigatedBy@"DamageCauser:"@DamageCauser);
+	// Let everyone modify the damage as they please, and then cap it if it's still over.
+	ActualDamage = Health;
 	Super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
+	ActualDamage -= Max(Health, 0);
+
+	DamageTracker.OnTakeDamage(ActualDamage, InstigatedBy, DamageType, DamageCauser);
 //	ScriptTrace();
 }
 
@@ -193,6 +202,11 @@ static function TowerPurchasableComponent GetPurchasableComponent(TowerTargetabl
 	return TowerEnemyPawn(Archetype).PurchasableComponent;
 }
 
+function TowerDamageTrackerComponent GetDamageTracker()
+{
+	return DamageTracker;
+}
+
 simulated event byte ScriptGetTeamNum()
 {
 	return TeamIndex;
@@ -233,6 +247,12 @@ function TowerFaction GetOwningFaction();
 
 DefaultProperties
 {
+	Begin Object Class=TowerDamageTrackerComponent Name=DamageTrackerComponent
+
+	End Object
+	Components.Add(DamageTrackerComponent)
+	DamageTracker=DamageTrackerComponent
+
 	bCanJump=true
 	bJumpCapable=true
 	JumpZ = 1680

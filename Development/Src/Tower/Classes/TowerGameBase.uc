@@ -115,10 +115,10 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 	return super.Login(Portal, Options, UniqueID, ErrorMessage);
 }
 
-event OnLoadGame();
+protected event OnLoadGame();
 
 /** Called from PreBeginPlay. Loads any mods listed in the config file. */
-final function CheckForMods()
+private final function CheckForMods()
 {
 	`if(`notdefined(DEMO))
 	local int i;

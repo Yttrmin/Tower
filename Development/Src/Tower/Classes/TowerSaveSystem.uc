@@ -134,8 +134,6 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	local array<int> TranslatedMods;
 	local ModInfo Info;
 	local TowerBlock BlockArchetype, Block;
-	local Vector SpawnLocation;
-	local IVector GridLocation;
 
 	FileName $= SAVE_FILE_EXTENSION;
 	`log("Loading:"@FileName,,'NativeLoad');
@@ -172,13 +170,8 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	// Spawn blocks (excluding air).
 	foreach Blocks(BlockInfo, i)
 	{
-		SpawnLocation = ToVect(BlockInfo.G*256);
-		SpawnLocation.Z += 128;
-		GridLocation.X = SpawnLocation.X / 256;
-		GridLocation.Y = SpawnLocation.Y / 256;
-		GridLocation.Z = SpawnLocation.Z / 256;
 		BlockArchetype = ModsArray[TranslatedMods[BlockInfo.M]].ModBlocks[BlockInfo.I];
-		Block = Player.GetTower().AddBlock(BlockArchetype, None, SpawnLocation, GridLocation, false);
+		Block = Player.GetTower().AddBlock(BlockArchetype, None, BlockInfo.G, false);
 		Block.Initialize(BlockInfo.G, BlockInfo.P, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
 		if(BlockArchetype == TowerGame(Player.WorldInfo.Game).RootArchetype)
 		{

@@ -21,6 +21,8 @@ static function int GetCost(TowerTargetable SelfArchetype);
 
 static function TowerPurchasableComponent GetPurchasableComponent(TowerTargetable Archetype);
 
+function TowerDamageTrackerComponent GetDamageTracker();
+
 //@TODO - Combine interface and component instead?
 function TowerFaction GetOwningFaction();
 

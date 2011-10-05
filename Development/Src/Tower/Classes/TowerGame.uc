@@ -38,7 +38,8 @@ struct DifficultySettings
 	var int BlockPriceMultiplier;
 };
 
-var array<TowerFaction> Factions;
+//@DEPRECATED - GameReplicationInfo::Teams does this.
+var deprecated array<TowerFaction> Factions;
 var TowerGameplayEventsWriter GameplayEventsWriter;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var private byte RemainingActiveFactions;
@@ -109,6 +110,7 @@ event PostLogin(PlayerController NewPlayer)
 		PendingLoadFile = "";
 	}
 	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
+	AddFaction(class'TowerFactionHuman', FL_None, NewPlayer);
 	if(NewPlayer.Pawn == None)
 	{
 		RestartPlayer(newPlayer);
@@ -502,43 +504,50 @@ exec function StartGame()
 
 function StartMatch()
 {
+	local TowerFactionAI Archetype;
 	local byte i;
 	`log("StartMatch!");
 	Super.StartMatch();
-	AddFactionHuman(0);
+//	AddFaction(class'TowerFactionHuman', FL_None);
 	//;PosX, PosY, NegX, NegY
 	for(i = 0; i < 4 && i+1 <= FactionAIs.length; i++)
 	{
-		AddFactionAI(5+i, TowerFactionAI(DynamicLoadObject(FactionAIs[i], class'TowerFactionAI', true)), FactionLocation(1+i));
+		Archetype = TowerFactionAI(DynamicLoadObject(FactionAIs[i], class'TowerFactionAI', true));
+		AddFaction(Archetype.class, FactionLocation(1+i),, Archetype);
 	}
 	GotoState('CoolDown');
 }
 
-function AddFactionAI(int TeamIndex, TowerFactionAI Archetype, FactionLocation Faction)
+
+private final function AddFaction(class<TowerFaction> FactionClass, FactionLocation Faction, 
+	optional PlayerController Controller, optional TowerFactionAI Archetype)
 {
+	local TowerFaction NewFaction;
+	local int TeamIndex;
 	local array<TowerSpawnPoint> FactionSpawnPoints;
 	local TowerSpawnPoint Point;
-	// Fill an array of spawn points for the AI.
-	foreach SpawnPoints(Point)
-	{
-		if(Point.Faction == Faction)
-		{
-			FactionSpawnPoints.AddItem(Point);
-		}
-	}
-	Factions[TeamIndex] = Spawn(Archetype.class,,,,,Archetype);
-	Factions[TeamIndex].TeamIndex = TeamIndex;
-	TowerFactionAI(Factions[TeamIndex]).Hivemind = HiveMind;
-	TowerFactionAI(Factions[TeamIndex]).Faction = FactionLocation(Faction);
-	TowerFactionAI(Factions[TeamIndex]).ReceiveSpawnPoints(FactionSpawnPoints);
-	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
-}
 
-function AddFactionHuman(int TeamIndex)
-{
-	Factions[TeamIndex] = Spawn(class'TowerFactionHuman');
-	Factions[TeamIndex].TeamIndex = TeamIndex;
-	GameReplicationInfo.SetTeam(TeamIndex, Factions[TeamIndex]);
+	TeamIndex = GameReplicationInfo.Teams.Length;;
+	NewFaction = Spawn(FactionClass,,,,, Archetype);
+	NewFaction.TeamIndex = TeamIndex;
+	NewFaction.Faction = Faction;
+	if(TowerFactionAI(NewFaction) != None)
+	{
+		// Fill an array of spawn points for the AI.
+		foreach SpawnPoints(Point)
+		{
+			if(Point.Faction == Faction)
+			{
+				FactionSpawnPoints.AddItem(Point);
+			}
+		}
+		TowerFactionAI(NewFaction).Hivemind = HiveMind;
+		TowerFactionAI(NewFaction).ReceiveSpawnPoints(FactionSpawnPoints);
+	}
+	//@DELETEME @DEPRECATED
+	Factions[TeamIndex] = NewFaction;
+	GameReplicationInfo.SetTeam(TeamIndex, NewFaction);
+	NewFaction.AddToTeam(Controller);
 }
 
 function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
@@ -759,19 +768,17 @@ function CalculateRemainingActiveFactions()
 function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
 	out IVector GridLocation)
 {
-	local Vector SpawnLocation;
 	local TowerBlock Block;
-	SpawnLocation = GridLocationToVector(GridLocation);
-	// Pivot point in middle, bump up.
-	SpawnLocation.Z += 128;
 	`assert(BlockArchetype != None);
 	if(CanAddBlock(GridLocation, Parent))
 	{
-		Block = Tower.AddBlock(BlockArchetype, Parent, SpawnLocation, GridLocation);
+		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
+		/*
 		if(Block != None)
 		{
 			`RecordGamePositionStat(PLAYER_SPAWNED_BLOCK, SpawnLocation, 5);
 		}
+		*/
 	}
 	return Block;
 }

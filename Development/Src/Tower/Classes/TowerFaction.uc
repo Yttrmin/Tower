@@ -23,6 +23,11 @@ function ConsumeBudget(int Amount)
 	Budget = Max(0, Budget - Amount);
 }
 
+function RewardBudget(int Amount)
+{
+	Budget += Amount;
+}
+
 state GameOver
 {
 
