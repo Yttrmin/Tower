@@ -534,6 +534,15 @@ function CheckActivity()
 event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKiller, TowerBlock BlockKiller)
 {
 	//@TODO - Collect information about deaths so we can figure out what to counter.
+	/*
+	if(BlockKiller != None)
+	{
+		//@TODO
+		// Award killing Tower points for kill.
+		// Keep track of how much damage from each Tower so everyone gets points.
+	}
+	*/
+	Targetable.GetDamageTracker().RewardFactions();
 	UnitsOut--;
 	CheckActivity();
 }

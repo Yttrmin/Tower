@@ -50,14 +50,17 @@ final function SetRootBlock(TowerBlockRoot RootBlock)
 }
 
 //@TODO - We really only need one of the locations. Probably Grid.
-function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
-	out const Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
+function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, 
+	out IVector GridLocation, optional bool bAddAir=true)
 {
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
+	local Vector SpawnLocation;
 	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
 		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
 	{
+		SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
+		SpawnLocation.Z += 128;
 		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 		if(Parent != None)
 		{
@@ -141,7 +144,6 @@ function DestroyOccupiedAir(TowerBlock BlockToDestroyAirs, TowerBlock BlockToTes
 
 function CreateSurroundingAir(TowerBlock Block)
 {
-	local Vector AirSpawnLocation;
 	local IVector AirGridLocation;
 	local TowerBlock IteratorBlock;
 	local array<IVector> EmptyDirections;
@@ -170,9 +172,7 @@ function CreateSurroundingAir(TowerBlock Block)
 		AirGridLocation = Block.GridLocation + EmptyDirections[0];
 		if(!IsThereAir(AirGridLocation))
 		{
-			AirSpawnLocation = Block.Location + ToVect(EmptyDirections[0] * 256);
-			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirSpawnLocation,
-				AirGridLocation);
+			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirGridLocation);
 		}
 		EmptyDirections.Remove(0, 1);
 	}
@@ -380,8 +380,8 @@ simulated state Inactive
 	`if(`isdefined(final_release))
 	ignores AddBlock, RemoveBlock, PostRenderFor, OnTargetableDeath;
 	`else
-	function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
-		out const Vector SpawnLocation, out IVector GridLocation, optional bool bAddAir=true)
+	function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, 
+		out IVector GridLocation, optional bool bAddAir=true)
 	{
 		`warn("AddBlock called during Inactive! How could this happen?!");
 		return None;
