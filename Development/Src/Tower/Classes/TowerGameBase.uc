@@ -22,8 +22,8 @@ var privatewrite TowerBlock RootArchetype;
 var privatewrite TowerBlock AirArchetype;
 
 //@TODO - Decouple loading from Tower/TowerGame. Make these private.
-var protectedwrite bool bPendingLoad;
-var protectedwrite string PendingLoadFile;
+var protected bool bPendingLoad;
+var protected string PendingLoadFile;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
 

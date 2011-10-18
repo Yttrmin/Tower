@@ -14,6 +14,11 @@ var array<int> BuildIndexes;
 
 var protectedwrite bool bInMenu;
 
+const SWF_WIDTH = 1024;
+const SWF_HEIGHT = 768;
+const SWF_MIDDLE_X = 512;
+const SWF_MIDDLE_Y = 368;
+
 event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 {
 	if(WidgetName == 'PlaceablesList')
@@ -102,10 +107,12 @@ event OnBuildListChange(int Index)
 
 event OnMouseMove(float DeltaX, float DeltaY)
 {
-	DeltaX *= HUD.RatioX;
-	DeltaY *= -HUD.RatioY;
-	MouseX = FMax(FMin(MouseX + DeltaX, 1024), 0);
-	MouseY = FMax(FMin(MouseY + DeltaY, 768), 0);
+//	DeltaX *= HUD.RatioX;
+//	DeltaY *= -HUD.RatioY;
+	DeltaX /= HUD.RatioX;
+	DeltaY /= -HUD.RatioY;
+	MouseX = FClamp(MouseX + DeltaX, 0, SWF_WIDTH);
+	MouseY = FClamp(MouseY + DeltaY, 0, SWF_HEIGHT);
 	MoveCursor();
 //	`log(DeltaX@DeltaY);
 }
@@ -148,17 +155,19 @@ function bool HitTest(GFxObject Object, int X, int Y)
 
 DefaultProperties
 {
-	MouseX = 512
-	MouseY = 384
+	MouseX = SWF_MIDDLE_X
+	MouseY = SWF_MIDDLE_Y
 	MovieInfo=SwfMovie'TowerHUD.HUD'
 	bAutoPlay=TRUE
 	bPauseGameWhileActive=FALSE
 	//bCaptureInput=TRUE
-	bAllowFocus=TRUE
+	bAllowFocus=FALSE
 	bIgnoreMouseInput=TRUE
 
 	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
 
 	bDisplayWithHudOff=false
+	bLogUnhandedWidgetInitializations=true
+	TimingMode=TM_Game
 }
 

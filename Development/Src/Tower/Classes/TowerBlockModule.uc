@@ -19,9 +19,10 @@ struct RangeCallbacks
 	var() bool bInfantry, bVehicle, bProjectile;
 };
 
+var() protected const bool bUseRangeCallbacks;
 /** Whichever variables are TRUE will result in this object getting OnEnterRange() called on it when such an enemy comes
 in range. */ 
-var() protected const RangeCallbacks Callbacks;
+var() protected const RangeCallbacks Callbacks<EditCondition=bUseRangeCallbacks>;
 
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
@@ -29,7 +30,10 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
-	RegisterRangeCallbacks();
+	if(bUseRangeCallbacks)
+	{
+		RegisterRangeCallbacks();
+	}
 }
 
 simulated event OnEnterRange(TowerTargetable Targetable);

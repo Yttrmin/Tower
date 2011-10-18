@@ -1,15 +1,20 @@
-class TowerPlayerInput extends PlayerInput;
+class TowerPlayerInput extends PlayerInput within TowerPlayerController;
+
+`define debugexec `if(`isdefined(debug)) exec `else `define debugconfig `endif
 
 delegate OnMouseMove(float DeltaX, float DeltaY);
 
 /** I predict this'll be painfully slow. If you use it definitely store the result! */
-function name GetKeyFromCommand(string Command)
+`debugexec function name GetKeyFromCommand(string Command)
 {
 	local KeyBind Bind;
 	foreach Bindings(Bind)
 	{
 		if(Bind.Command == Command)
 		{
+			`if(`isdefined(debug))
+				`log(Bind.Name);
+			`endif
 			return Bind.Name;
 		}
 	}
@@ -19,6 +24,7 @@ function name GetKeyFromCommand(string Command)
 // Postprocess the player's input.
 event PlayerInput( float DeltaTime )
 {
+	//@NOTE - aMouseX and aMouseY are updated even with Scaleform.
 	// Process mouse input before this, please.
 	if(aMouseX != 0 || aMouseY != 0)
 	{

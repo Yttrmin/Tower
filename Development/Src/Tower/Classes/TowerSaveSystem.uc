@@ -30,6 +30,14 @@ struct immutable PlayerSaveInfo
 	var Rotator R;
 };
 
+struct immutable FactionInfo
+{
+	// AI Archetype. None implies player.
+	var TowerFactionAI A;
+	// Budget.
+	var int B;
+};
+
 struct immutable ModInfo
 {
 	// ModName.
