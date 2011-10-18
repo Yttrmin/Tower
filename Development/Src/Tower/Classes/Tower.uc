@@ -56,37 +56,35 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
 	local Vector SpawnLocation;
-	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
-		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
+	
+	SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
+	SpawnLocation.Z += 128;
+	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
+	if(Parent != None)
 	{
-		SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
-		SpawnLocation.Z += 128;
-		NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
-		if(Parent != None)
+		NewBlock.SetBase(Parent);
+		if(NewBlock.class != class'TowerBlockAir')
 		{
-			NewBlock.SetBase(Parent);
-			if(NewBlock.class != class'TowerBlockAir')
+			if(TowerBlockStructural(NewBlock) != None)
 			{
-				if(TowerBlockStructural(NewBlock) != None)
-				{
-					// Why do only TBS get this?
-					// Because they don't replicate actor stuff IDIOT.
-					TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
-				}
-				else
-				{
-					NewBlock.bUpdateRotation = true;
-				}
-				NewBlock.CalculateBlockRotation();
+				// Why do only TBS get this?
+				// Because they don't replicate actor stuff IDIOT.
+				TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
 			}
-			ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
+			else
+			{
+				NewBlock.bUpdateRotation = true;
+			}
+			NewBlock.CalculateBlockRotation();
 		}
-		NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
-		if(bAddAir && NewBlock.class != class'TowerBlockAir')
-		{
-			CreateSurroundingAir(NewBlock);
-		}
+		ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
 	}
+	NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
+	if(bAddAir && NewBlock.class != class'TowerBlockAir')
+	{
+		CreateSurroundingAir(NewBlock);
+	}
+	
 	
 	//@TODO - Tell AI about this?
 	return NewBlock;

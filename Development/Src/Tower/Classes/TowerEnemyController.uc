@@ -174,7 +174,7 @@ Begin:
 
 function BeginCheckFireTimer()
 {
-	SetTimer(1 + (Rand(-1) + Rand(1)), true, 'CheckFiring');
+	SetTimer(1 + (Rand(-1) + Rand(1)), true, NameOf(CheckFiring));
 }
 
 function EndCheckFireTimer()

@@ -334,7 +334,7 @@ exec function DebugSpectateTargetable(optional bool bRetainViewTarget=false)
 
 exec function DebugSpectateFactionAI(int Index, optional bool bRetainViewTarget=false)
 {
-	if(TowerGame(WorldInfo.Game).Factions[Index] != None)
+	if(WorldInfo.Game.GameReplicationInfo.Teams[Index] != None)
 	{
 		if(ViewTarget != None)
 		{
@@ -342,9 +342,9 @@ exec function DebugSpectateFactionAI(int Index, optional bool bRetainViewTarget=
 		}
 		if(!bRetainViewTarget)
 		{
-			SetViewTarget(TowerGame(WorldInfo.Game).Factions[Index]);
+			SetViewTarget(WorldInfo.Game.GameReplicationInfo.Teams[Index]);
 		}
-		myHUD.AddPostRenderedActor(TowerGame(WorldInfo.Game).Factions[Index]);
+		myHUD.AddPostRenderedActor(WorldInfo.Game.GameReplicationInfo.Teams[Index]);
 	}
 }
 

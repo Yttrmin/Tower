@@ -119,7 +119,8 @@ struct FormationSpawnInfo
 };
 
 //@TODO - Deprecate this?
-var protected Tower TargetTower;
+var protected deprecated Tower TargetTower;
+var() protected  TowerFactionAILogicComponent LogicComponent;
 var() protected TowerFactionInfo FactionInfo;
 
 // These exist purely to cut down on the typecasting and function calling every tick.
@@ -195,7 +196,7 @@ event ReceiveSpawnPoints(array<TowerSpawnPoint> NewSpawnPoints)
 function BeginCoolDown()
 {
 	bCoolDown = true;
-	SetTimer(2, true, 'CooledDown');
+	SetTimer(2, true, NameOf(CooledDown));
 }
 
 function ResetCoolDown()

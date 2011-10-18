@@ -1,0 +1,1 @@
+class GFxScrollBar extends GFxClikWidget;

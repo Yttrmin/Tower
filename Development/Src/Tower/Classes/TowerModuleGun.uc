@@ -2,6 +2,7 @@ class TowerModuleGun extends TowerBlockModule;
 
 var SkelControlLookAt Barrel;
 var TowerTargetable Target;
+var() private const noclear editinline TowerRangeComponent RangeComponent;
 var() private const bool bUsesProjectile;
 var() private const class<TowerProjectile> ProjectileClass<EditCondition=bUsesProjectile>;
 var() private const class<TowerDamageType> DamageTypeClass; 
@@ -9,7 +10,7 @@ var() private const class<TowerDamageType> DamageTypeClass;
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	SetTimer(3, true, 'Think');
+	SetTimer(3, true, NameOf(Think));
 }
 
 simulated event OnEnterRange(TowerTargetable Targetable)
@@ -18,7 +19,7 @@ simulated event OnEnterRange(TowerTargetable Targetable)
 	{
 		Target = Targetable;
 		Think();
-		SetTimer(3, true, 'Think');
+		SetTimer(3, true, NameOf(Think));
 	}
 }
 

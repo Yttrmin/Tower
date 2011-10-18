@@ -168,7 +168,7 @@ simulated state UnstableParent extends Unstable
 		else
 		{
 //			bReplicateMovement = false;
-			SetTimer(TimeToDrop(), true, 'DroppedSpace');
+			SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
 		}
 	}
 	event EndState(Name NextStateName)

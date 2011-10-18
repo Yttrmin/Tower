@@ -38,12 +38,9 @@ struct DifficultySettings
 	var int BlockPriceMultiplier;
 };
 
-//@DEPRECATED - GameReplicationInfo::Teams does this.
-var deprecated array<TowerFaction> Factions;
 var TowerGameplayEventsWriter GameplayEventsWriter;
 /** Number of factions that either have enemies alive or the capability to spawn more. */
 var private byte RemainingActiveFactions;
-var protected byte Round;
 var privatewrite DifficultyLevel Difficulty;
 var const config float CoolDownTime;
 var const config array<String> FactionAIs;
@@ -119,6 +116,19 @@ event PostLogin(PlayerController NewPlayer)
 	{
 		StartMatch();
 	}
+	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
+		SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+}
+
+//
+// Player exits.
+//
+function Logout( Controller Exiting )
+{
+	//@TODO - Remove faction.
+	Super.Logout(Exiting);
+	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
+		SetVariableString("_root.PlayerCount.text", String(NumPlayers));
 }
 
 function RestartPlayer(Controller NewPlayer)
@@ -360,8 +370,8 @@ exec function DebugUberBlockTest()
 
 exec function DebugStep()
 {
-	local TowerFaction Faction;
-	foreach Factions(Faction)
+	local TeamInfo Faction;
+	foreach GameReplicationInfo.Teams(Faction)
 	{
 		if(TowerFactionAIAStar(Faction) != None)
 		{
@@ -544,8 +554,6 @@ private final function AddFaction(class<TowerFaction> FactionClass, FactionLocat
 		TowerFactionAI(NewFaction).Hivemind = HiveMind;
 		TowerFactionAI(NewFaction).ReceiveSpawnPoints(FactionSpawnPoints);
 	}
-	//@DELETEME @DEPRECATED
-	Factions[TeamIndex] = NewFaction;
 	GameReplicationInfo.SetTeam(TeamIndex, NewFaction);
 	NewFaction.AddToTeam(Controller);
 }
@@ -626,24 +634,47 @@ function bool IsRoundInProgress()
 	return false;
 }
 
+function ToggleShowHUDCoolDown(bool bVisible)
+{
+	local TowerPlayerController Controller;
+	foreach LocalPlayerControllers(class'TowerPlayerController', Controller)
+	{
+		TowerHUD(Controller.myHUD).HUDMovie.SetVariableBool("_root.CoolDownText._visible", bVisible);
+		TowerHUD(Controller.myHUD).HUDMovie.SetVariableBool("_root.CoolDownTime._visible", bVisible);
+	}
+}
+
 state CoolDown
 {
 	event BeginState(Name PreviousStateName)
 	{
-		SetTimer(CoolDownTime, false);
+		SetTimer(CoolDownTime, false, NameOf(CoolDownExpire));
+		SetTimer(1, true, NameOf(UpdateHUDCoolDown));
+		ToggleShowHUDCoolDown(true);
+		UpdateHUDCoolDown();
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 	}
 
 	//@DEBUG
 	exec function SkipCoolDown()
 	{
-		ClearTimer();
-		Timer();
+		ClearTimer(NameOf(CoolDownExpire));
+		CoolDownExpire();
 	}
 
-	event Timer()
+	event CoolDownExpire()
 	{
 		GotoState('RoundInProgress');
+	}
+
+	event UpdateHUDCoolDown()
+	{
+		local TowerPlayerController Controller;
+		foreach LocalPlayerControllers(class'TowerPlayerController', Controller)
+		{
+			TowerHUD(Controller.myHUD).HUDMovie.SetVariableString("_root.CoolDownTime.text", 
+				String(Round(GetTimerRate('CoolDownExpire') - GetTimerCount('CoolDownExpire'))));
+		}
 	}
 
 	function bool IsRoundInProgress()
@@ -656,15 +687,16 @@ state RoundInProgress
 {
 	event BeginState(Name PreviousStateName)
 	{
-		local TowerFaction Faction;
+		local TeamInfo Faction;
 		local int BudgetPerFaction;
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 		IncrementRound();
+		ToggleShowHUDCoolDown(false);
 		CalculateRemainingActiveFactions();
 		SendMusicEvent(ME_StartRound);
 		//@FIXME - Remove +1
 		BudgetPerFaction = 50 / (GetFactionAICount()+1);
-		foreach Factions(Faction)
+		foreach GameReplicationInfo.Teams(Faction)
 		{
 			if(TowerFactionAI(Faction) != None)
 			{
@@ -676,18 +708,17 @@ state RoundInProgress
 	//@DEBUG
 	exec function SkipRound()
 	{
-		local TowerFaction Faction;
-		foreach Factions(Faction)
+		local TeamInfo Faction;
+		foreach GameReplicationInfo.Teams(Faction)
 		{
-			Faction.GoInActive();
+			TowerFaction(Faction).GoInActive();
 		}
 	}
 
 	/** Increments the round number and sends it all PlayerControllers. */
 	function IncrementRound()
 	{
-		Round++;
-		TowerGameReplicationInfo(GameReplicationInfo).Round = Round;
+		TowerGameReplicationInfo(GameReplicationInfo).Round++;
 		// Force update Round for the server since it won't get replicated to it.
 		TowerGameReplicationInfo(GameReplicationInfo).ReplicatedEvent('Round');
 	}
@@ -707,8 +738,8 @@ state RoundInProgress
 
 	event EndState(Name NextStateName)
 	{
-		local TowerFaction Faction;
-		foreach Factions(Faction)
+		local TeamInfo Faction;
+		foreach GameReplicationInfo.Teams(Faction)
 		{
 			if(TowerFactionAI(Faction) != None)
 			{
@@ -727,10 +758,10 @@ state GameOver
 {
 	final function NotifyGameOver()
 	{
-		local TowerFaction Faction;
-		foreach Factions(Faction)
+		local TeamInfo Faction;
+		foreach GameReplicationInfo.Teams(Faction)
 		{
-			Faction.OnGameOver();
+			TowerFaction(Faction).OnGameOver();
 		}
 	}
 Begin:
@@ -748,9 +779,9 @@ function SendMusicEvent(MusicEvent Event)
 
 function byte GetFactionAICount()
 {
-	local TowerFaction Faction;
+	local TeamInfo Faction;
 	local byte Count;
-	foreach Factions(Faction)
+	foreach GameReplicationInfo.Teams(Faction)
 	{
 		if(TowerFactionAI(Faction) != None)
 		{
@@ -770,7 +801,10 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 {
 	local TowerBlock Block;
 	`assert(BlockArchetype != None);
-	if(CanAddBlock(GridLocation, Parent))
+//	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
+//		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
+	if(CanAddBlock(GridLocation, Parent) && (Parent != None && TowerBlockModule(Parent) == None 
+		&& Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' || bPendingLoad)
 	{
 		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
 		/*
