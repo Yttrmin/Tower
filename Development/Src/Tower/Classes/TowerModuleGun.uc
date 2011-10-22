@@ -2,10 +2,11 @@ class TowerModuleGun extends TowerBlockModule;
 
 var SkelControlLookAt Barrel;
 var TowerTargetable Target;
-var() private const noclear editinline TowerRangeComponent RangeComponent;
-var() private const bool bUsesProjectile;
-var() private const class<TowerProjectile> ProjectileClass<EditCondition=bUsesProjectile>;
-var() private const class<TowerDamageType> DamageTypeClass; 
+var bool bCanFire;
+var bool bThinking;
+
+var() protected const instanced TowerAttackComponent AttackComponent;
+var() byte CoolDownTime;
 
 simulated event PostBeginPlay()
 {
@@ -13,14 +14,36 @@ simulated event PostBeginPlay()
 	SetTimer(3, true, NameOf(Think));
 }
 
+event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
+	TowerPlayerReplicationInfo NewOwnerPRI)
+{
+	Super.Initialize(NewGridLocation, NewParentDirection, NewOwnerPRI);
+	AttackComponent.Initialize();
+}
+
+event Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
+{
+	Super.Touch(Other, OtherComp, HitLocation, HitNormal);
+	RangeComponent.Touch(Other, OtherComp, HitLocation, HitNormal);
+}
+
+//@TODO - Move prototype to TowerBlockModule.
 simulated event OnEnterRange(TowerTargetable Targetable)
 {
+	if(!bThinking)
+	{
+		Think();
+		SetTimer(3, true, NameOf(Think));
+		bThinking = true;
+	}
+	/*
 	if((Target == None || Actor(Target).bDeleteMe || !HasLineOfSight(Actor(Target))) && HasLineOfSight(Actor(Targetable)))
 	{
 		Target = Targetable;
 		Think();
 		SetTimer(3, true, NameOf(Think));
 	}
+	*/
 }
 
 function bool HasLineOfSight(Actor Actor)
@@ -41,6 +64,11 @@ function bool IsFacing(Actor Actor);
 
 event Think()
 {
+	if(Touching.Length > 0)
+	{
+		AttackComponent.StartAttack();
+	}
+	/*
 	if(Target == None || Actor(Target).bDeleteMe)
 	{
 		GetNewTarget();
@@ -53,10 +81,13 @@ event Think()
 	{
 		ClearTimer('Think');
 	}
+	*/
 }
 
 function GetNewTarget()
 {
+	Target = RangeComponent.GetATargetable();
+	/*
 	//@TODO - If multiple callbacks, pick at random.
 	//@TODO - Pick random array member?
 	if(Callbacks.bInfantry && OwnerPRI.Tower.Root.Infantry.Length > 0)
@@ -71,6 +102,7 @@ function GetNewTarget()
 	{
 		Target = OwnerPRI.Tower.Root.Projectiles[0];
 	}
+	*/
 }
 
 /** called after initializing the AnimTree for the given SkeletalMeshComponent that has this Actor as its Owner

@@ -506,7 +506,7 @@ event TowerTargetable SpawnUnit(TowerTargetable UnitArchetype, TowerSpawnPoint S
 	SpawnLocation.Z += 100;
 //	`log("SpawnLocation:"@SpawnLocation@"from SpawnPoint:"@SpawnPoint.Location@"rotation:"@SpawnPoint.Rotation);
 	Targetable = UnitArchetype.CreateTargetable(UnitArchetype, SpawnLocation, Self);
-	TowerEnemyPawn(Targetable).TeamIndex = TeamIndex;
+//	TowerEnemyPawn(Targetable).TeamIndex = TeamIndex;
 	if(Targetable != None)
 	{
 		UnitsOut++;

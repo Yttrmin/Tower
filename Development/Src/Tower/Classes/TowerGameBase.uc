@@ -115,6 +115,14 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 	return super.Login(Portal, Options, UniqueID, ErrorMessage);
 }
 
+/* ProcessServerTravel()
+ Optional handling of ServerTravel for network games.
+*/
+function ProcessServerTravel(string URL, optional bool bAbsolute)
+{
+	Super.ProcessServerTravel(URL, bAbsolute);
+}
+
 protected event OnLoadGame();
 
 /** Called from PreBeginPlay. Loads any mods listed in the config file. */

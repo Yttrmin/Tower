@@ -14,15 +14,7 @@ struct CallbackArrayPosition
 var private CallbackArrayPosition ArrayIndexes;
 */
 
-struct RangeCallbacks
-{
-	var() bool bInfantry, bVehicle, bProjectile;
-};
-
-var() protected const bool bUseRangeCallbacks;
-/** Whichever variables are TRUE will result in this object getting OnEnterRange() called on it when such an enemy comes
-in range. */ 
-var() protected const RangeCallbacks Callbacks<EditCondition=bUseRangeCallbacks>;
+var() protected const editinline TowerRangeComponent RangeComponent;
 
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
@@ -30,24 +22,16 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
-	if(bUseRangeCallbacks)
+	if(RangeComponent != None)
 	{
-		RegisterRangeCallbacks();
+		RangeComponent.Initialize();
 	}
 }
 
 simulated event OnEnterRange(TowerTargetable Targetable);
 
-event Think();
-
-function RegisterRangeCallbacks()
+event Think()
 {
-	OwnerPRI.Tower.Root.AddRangeNotifyCallback(OnEnterRange, Callbacks.bInfantry, Callbacks.bVehicle, Callbacks.bProjectile);
-}
-
-function UnRegisterRangeCallbacks()
-{
-	OwnerPRI.Tower.Root.RemoveRangeNotifyCallback(OnEnterRange, Callbacks.bInfantry, Callbacks.bVehicle, Callbacks.bProjectile);
 }
 
 auto simulated state Stable
@@ -76,5 +60,13 @@ event OrphanedParent()
 simulated event Destroyed()
 {
 	Super.Destroyed();
-	UnRegisterRangeCallbacks();
+	if(RangeComponent != None)
+	{
+		RangeComponent.ModuleDestroyed();
+	}
+}
+
+DefaultProperties
+{
+	
 }

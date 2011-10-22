@@ -1,4 +1,5 @@
-class TowerModuleAreaGun extends TowerBlockModule;
+class TowerModuleAreaGun extends TowerBlockModule
+	deprecated;
 
 var() const CylinderComponent RangeArea;
 
