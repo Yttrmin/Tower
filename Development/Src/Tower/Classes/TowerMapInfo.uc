@@ -65,6 +65,11 @@ simulated function SetPreview(TowerBlock Block)
 	PreviewBlock.StaticMeshComponent.SetMaterial(0, Block.StaticMeshComponent.GetMaterial(0));
 }
 
+function bool ArePreviewAreasValid()
+{
+
+}
+
 DefaultProperties
 {
 	// 256 probably best, could fit several people in.

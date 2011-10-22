@@ -4,6 +4,7 @@ class TowerPlayerController extends GamePlayerController
 
 var TowerSaveSystem SaveSystem;
 var TowerMusicManager MusicManager;
+var byte PreviewAreaIndex;
 
 simulated event PostBeginPlay()
 {
@@ -556,6 +557,11 @@ exec function WhereIs(int X, int Y, int Z)
 	SpawnLocation.Y = Y * 256;
 	SpawnLocation.Z = Z * 256 + 128;
 	Spawn(class'TowerDebugMarker',,,SpawnLocation);
+}
+
+exec function DebugAllBlocksPlaceable(bool bNewAllBlocksPlaceable)
+{
+
 }
 `endif
 

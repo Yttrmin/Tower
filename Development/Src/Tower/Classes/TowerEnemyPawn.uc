@@ -9,8 +9,8 @@ class TowerEnemyPawn extends TowerPawn
 
 var() editinline TowerPurchasableComponent PurchasableComponent;
 var(InGame) editconst TowerDamageTrackerComponent DamageTracker;
-var(InGame) editconst TowerFaction OwnerFaction;
-var(InGame) editconst byte TeamIndex;
+var(InGame) deprecated editconst TowerFaction OwnerFaction;
+var(InGame) deprecated editconst byte TeamIndex;
 var	AnimNodeAimOffset		AimNode;
 
 var const globalconfig bool bRagdollOnDeath;
@@ -189,7 +189,8 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	TowerFaction NewOwningFaction)
 {
 	local TowerEnemyPawn Pawn;
-	Pawn = NewOwningFaction.Spawn(class'TowerEnemyPawn',,,SpawnLocation,,TowerEnemyPawn(TargetableArchetype), true);
+	Pawn = NewOwningFaction.Spawn(class'TowerEnemyPawn',NewOwningFaction,,
+		SpawnLocation,,TowerEnemyPawn(TargetableArchetype), true);
 	if(Pawn != None)
 	{
 		Pawn.OwnerFaction = NewOwningFaction;
@@ -209,7 +210,7 @@ function TowerDamageTrackerComponent GetDamageTracker()
 
 simulated event byte ScriptGetTeamNum()
 {
-	return TeamIndex;
+	return TowerFaction(Owner).TeamIndex;
 }
 
 /* epic ===============================================
