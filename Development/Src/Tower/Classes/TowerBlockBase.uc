@@ -1,0 +1,1 @@
+class TowerBlockBase extends Actor;

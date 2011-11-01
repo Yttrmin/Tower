@@ -15,16 +15,6 @@ class TowerGame extends TowerGameBase
 	`include(Tower\Classes\TowerStats.uci);
 `undefine(GAMEINFO)
 
-enum FactionLocation
-{
-	FL_None,
-	FL_PosX,
-	FL_NegX,
-	FL_PosY,
-	FL_NegY,
-	FL_All
-};
-
 enum DifficultyLevel
 {
 	DL_Easy,

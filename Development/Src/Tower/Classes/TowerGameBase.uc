@@ -1,6 +1,16 @@
 class TowerGameBase extends FrameworkGame
 	Config(Tower);
 
+enum FactionLocation
+{
+	FL_None,
+	FL_PosX,
+	FL_NegX,
+	FL_PosY,
+	FL_NegY,
+	FL_All
+};
+
 struct ModCheck
 {
 	var String ModName;

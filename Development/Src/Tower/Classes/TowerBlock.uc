@@ -59,6 +59,8 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
+var() protected const editinline MeshComponent MeshComponent;
+
 /** Used when saving/loading, set in the archetype by the game during runtime when the mod is loaded. */
 var int ModIndex, ModBlockIndex;
 
