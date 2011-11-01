@@ -27,7 +27,8 @@ enum DesiredTarget
 	/** Tells the component to pick the farthest target(s) in range. */
 	DT_Farthest,
 	/** Tells the component to truly pick a random target(s) in range, unlike DT_First. */
-	DT_Random
+	DT_Random,
+	DT_Custom
 };
 
 /** If FALSE, all targetables in the range of this module can be shot at in a single firing.
@@ -50,7 +51,9 @@ DT_Farthest - Tells the component to pick the farthest target(s) in range.
 
 DT_Random - Tells the component to truly pick a random target(s) in range, unlike DT_First.
 */
-var() protected DesiredTarget PickingTargetLogic<EditCondition=bLimitSimultaneousTargets>;
+var() private DesiredTarget PickingTargetLogic<EditCondition=bLimitSimultaneousTargets>;
+/** Name of the socket where any firing (tracing for hitscan, spawning projectile, etc.) starts. */
+var() protected const name StartFireSocketName;
 /** Used so often we might as well just make it an instance variable.
 Should be emptied after every attack. */
 var private array<TowerTargetable> Targets;
@@ -62,8 +65,12 @@ event ModuleDestroyed();
 
 function StartAttack()
 {
-	
-	
+	local TowerTargetable Targetable;
+	AcquireTargets();
+	foreach Targets(Targetable)
+	{
+		Attack(Targetable);
+	}
 }
 
 private final function AcquireTargets()
@@ -86,6 +93,10 @@ private final function AcquireTargets()
 			GetTargetsByDistance(false, TargetsPerFire);
 			break;
 		case DT_Random:
+			GetTargetsRandomly(TargetsPerFire);
+			break;
+		case DT_Custom:
+			CustomAcquireTargets(TargetsPerFire);
 			break;
 		}
 	}
@@ -113,6 +124,10 @@ private final function GetTargetsByDistance(bool bClosestFirst, optional int Max
 	}
 }
 
+private final function GetTargetsRandomly(optional int Max=MaxInt);
+
+protected function CustomAcquireTargets(optional int Max=MaxInt);
+
 private final function int SortByClosest(TowerTargetable A, TowerTargetable B)
 {
 	return VSizeSq(Actor(A).Location - Location) <= VSizeSq(Actor(B).Location - Location) ? 1 : -1;
@@ -123,7 +138,7 @@ private final function int SortByFarthest(TowerTargetable A, TowerTargetable B)
 	return VSizeSq(Actor(A).Location - Location) <= VSizeSq(Actor(B).Location - Location) ? -1 : 1;
 }
 
-function Attack(TowerTargetable Targetable)
+protected function Attack(TowerTargetable Targetable)
 {
 	SetupParticleParameters();
 }
@@ -131,6 +146,15 @@ function Attack(TowerTargetable Targetable)
 private final function SetupParticleParameters()
 {
 
+}
+
+protected function Vector GetAimDirection(TowerTargetable Target)
+{
+	local Vector SocketLocation;
+	local Rotator SocketRotation;
+	`assert(SkeletalMeshComponent(MeshComponent).
+		GetSocketWorldLocationAndRotation(StartFireSocketName, SocketLocation, SocketRotation));
+	return Normal(Actor(Target).Location - SocketLocation);
 }
 
 DefaultProperties

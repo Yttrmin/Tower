@@ -11,6 +11,8 @@ interface TowerTargetable;
 static function TowerTargetable CreateTargetable(TowerTargetable TargetableArchetype, out Vector SpawnLocation,
 	TowerFaction NewOwningFaction);
 
+event TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser);
+
 function bool IsProjectile();
 
 function bool IsVehicle();

@@ -34,6 +34,8 @@ struct immutable FactionInfo
 {
 	// AI Archetype. None implies player.
 	var TowerFactionAI A;
+	// FactionLocation of the faction. Ignored for players.
+	var FactionLocation L;
 	// Budget.
 	var int B;
 };
