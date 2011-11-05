@@ -163,6 +163,7 @@ Move:
 	goto 'Move';
 };
 
+//@TODO - Look at UTBot's celebration.
 // Player lost, celebrate!
 state Celebrating
 {

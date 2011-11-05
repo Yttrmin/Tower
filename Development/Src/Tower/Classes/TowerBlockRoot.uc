@@ -175,8 +175,18 @@ private function ExecuteCallbacks(TargetType Type, TowerTargetable Targetable)
 DefaultProperties
 {
 	DisplayName="Root Block"
-	Begin Object Name=StaticMeshComponent0
-	    StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
+	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0
+		StaticMesh=StaticMesh'TowerBlocks.DebugBlock'
 		Materials(0)=Material'TowerBlocks.DebugBlockMaterial'
+		ScriptRigidBodyCollisionThreshold=999999
+		BlockActors=true
+		RBChannel=RBCC_GameplayPhysics
+		RBCollideWithChannels=(Default=TRUE,BlockingVolume=TRUE,GameplayPhysics=TRUE,EffectPhysics=TRUE)
+		bNotifyRigidBodyCollision=false
+		BlockRigidBody=true
+		BlockNonZeroExtent=true
 	End Object
+	CollisionComponent=StaticMeshComponent0
+	MeshComponent=StaticMeshComponent0
+	Components.Add(StaticMeshComponent0)
 }

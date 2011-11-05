@@ -8,7 +8,7 @@ var privatewrite TowerBlock PlaceBlock;
 event PreBeginPlay()
 {
 	Super.PreBeginPlay();
-	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview();
+	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview(GetControllerID());
 	HUDMovie = new class'TowerHUDMoviePlayer';
 	HUDMovie.HUD = self;
 	HUDMovie.Init();
@@ -129,7 +129,7 @@ event Focus()
 {
 //	HUDMovie.SetMovieCanReceiveFocus(TRUE);
 	//@TODO - This should really just ignore Q instead.
-	TowerPlayerController(Owner).bIgnoreLookInput = 1;
+	PlayerOwner.bIgnoreLookInput = 1;
 //	HUDMovie.AddCaptureKey('MouseX');
 //	HUDMovie.AddCaptureKey('MouseY');
 	HUDMovie.SetMovieCanReceiveInput(TRUE);
@@ -138,7 +138,7 @@ event Focus()
 event UnFocus()
 {
 //	HUDMovie.ClearCaptureKeys();
-	TowerPlayerController(Owner).bIgnoreLookInput = 0;
+	PlayerOwner.bIgnoreLookInput = 0;
 	HUDMovie.SetMovieCanReceiveInput(FALSE);
 }
 
@@ -155,16 +155,16 @@ function SetPlaceBlock(TowerBlock NewBlockArchetype)
 
 function ExpandBuildMenu()
 {
-	TowerMapInfo(WorldInfo.GetMapInfo()).ActivateHUDPreview();
+	TowerMapInfo(WorldInfo.GetMapInfo()).ActivateHUDPreview(GetControllerID());
 	Focus();
 	ProcessMouseMovement();
 	HUDMovie.ExpandBuildMenu();
-	HUDMovie.SetExternalTexture("HUDPreview", TextureRenderTarget2D'TowerMisc.HUDPreview');
+	HUDMovie.SetExternalTexture("HUDPreview", GetPreviewRenderTarget());
 }
 
 function CollapseBuildMenu()
 {
-	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview();
+	TowerMapInfo(WorldInfo.GetMapInfo()).DeactivateHUDPreview(GetControllerID());
 	UnFocus();
 	IgnoreMouseMovement();
 	HUDMovie.CollapseBuildMenu();
@@ -203,6 +203,24 @@ exec function DebugFlushLines()
 function TowerPlayerReplicationInfo GetTPRI()
 {
 	return TowerPlayerReplicationInfo(TowerPlayerController(Owner).PlayerReplicationInfo);
+}
+
+final function int GetControllerID()
+{
+	// PlayerOwner isn't valid in PreBeginPlay, so we fallback to typecasting Owner in that case.
+	if(PlayerOwner != None)
+	{
+		return LocalPlayer(PlayerOwner.Player).ControllerID;
+	}
+	else
+	{
+		return LocalPlayer(TowerPlayerController(Owner).Player).ControllerID;
+	}
+}
+
+final function TextureRenderTarget2D GetPreviewRenderTarget()
+{
+	return SceneCapture2DComponent(TowerMapInfo(WorldInfo.GetMapInfo()).PreviewAreas[GetControllerID()].PreviewSceneCaptureActor.SceneCapture).TextureTarget;
 }
 
 DefaultProperties

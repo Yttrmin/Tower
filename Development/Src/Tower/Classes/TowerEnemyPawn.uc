@@ -27,8 +27,10 @@ replication
 event Initialize(TowerFormationAI Squad, TowerEnemyPawn PreviousSquadMember)
 {
 //	Super.PostBeginPlay();
+	/*
 	Controller = Spawn(ControllerClass);
-	Controller.Possess(self, false);
+	Controller.Possess(self, false);*/
+	SpawnDefaultController();
 	TowerEnemyController(Controller).Squad = Squad;
 	Weapon = Spawn(class'Tower.TowerWeapon_Rifle', self);
 	Weapon.Activate();
@@ -104,7 +106,7 @@ function bool Died(Controller Killer, class<DamageType> DamageType, vector HitLo
 	local bool Value;
 //	`log(Self@"died. He owned"@Weapon);
 	Value = Super.Died(Killer, DamageType, HitLocation);
-	OwnerFaction.OnTargetableDeath(Self, None, None);
+	GetOwningFaction().OnTargetableDeath(Self, None, None);
 //	Destroy();
 	if(bRagdollOnDeath)
 	{
@@ -191,10 +193,6 @@ static function TowerTargetable CreateTargetable(TowerTargetable TargetableArche
 	local TowerEnemyPawn Pawn;
 	Pawn = NewOwningFaction.Spawn(class'TowerEnemyPawn',NewOwningFaction,,
 		SpawnLocation,,TowerEnemyPawn(TargetableArchetype), true);
-	if(Pawn != None)
-	{
-		Pawn.OwnerFaction = NewOwningFaction;
-	}
 	return Pawn;
 }
 
@@ -210,7 +208,7 @@ function TowerDamageTrackerComponent GetDamageTracker()
 
 simulated event byte ScriptGetTeamNum()
 {
-	return TowerFaction(Owner).TeamIndex;
+	return GetOwningFaction().TeamIndex;
 }
 
 /* epic ===============================================
@@ -220,7 +218,7 @@ simulated event byte ScriptGetTeamNum()
 */
 simulated function bool StopsProjectile(Projectile P)
 {
-	return TowerEnemyPawn(P.Instigator).TeamIndex != TeamIndex && (bProjTarget || bBlockActors);
+	return !OnSameFaction(TowerEnemyPawn(P.Instigator)) && (bProjTarget || bBlockActors);
 }
 
 function bool IsProjectile()
@@ -243,8 +241,56 @@ static function int GetCost(TowerTargetable SelfArchetype)
 	return TowerEnemyPawn(SelfArchetype).PurchasableComponent.Cost;
 }
 
+function SpawnDefaultController()
+{
+	if ( Controller != None )
+	{
+		`log("SpawnDefaultController" @ Self @ ", Controller != None" @ Controller );
+		return;
+	}
+
+	if ( ControllerClass != None )
+	{
+		`log(Owner@"SD");
+		Controller = Spawn(ControllerClass, Owner);
+	}
+
+	if ( Controller != None )
+	{
+		Controller.Possess( Self, false );
+	}
+}
+
+function OnAssignController(SeqAct_AssignController inAction)
+{
+
+	if ( inAction.ControllerClass != None )
+	{
+		if ( Controller != None )
+		{
+			DetachFromController( true );
+		}
+
+		Controller = Spawn(inAction.ControllerClass, Owner);
+		Controller.Possess( Self, false );
+
+		// Set class as the default one if pawn is restarted.
+		if ( Controller.IsA('AIController') )
+		{
+			ControllerClass = class<AIController>(Controller.Class);
+		}
+	}
+	else
+	{
+		`warn("Assign controller w/o a class specified!");
+	}
+}
+
 //@TODO - Combine interface and component instead?
-function TowerFaction GetOwningFaction();
+function TowerFaction GetOwningFaction()
+{
+	return TowerFaction(Controller.Owner);
+}
 
 DefaultProperties
 {

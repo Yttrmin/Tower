@@ -99,7 +99,7 @@ event OnBuildListChange(int Index)
 	if(Index < BuildIndexes.Length)
 	{
 		BlockArchetype = TowerGameReplicationInfo(HUD.WorldInfo.GRI).Blocks[BuildIndexes[Index]];
-		TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(BlockArchetype);
+		TowerMapInfo(HUD.WorldInfo.GetMapInfo()).SetPreview(LocalPlayer(HUD.PlayerOwner.Player).ControllerID, BlockArchetype);
 		HUD.SetPlaceBlock(BlockArchetype);
 		SetBuildMenuInfo(BlockArchetype);
 	}

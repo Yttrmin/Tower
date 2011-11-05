@@ -5,7 +5,7 @@ Base class of all the blocks that make up a Tower.
 
 Keep in mind this class and its children will likely be opened up to modding!
 */
-class TowerBlock extends DynamicSMActor_Spawnable /*Actor*/
+class TowerBlock extends TowerBlockBase /*Actor*/
 	config(Tower)
 	HideCategories(Attachment,Collision,Physics,Advanced,Object)
 	AutoExpandCategories(TowerBlock)
@@ -59,8 +59,6 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
-var() protected const editinline MeshComponent MeshComponent;
-
 /** Used when saving/loading, set in the archetype by the game during runtime when the mod is loaded. */
 var int ModIndex, ModBlockIndex;
 
@@ -105,12 +103,12 @@ event Detach(Actor Other){}
 
 simulated function StaticMesh GetStaticMesh()
 {
-	return StaticMeshComponent.StaticMesh;
+	return StaticMeshComponent(MeshComponent) != None ? StaticMeshComponent(MeshComponent).StaticMesh : None;
 }
 
 simulated function SkeletalMesh GetSkeletalMesh()
 {
-	return None;
+	return SkeletalMeshComponent(MeshComponent) != None ? SkeletalMeshComponent(MeshComponent).SkeletalMesh : None;
 }
 
 /** Returns TRUE if the Block was rendered this most recent frame. */
@@ -123,7 +121,10 @@ simulated event PostBeginPlay()
 {
 	local Vector ObstacleLocation;
 	Super.PostBeginPlay();
-	MaterialInstance = StaticMeshComponent.CreateAndSetMaterialInstanceConstant(0);
+	if(MeshComponent != None)
+	{
+		MaterialInstance = MeshComponent.CreateAndSetMaterialInstanceConstant(0);
+	}
 	if(bEnableNavMeshObstacleGeneration && Location.Z == 128 && Role == Role_Authority)
 	{
 		Obstacle = Spawn(class'DynamicNavMeshObstacle');
@@ -360,6 +361,7 @@ DefaultProperties
 		// Characters and other important skeletal meshes should set bSynthesizeSHLight=true
 	End Object
 
+	/*
 	 // 256x256x256 cube.
 	Begin Object Name=StaticMeshComponent0
 		ScriptRigidBodyCollisionThreshold=999999
@@ -370,4 +372,5 @@ DefaultProperties
 		BlockRigidBody=true
 		BlockNonZeroExtent=true
 	End Object
+	*/
 }

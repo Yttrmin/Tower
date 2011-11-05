@@ -1,3 +1,9 @@
+/**
+TowerAttackComponent
+
+Base class of components that determine how TowerModuleGuns attack something, such as shooting projectiles or
+using traces.
+*/
 class TowerAttackComponent extends ActorComponent within TowerModuleGun
 	EditInlineNew
 	abstract;
@@ -28,6 +34,7 @@ enum DesiredTarget
 	DT_Farthest,
 	/** Tells the component to truly pick a random target(s) in range, unlike DT_First. */
 	DT_Random,
+	/** Tells the component to pick targets using its own special way. Official AttackComponents don't use this. */
 	DT_Custom
 };
 
@@ -37,6 +44,7 @@ var() protected const bool bLimitSimultaneousTargets;
 /** The number of targetables that can be shot in a single firing. */
 var() protected const int TargetsPerFire<EditCondition=bLimitSimultaneousTargets>;
 var() protected const instanced ParticleSystemComponent ParticleSystem;
+/** What parameters should this component pass to the ParticleSystem? */
 var() private const ParticleSystemParameters ParticleParameters;
 /**
 Tells the component how to pick a target to attack.
@@ -50,6 +58,8 @@ DT_Closest - Tells the component to pick the closest target(s) in range.
 DT_Farthest - Tells the component to pick the farthest target(s) in range.
 
 DT_Random - Tells the component to truly pick a random target(s) in range, unlike DT_First.
+
+DT_Custom - Tells the component to pick target(s) using its own special way. Official AttackComponents don't use this.
 */
 var() private DesiredTarget PickingTargetLogic<EditCondition=bLimitSimultaneousTargets>;
 /** Name of the socket where any firing (tracing for hitscan, spawning projectile, etc.) starts. */
