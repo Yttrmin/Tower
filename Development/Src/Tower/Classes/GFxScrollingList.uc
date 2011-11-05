@@ -106,6 +106,7 @@ function bool HitTest(float X, float Y, optional bool bShapeFlag=false)
 	Arg.n = Y;
 	Arguments.AddItem(Arg);
 
+	// hitTest is MovieClip::hitTest, it's not Clik-specific.
 	ReturnBool = Invoke("hitTest", Arguments);
 	return ReturnBool.b;
 }

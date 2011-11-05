@@ -212,7 +212,7 @@ exec function DebugTestManyBlocks(bool bAsComponents, optional bool bUseAAMesh)
 			{
 				NewBlock = Parent.Spawn(class'Tower.TowerBlockStructural',,,NewTranslation,,,false);
 				`log("Spawned NewBlock?:"@NewBlock);
-				NewBlock.StaticMeshComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
+				NewBlock.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
 			}
 		}
 	}

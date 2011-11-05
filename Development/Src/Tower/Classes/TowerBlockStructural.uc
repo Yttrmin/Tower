@@ -258,5 +258,18 @@ DefaultProperties
 	bAddToBuildList=true
 	bReplicateMovement=false
 	GridLocation=(X=-1,Y=-1,Z=-1)
+
+	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0
+		ScriptRigidBodyCollisionThreshold=999999
+		BlockActors=true
+		RBChannel=RBCC_GameplayPhysics
+		RBCollideWithChannels=(Default=TRUE,BlockingVolume=TRUE,GameplayPhysics=TRUE,EffectPhysics=TRUE)
+		bNotifyRigidBodyCollision=false
+		BlockRigidBody=true
+		BlockNonZeroExtent=true
+	End Object
+	CollisionComponent=StaticMeshComponent0
+	MeshComponent=StaticMeshComponent0
+	Components.Add(StaticMeshComponent0)
 }
 

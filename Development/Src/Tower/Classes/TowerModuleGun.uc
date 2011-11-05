@@ -136,7 +136,9 @@ function Shoot(Vector Direction)
 
 DefaultProperties
 {
+	/*
 	Begin Object Name=StaticMeshComponent0
 		Translation=(Z=-128)
 	End Object
+	*/
 }

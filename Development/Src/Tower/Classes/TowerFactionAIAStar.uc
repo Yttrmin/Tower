@@ -74,7 +74,7 @@ event OnGameOver()
 	local TowerEnemyController Controller;
 	foreach WorldInfo.AllControllers(class'TowerEnemyController', Controller)
 	{
-		if(TowerEnemyPawn(Controller.Pawn).OwnerFaction == Self)
+		if(Controller.Owner == Self)
 		{
 			Controller.GotoState('Celebrating');
 		}

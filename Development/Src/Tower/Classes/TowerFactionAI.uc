@@ -118,8 +118,6 @@ struct FormationSpawnInfo
 	var TowerAIObjective Target;
 };
 
-//@TODO - Deprecate this?
-var protected deprecated Tower TargetTower;
 var() protected  TowerFactionAILogicComponent LogicComponent;
 var() protected TowerFactionInfo FactionInfo;
 
@@ -179,7 +177,7 @@ event GoInActive()
 	Budget = -1;
 	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
 	{
-		if(Pawn.OwnerFaction == Self)
+		if(Pawn.Owner == Self)
 		{
 			Pawn.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
 		}
@@ -457,21 +455,6 @@ function CalculateAllCosts()
 }
 
 event RoundStarted(const int AwardedBudget);
-
-function GetNewTarget()
-{
-	//@TODO - 3rd player and on are not counted, make something better.
-	local Tower PlayerTower;
-	foreach AllActors(class'Tower', PlayerTower)
-	{
-		if(PlayerTower != TargetTower)
-		{
-			TargetTower = PlayerTower;
-			`log("FOUND TARGETTOWER:"@TargetTower);
-			return;
-		}
-	}
-}
 
 final function TowerSpawnPoint GetSpawnPoint(int FormationIndex)
 {

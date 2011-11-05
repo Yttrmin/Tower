@@ -8,6 +8,7 @@ will fail!
 class TowerFactionAIHivemind extends Info
 	config(Tower);
 
+
 struct BlockUsage
 {
 	var bool bStructural;
@@ -24,7 +25,7 @@ struct AIBlockInfo
 	var TowerBlock BlockArchetype;
 	var BlockUsage Flags;
 };
-
+/*
 struct BlockNode
 {
 	var int Cost;
@@ -40,7 +41,7 @@ struct TowerBlockAir extends BlockNode
 {
 	var IVector GridLocation;
 };
-
+*/
 
 //@TODO - Transient? Will it still be saved to config?
 var private config bool bSaveToDisk;

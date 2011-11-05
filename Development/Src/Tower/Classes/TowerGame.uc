@@ -335,18 +335,20 @@ exec function DebugForceGarbageCollection(optional bool bFullPurge)
 	WorldInfo.ForceGarbageCollection(bFullPurge);
 }
 
+/*
 exec function DebugAllBlocksToKActor()
 {
 	local TowerBlockStructural Block;
 	local StaticMeshComponent ToKactor;
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{
-		`log(Block@Block.StaticMeshComponent@"GO");
-		TOKactor = Block.StaticMeshComponent;
+		`log(Block@Block.MeshComponent@"GO");
+		TOKactor = Block.MeshComponent;
 		class'KActorFromStatic'.static.MakeDynamic(TOKactor)
 			.ApplyImpulse(Vect(0,0,1), 25000, Vect(0,0,0));
 	}
 }
+*/
 
 exec function DebugRecursionStateTest()
 {
@@ -670,6 +672,12 @@ state CoolDown
 	function bool IsRoundInProgress()
 	{
 		return false;
+	}
+
+	event EndState(Name NextStateName)
+	{
+		ClearTimer(NameOf(CoolDownExpire));
+		ClearTimer(NameOf(UpdateHUDCoolDown));
 	}
 }
 
