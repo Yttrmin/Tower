@@ -548,6 +548,7 @@ private final function AddFaction(class<TowerFaction> FactionClass, FactionLocat
 	}
 	GameReplicationInfo.SetTeam(TeamIndex, NewFaction);
 	NewFaction.AddToTeam(Controller);
+	Controller.SetOwner(NewFaction);
 }
 
 function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
@@ -665,7 +666,7 @@ state CoolDown
 		foreach LocalPlayerControllers(class'TowerPlayerController', Controller)
 		{
 			TowerHUD(Controller.myHUD).HUDMovie.SetVariableString("_root.CoolDownTime.text", 
-				String(Round(GetTimerRate('CoolDownExpire') - GetTimerCount('CoolDownExpire'))));
+				String(Round(GetTimerRate(NameOf(CoolDownExpire)) - GetTimerCount(NameOf(CoolDownExpire)))));
 		}
 	}
 

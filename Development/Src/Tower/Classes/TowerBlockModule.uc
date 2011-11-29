@@ -1,6 +1,5 @@
 class TowerBlockModule extends TowerBlock
-	abstract
-	AutoExpandCategories(TowerBlockModule);
+	abstract;
 
 /**
 // If TowerBlockRoot shuffling around arrays gets slow under high-use, finish this. Each Module holds onto its
@@ -19,9 +18,7 @@ var() protected const editinline TowerRangeComponent RangeComponent;
 event Initialize(out IVector NewGridLocation, out IVector NewParentDirection, 
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
-	GridLocation = NewGridLocation;
-	ParentDirection = NewParentDirection;
-	OwnerPRI = NewOwnerPRI;
+	Super.Initialize(NewGridLocation, NewParentDirection, NewOwnerPRI);
 	if(RangeComponent != None)
 	{
 		RangeComponent.Initialize();
@@ -29,6 +26,8 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 }
 
 simulated event OnEnterRange(TowerTargetable Targetable);
+
+simulated event OnExitRange(TowerTargetable Targetable);
 
 event Think()
 {

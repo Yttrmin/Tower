@@ -5,6 +5,9 @@ class TowerPlayerController extends GamePlayerController
 var TowerSaveSystem SaveSystem;
 var TowerMusicManager MusicManager;
 var byte PreviewAreaIndex;
+`if(`isdefined(DEBUG))
+var TowerEnemyController PossessedPawnController;
+`endif
 
 simulated event PostBeginPlay()
 {
@@ -563,6 +566,19 @@ exec function DebugAllBlocksPlaceable(bool bNewAllBlocksPlaceable)
 {
 
 }
+
+exec function DebugPossess()
+{
+	local TowerEnemyPawn IteratorPawn;
+	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', IteratorPawn)
+	{
+		PossessedPawnController = TowerEnemyController(IteratorPawn.Controller);
+		Possess(IteratorPawn, false);
+		PossessedPawnController.PushState('PawnTaken');
+		myHUD.AddPostRenderedActor(self);
+		return;
+	}
+}
 `endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
@@ -581,6 +597,10 @@ reliable server function ServerAddBlock(TowerBlock BlockArchetype, TowerBlock Pa
 		if(TowerGame(WorldInfo.Game).AddBlock(GetTower(), BlockArchetype, Parent, GridLocation) != None)
 		{
 			GetTower().ConsumeBudget(BlockArchetype.PurchasableComponent.Cost);
+		}
+		else
+		{
+			`log("Failed to add block of Archetype:"@BlockArchetype@"Parent:"@Parent@"GridLocation:"@GridLocation.X@GridLocation.Y@GridLocation.Z,,'Error');
 		}
 	}
 }
@@ -623,6 +643,17 @@ simulated function Tower GetTower()
 function TowerPlayerReplicationInfo GetTPRI()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
+}
+
+simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
+{
+	Canvas.SetDrawColor(255,255,255);
+	Canvas.SetPos(0,430);
+	Canvas.DrawText("Pawn:"@Pawn);
+	Canvas.SetPos(0,440);
+	Canvas.DrawText("Health:"@Pawn.Health);
+	Canvas.SetPos(0,450);
+	Canvas.DrawText("Owner:"@Owner);
 }
 
 DefaultProperties

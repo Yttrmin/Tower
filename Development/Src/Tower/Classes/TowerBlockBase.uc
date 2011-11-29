@@ -1,7 +1,7 @@
 class TowerBlockBase extends Actor
 	abstract;
 
-var() const editinline MeshComponent MeshComponent;
+var() const editinline instanced MeshComponent MeshComponent;
 var() const editconst DynamicLightEnvironmentComponent LightEnvironment;
 
 /** Used to replicate mesh to clients */

@@ -173,6 +173,11 @@ Begin:
 	goto 'Begin';
 };
 
+state PawnTaken
+{
+
+};
+
 function BeginCheckFireTimer()
 {
 	SetTimer(1 + (Rand(-1) + Rand(1)), true, NameOf(CheckFiring));

@@ -26,9 +26,11 @@ var private TowerGame Game;
 var private TowerFactionAIHivemind Hivemind;
 
 /** Current PathID we're working on the path of. */
-var private int CurrentPathID;
+var deprecated private int CurrentPathID;
 /** Next PathID to use when we need one for GeneratePath. */
 var private int NextPathID;
+/** Current Path we're working on. Should it be first-come first-serve or what? */
+var private PathRoot CurrentPath;
 /** Holds all the paths that need generating, including the CurrentPathID one. */
 var private array<PathRoot> QueuedPaths;
 
@@ -57,7 +59,7 @@ delegate OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObject
 
 /** Called from TowerGame when requested.
 Used to call OnPathGenerated during PreAsync so factions can actually spawn/queue stuff in response. */
-event PreAsyncTick(float DeltaTime)
+final event PreAsyncTick(float DeltaTime)
 {
 	local int i;
 	local delegate<OnPathGenerated> PathGeneratedDelegate;
@@ -84,12 +86,12 @@ event PreAsyncTick(float DeltaTime)
 
 /** Called from TowerFactionAIHivemind when requested.
 Used to call GeneratePath for our CurrentPathID, for maximum efficiency. */
-event AsyncTick(float DeltaTime)
+final event AsyncTick(float DeltaTime)
 {
-
+	GeneratePath(CurrentPath.Start,CurrentPath.Finish,CurrentPathID);
 }
 
-event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate, 
+final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate, 
 	optional bool bNewDeferSearching=default.bDeferSearching,
 	optional int NewIterationsPerTick=default.IterationsPerTick, optional bool bNewStepSearch=false,
 	optional bool bNewDrawStepInfo=false)
@@ -101,6 +103,11 @@ event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate,
 	IterationsPerTick = NewIterationsPerTick;
 	bStepSearch = bNewStepSearch;
 	bDrawStepInfo = bNewDrawStepInfo;
+}
+
+function int CompareBlocks(out Object A, out Object B)
+{
+	return TowerBlock(A).Fitness - TowerBlock(B).Fitness;
 }
 
 final function Step()
@@ -155,6 +162,7 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 		Path.ID = PathID;
 		Path.Start = Start;
 		Path.Finish = Finish;
+		CurrentPath = Path;
 		QueuedPaths.AddItem(Path);
 		if(CurrentPathID == -1)
 		{
@@ -262,6 +270,10 @@ private final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out arr
 	// Add everything to a single array so we can iterate through it easily.
 	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
 	{
+		if(IteratorBlock.bDebugIgnoreForAStar)
+		{
+			continue;
+		}
 		//check for each neighbor's air since it won't get picked up by CollidingActors.
 		foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
 		{
@@ -421,7 +433,9 @@ private final function ConstructPath(TowerBlock Finish)
 	`log("Path construction complete!",,'AStar');
 	DebugLogPaths();
 	PathReady(CurrentPathID, true);
+	Hivemind.UnRegisterForAsyncTick(AsyncTick);
 	CurrentPathID = -1;
+	CurrentPath = NullPathRoot;
 }
 
 private final function PathReady(const int PathID, const bool bSuccess)

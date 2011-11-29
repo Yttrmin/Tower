@@ -5,10 +5,9 @@ Base class of all the blocks that make up a Tower.
 
 Keep in mind this class and its children will likely be opened up to modding!
 */
-class TowerBlock extends TowerBlockBase /*Actor*/
+class TowerBlock extends TowerBlockBase
 	config(Tower)
 	HideCategories(Attachment,Collision,Physics,Advanced,Object)
-	AutoExpandCategories(TowerBlock)
 	dependson(TowerGame)
 	ClassGroup(Tower)
 	placeable
@@ -34,8 +33,10 @@ var() editinline TowerPurchasableComponent PurchasableComponent;
 
 //=========================================================
 // A*-related
-/** Base cost to go "through" (destroy) this block in A*. */
-var() int BaseCost;
+/** Base cost to go "through" (destroy) this block in AStar. */
+var() int BaseCost<DisplayName=A* Base Cost>;
+//@DEBUG @DELETEME
+var() privatewrite const bool bDebugIgnoreForAStar<DisplayName=Debug Ignore For A*?>;
 var(InGame) int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
@@ -59,7 +60,7 @@ var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
 
 var private DynamicNavMeshObstacle Obstacle;
 
-/** Used when saving/loading, set in the archetype by the game during runtime when the mod is loaded. */
+/** Used when saving/loading, set in the archetype by the game when the mod is loaded. */
 var int ModIndex, ModBlockIndex;
 
 replication
@@ -152,6 +153,10 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
+	if(MeshComponent != None)
+	{
+		AttachComponent(MeshComponent);
+	}
 //	SetOwner(OwnerPRI);
 }
 

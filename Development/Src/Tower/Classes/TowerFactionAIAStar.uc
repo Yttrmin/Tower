@@ -52,7 +52,7 @@ var private int DesiredPath;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	AStarComponent.Initialize(OnPathGenerated);
+	AStarComponent.Initialize(OnPathGenerated, bDeferSearching, IterationsPerTick, bStepSearch, bDrawStepInfo);
 	/*
 	IterationsPerTick = Clamp(IterationsPerTick, 0, MaxInt);
 	if(bStepSearch)

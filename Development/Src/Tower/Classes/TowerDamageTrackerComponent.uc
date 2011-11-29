@@ -26,7 +26,6 @@ function OnTakeDamage(int CappedDamageAmount, Controller EventInstigator, class<
 	if(TowerBlock(DamageCauser) != None)
 	{
 		Faction = TowerFaction(TowerBlock(DamageCauser).OwnerPRI.Team);
-		`log("Attacking faction:"@FAction);
 	}
 	if(Faction == None)
 	{
