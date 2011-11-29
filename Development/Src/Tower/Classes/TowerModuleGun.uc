@@ -6,7 +6,7 @@ var bool bCanFire;
 var bool bThinking;
 
 var() protected const instanced TowerAttackComponent AttackComponent;
-var() byte CoolDownTime;
+var() float CoolDownTime;
 
 simulated event PostBeginPlay()
 {
@@ -19,12 +19,20 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 {
 	Super.Initialize(NewGridLocation, NewParentDirection, NewOwnerPRI);
 	AttackComponent.Initialize();
+	RangeComponent.Initialize();
 }
 
 event Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )
 {
+//	`log(SELF@"TOUCHED BY"@OTHER);
 	Super.Touch(Other, OtherComp, HitLocation, HitNormal);
 	RangeComponent.Touch(Other, OtherComp, HitLocation, HitNormal);
+}
+
+event UnTouch(Actor Other)
+{
+	Super.UnTouch(Other);
+	RangeComponent.UnTouch(Other);
 }
 
 //@TODO - Move prototype to TowerBlockModule.
@@ -34,6 +42,7 @@ simulated event OnEnterRange(TowerTargetable Targetable)
 	{
 		Think();
 		SetTimer(3, true, NameOf(Think));
+		`log(Self@"OnEnterRange");
 		bThinking = true;
 	}
 	/*
@@ -44,6 +53,14 @@ simulated event OnEnterRange(TowerTargetable Targetable)
 		SetTimer(3, true, NameOf(Think));
 	}
 	*/
+}
+
+simulated event OnExitRange(TowerTargetable Targetable)
+{
+	if(RangeComponent.EnemiesInRange() == 0)
+	{
+		AttackComponent.StopAttack();
+	}
 }
 
 function bool HasLineOfSight(Actor Actor)
@@ -64,7 +81,7 @@ function bool IsFacing(Actor Actor);
 
 event Think()
 {
-	if(Touching.Length > 0)
+	if(RangeComponent.EnemiesInRange() > 0)
 	{
 		AttackComponent.StartAttack();
 	}

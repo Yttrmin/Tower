@@ -81,7 +81,7 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 {
 	local int ActualDamage;
 	//@TODO - Cap damage for damage tracking.
-	`log(Self@"InstigatedBy:"@InstigatedBy@"DamageCauser:"@DamageCauser);
+//	`log(Self@"InstigatedBy:"@InstigatedBy@"DamageCauser:"@DamageCauser);
 	// Let everyone modify the damage as they please, and then cap it if it's still over.
 	ActualDamage = Health;
 	Super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
