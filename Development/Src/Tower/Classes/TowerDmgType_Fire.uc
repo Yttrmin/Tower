@@ -1,0 +1,1 @@
+class TowerDmgType_Fire extends TowerDamageType;

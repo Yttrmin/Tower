@@ -653,7 +653,7 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Canvas.SetPos(0,440);
 	Canvas.DrawText("Health:"@Pawn.Health);
 	Canvas.SetPos(0,450);
-	Canvas.DrawText("Owner:"@Owner);
+	Canvas.DrawText("PawnFactionOwner:"@PossessedPawnController.Owner);
 }
 
 DefaultProperties
