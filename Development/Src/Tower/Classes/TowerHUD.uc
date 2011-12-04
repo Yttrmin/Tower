@@ -159,7 +159,10 @@ function ExpandBuildMenu()
 	Focus();
 	ProcessMouseMovement();
 	HUDMovie.ExpandBuildMenu();
-	HUDMovie.SetExternalTexture("HUDPreview", GetPreviewRenderTarget());
+	//@FIXME - Commented out line crashes the game, why?!
+	HUDMovie.SetExternalTexture("HUDPreview", Texture2D'TowerBlocks.DirectionFaces.back'); // Doesn't crash, works fine.
+//	HUDMovie.SetExternalTexture("HUDPreview", TextureRenderTarget2D'TowerHUD.HUDPreview0'); // Immediately crashes.
+//	HUDMovie.SetExternalTexture("HUDPreview", GetPreviewRenderTarget());
 }
 
 function CollapseBuildMenu()

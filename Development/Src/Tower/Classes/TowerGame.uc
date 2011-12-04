@@ -497,6 +497,114 @@ exec function DebugSpawnDestructible()
 {
 	Spawn(class'ApexDestructibleActorSpawnable',,, vect(0,0,1024),, ApexDestructibleActor(DynamicLoadObject("TestDestructible.DebugDestructibleSpawnableArchetype", class'ApexDestructibleActorSpawnable'))).SetPhysics(PHYS_RigidBody);
 }
+
+exec function DebugTestPriorityQueue(optional int Amount=100)
+{
+	local array<TowerBlockStructural> BlockArray, PriorityArray, SortedArray;
+	local PriorityQueue Queue;
+	local int i;
+	local String LogString;
+	local float Time;
+	Queue = new class'PriorityQueue';
+	for(i = 0; i < Amount; i++)
+	{
+		BlockArray.AddItem(Spawn(class'TowerBlockStructural'));
+		BlockArray[BlockArray.length-1].Fitness = i;
+	}
+	for(i = 0; i < Amount; i++)
+	{
+		Swap(i, Rand(Amount), BlockArray);
+	}
+	LogString = "Initial:";
+	for(i = 0; i < Amount; i++)
+	{
+		LogString @= BlockArray[i].Fitness$",";
+	}
+	`log(LogString,,'PriQueTest');
+	for(i = 0; i < Amount; i++)
+	{
+		Queue.Add(BlockArray[i]);
+	}
+	Clock(Time);
+	LogString = "";
+	for(i = 0; i < Amount; i++)
+	{
+		PriorityArray.AddItem(TowerBlockStructural(Queue.Remove()));
+	}
+	for(i = 0; i < Amount; i++)
+	{
+		LogString @= PriorityArray[i].Fitness$",";
+	}
+	UnClock(Time);
+	LogString = "ResultPriorityQueue"@Time@"seconds:"@LogString;
+	Time = 0;
+	`log(LogString,,'PriQueTest');
+	Clock(Time);
+	for(i = 0; i < Amount; i++)
+	{
+		SortedArray[i] = GetBestBlock(BlockArray);
+		BlocKArray.RemoveItem(SortedArray[i]);
+	}
+	UnClock(Time);
+	LogString = "ResultOldWay:"@Time@"seconds:";
+	for(i = 0; i < Amount; i++)
+	{
+		LogString @= SortedArray[i].Fitness$",";
+	}
+	`log(LogString,,'PriQueTest');
+}
+
+final function TowerBlockStructural GetBestBlock(out array<TowerBlockStructural> OpenList)
+{
+	local TowerBlockStructural BestBlock, IteratorBlock;
+	foreach OpenList(IteratorBlock)
+	{
+//		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness,,'AStar');
+		if(BestBlock == None)
+		{
+			BestBlock = IteratorBlock;
+		}
+		else if(IteratorBlock.Fitness < BestBlock.FitNess)
+		{
+			BestBlock = IteratorBlock;
+		}
+	}
+	return BestBlock;
+}
+
+final function Swap(int A, int B, out array<TowerBlockStructural> C)
+{
+	local TowerBlockStructural D;
+	D = C[A];
+	C[A] = C[B];
+	C[B] = D;
+}
+
+final function int PriorityComparator(Object A, Object B)
+{
+	return TowerBlockStructural(A).Fitness - TowerBlockStructural(B).Fitness;
+}
+
+exec function ActivateHUDPreview(int ControllerID)
+{
+	TowerMapInfo(WorldInfo.GetMapInfo()).ActivateHUDPreview(ControllerID);
+}
+
+exec function TestRTHUD(bool bUseRenderTargetTexture)
+{
+	local GFxMoviePlayer Movie;
+	Movie = new class'GFxMoviePlayer';
+	Movie.MovieInfo = SwfMovie'TestRTHUD.RTHUD';
+	Movie.Start();
+	if(bUseRenderTargetTexture)
+	{
+		Movie.SetExternalTexture("MyRenderTarget", TextureRenderTarget2D'TestRTHUD.RenderTargetTexture');
+	}
+	else
+	{
+		Movie.SetExternalTexture("MyRenderTarget", Texture2D'TestRTHUD.DefaultDiffuse');
+	}
+}
 `endif
 
 exec function StartGame()

@@ -50,6 +50,7 @@ struct immutable ModInfo
 
 const SAVE_FILE_VERSION = 4;
 const SAVE_FILE_EXTENSION = ".bin";
+const SAVE_FILE_PATH = "../../UDKGame/Saves/";
 
 var string SaveTowerName;
 var array<ModInfo> SaveMods;
@@ -117,7 +118,7 @@ final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayer
 		Blocks.AddItem(BlockInfo);
 	}
 
-	Result = class'Engine'.static.BasicSaveObject(Self, FileName, true, SAVE_FILE_VERSION);
+	Result = class'Engine'.static.BasicSaveObject(Self, GetFilePath(FileName), true, SAVE_FILE_VERSION);
 	if(Result)
 	{
 		AddToSaves(FileName);
@@ -150,7 +151,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	GRI = TowerGameReplicationInfo(Player.WorldInfo.GRI);
 	CleanupSaveLoadVariables();
 
-	bLoaded = class'Engine'.static.BasicLoadObject(Self, FileName, true, SAVE_FILE_VERSION);
+	bLoaded = class'Engine'.static.BasicLoadObject(Self, GetFilePath(FileName), true, SAVE_FILE_VERSION);
 	if(bLoaded)
 	{
 		`log("Load successful!",,'NativeLoad');
@@ -237,7 +238,7 @@ final function bool CheckSaveExist(string FileName)
 	{
 		return true;
 	}
-	else if(class'Engine'.static.BasicLoadObject(TestSaveSystem, FileName, true, SAVE_FILE_VERSION))
+	else if(class'Engine'.static.BasicLoadObject(TestSaveSystem, GetFilePath(FileName), true, SAVE_FILE_VERSION))
 	{
 		AddToSaves(FileName);
 		return true;
@@ -280,6 +281,11 @@ final function CleanupSaveLoadVariables()
 	Blocks.Remove(0, Blocks.Length);
 	SaveMods.Remove(0, SaveMods.Length);
 	SaveTowerName = "MAKE_SURE_I_GET_SET";
+}
+
+final function String GetFilePath(out const String FileName)
+{
+	return SAVE_FILE_PATH$FileName;
 }
 
 DefaultProperties

@@ -47,7 +47,8 @@ var private bool bDeferredDone;
 /** To step or not. Used when step searching. */
 var private bool bStep;
 /** A copy of the OpenList and ClosedList before deferring. */
-var private array<TowerBlock> DeferredOpenList, DeferredClosedList;
+var private PriorityQueue DeferredOpenList;
+var private array<TowerBlock> DeferredClosedList;
 /** Reference to the best block before deferring. */
 var private TowerBlock StepBestBlock;
 /** Used to represent the different nodes when stepping. */
@@ -105,7 +106,7 @@ final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate,
 	bDrawStepInfo = bNewDrawStepInfo;
 }
 
-function int CompareBlocks(out Object A, out Object B)
+function int CompareBlocks(Object A, Object B)
 {
 	return TowerBlock(A).Fitness - TowerBlock(B).Fitness;
 }
@@ -149,7 +150,8 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 	local PathRoot Path;
 	/** OpenList = Blocks that haven't been explored yet. ClosedList = Blocks that have been explored.
 	Explored = Looked at every node connected to this one, calculate dtheir F, G, and H, and placed them in OpenList. */
-	local array<TowerBlock> OpenList, ClosedList;
+	local PriorityQueue OpenList;
+	local array<TowerBlock> ClosedList;
 	/** References whichever Block in the OpenList that has the lowest Fitness. */
 	local TowerBlock BestBlock;
 	local int i;
@@ -202,9 +204,10 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 		CalculateCosts(Start, Finish, GetGoalCost(Start));
 		// Add our Starting block to the OpenList and start pathfinding!
 		// #3
-		OpenList.AddItem(Start);
+		OpenList = new class'PriorityQueue';
+		OpenList.Add(Start);
 	}
-	while(OpenList.Length > 0)
+	while(OpenList.Length() > 0)
 	{
 		// If we're defer searching and hit IterationsPerTick, defer!
 		if(bDeferSearching && i >= IterationsPerTick)
@@ -227,7 +230,7 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 			i++;
 			Iteration++;
 		}
-		BestBlock = GetBestBlock(OpenList, Finish);
+		BestBlock = OpenList.Remove();
 //		`log("Iteration"@Iteration$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,!bDeferredDone,'AStar');
 		if(BestBlock == Finish)
 		{
@@ -254,14 +257,14 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 			// No path?! How?! What?
 		}
 		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish);
-		OpenList.RemoveItem(BestBlock);
 		ClosedList.AddItem(BestBlock);
 	}
 	`log("================== FINISHED A* ==================",,'AStar');
+	OpenList.Dispose();
 	return PathID;
 }
 
-private final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out array<TowerBlock> ClosedList, 
+private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<TowerBlock> ClosedList, 
 	TowerBlock SourceBlock, TowerBlock Finish)
 {
 	local array<TowerBlock> AdjacentList;
@@ -286,7 +289,7 @@ private final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out arr
 	}
 	foreach AdjacentList(IteratorBlock)
 	{
-		if(OpenList.Find(IteratorBlock) != -1)
+		if(OpenList.Contains(IteratorBlock))
 		{
 			// Already in OpenList.
 			if(IteratorBlock.GoalCost > SourceBlock.GoalCost)
@@ -313,7 +316,7 @@ private final function AddAdjacentBlocks(out array<TowerBlock> OpenList, out arr
 			// Not in either list.
 			IteratorBlock.AStarParent = SourceBlock;
 			CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
-			OpenList.AddItem(IteratorBlock);
+			OpenList.Add(IteratorBlock);
 		}
 	}
 }
@@ -361,6 +364,11 @@ private final function UpdateParents(TowerBlock Block, TowerBlock Finish)
 
 private final function CalculateCosts(TowerBlock Block, TowerBlock Finish, optional int GoalCost)
 {
+	if(Block == Finish)
+	{
+		Block.Fitness = 0;
+		return;
+	}
 	Block.HeuristicCost = GetHeuristicCost(Block, Finish);
 	if(Block.AStarParent != None)
 	{
@@ -535,12 +543,14 @@ final simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector C
 	*/
 }
 
-private final function DebugCreateStepMarkers(out array<TowerBlock> OpenList, out array<TowerBlock> ClosedList)
+private final function DebugCreateStepMarkers(out PriorityQueue OpenList, out array<TowerBlock> ClosedList)
 {
 	local TowerAIObjective Marker;
 	local TowerBlock Block;
+	local array<TowerBlock> BlockArray;
 	StepMarkers.Remove(0, StepMarkers.Length);
-	foreach OpenList(Block)
+	OpenList.AsArray(BlockArray);
+	foreach BlockArray(Block)
 	{
 		if(Block == StepBestBlock)
 		{
@@ -620,12 +630,14 @@ private final function DebugDrawStepInfo(Canvas Canvas)
 	Canvas.SetPos(0,50);
 	Canvas.DrawText("OpenList:");
 	i = 62;
+	/*
 	foreach DeferredOpenList(Block)
 	{
 		Canvas.SetPos(0, i);
 		Canvas.DrawText(Block.Name);
 		i += 12;
 	}
+	*/
 	Canvas.SetPos(200, 50);
 	Canvas.DrawText("ClosedList:");
 	i = 62;

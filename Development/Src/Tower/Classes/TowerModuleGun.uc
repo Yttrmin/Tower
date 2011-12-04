@@ -55,11 +55,18 @@ simulated event OnEnterRange(TowerTargetable Targetable)
 	*/
 }
 
+simulated function StopThinking()
+{
+	ClearTimer('Think');
+	bThinking = false;
+}
+
 simulated event OnExitRange(TowerTargetable Targetable)
 {
 	if(RangeComponent.EnemiesInRange() == 0)
 	{
 		AttackComponent.StopAttack();
+		StopThinking();
 	}
 }
 

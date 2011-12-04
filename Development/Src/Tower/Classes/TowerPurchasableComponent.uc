@@ -1,4 +1,5 @@
 class TowerPurchasableComponent extends ActorComponent
+	HideCategories(Object)
 	EditInlineNew;
 
 var() const privatewrite int BaseCost<UIMin=1.0|ClampMin=1.0|DisplayName="Cost">;

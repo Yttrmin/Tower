@@ -158,7 +158,7 @@ private final function CheckForMods()
 			RootMod = LoadedMod;
 			TowerGameReplicationInfo(GameReplicationInfo).RootMod = RootMod;
 			RootArchetype = RootMod.ModBlocks[0];
-			AirArchetype = RootMod.ModBlocks[5];
+			AirArchetype = RootMod.ModBlocks[6];
 		}
 		else
 		{
