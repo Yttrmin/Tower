@@ -18,8 +18,10 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	TowerPlayerReplicationInfo NewOwnerPRI)
 {
 	Super.Initialize(NewGridLocation, NewParentDirection, NewOwnerPRI);
-	AttackComponent.Initialize();
-	RangeComponent.Initialize();
+	if(AttackComponent != None)
+	{
+		AttackComponent.Initialize();
+	}
 }
 
 event Touch( Actor Other, PrimitiveComponent OtherComp, vector HitLocation, vector HitNormal )

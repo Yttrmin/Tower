@@ -119,7 +119,6 @@ struct FormationSpawnInfo
 };
 
 var() protected  TowerFactionAILogicComponent LogicComponent;
-var() protected TowerFactionInfo FactionInfo;
 
 // These exist purely to cut down on the typecasting and function calling every tick.
 var protected TowerGame Game;
@@ -542,10 +541,6 @@ DefaultProperties
 	bPostRenderIfNotVisible=true
 
 	RemoteRole=ROLE_None
-	Begin Object Class=TowerFactionInfo Name=FactionInfo0
-	End Object
-	Components.Add(FactionInfo0)
-	FactionInfo=FactionInfo0
 
 	// Consider how to get this during AsyncWork.
 	TickGroup=TG_PreAsyncWork

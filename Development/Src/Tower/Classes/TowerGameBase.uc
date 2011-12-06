@@ -38,11 +38,17 @@ var protected string PendingLoadFile;
 var privatewrite TowerFactionAIHivemind Hivemind;
 
 var private array<delegate<TickDelegate> > ToTick;
+
+var const Vector Borders[4];
+var privatewrite Vector GridOrigin;
+var privatewrite TowerStart TowerStarts[4];
+
 delegate TickDelegate(float DeltaTime);
 
 event PreBeginPlay()
 {
 	Super.PreBeginPlay();
+	DetermineTowerStarts();
 	CheckForMods();
 }
 
@@ -183,6 +189,28 @@ private final function CheckForMods()
 	`endif
 }
 
+private function DetermineTowerStarts()
+{
+	local TowerStart Start;
+	foreach WorldInfo.AllActors(class'TowerStart', Start)
+	{
+		if(TowerStarts[Start.PlayerNumber-1] == None)
+		{
+			TowerStarts[Start.PlayerNumber-1] = Start;
+		}
+		else
+		{
+			`warn(Start@"has the same PlayerNumber as"@TowerStarts[Start.PlayerNumber-1]$"! Ignoring!");
+		}
+	}
+	`assert(ArrayCount(TowerStarts) != 0);
+	if(ArrayCount(TowerStarts) < MaxPlayersAllowed)
+	{
+		`warn("There are only"@ArrayCount(TowerStarts)@"TowerStarts, but this game mode supports"@MaxPlayersAllowed@"players!");
+	}
+	GridOrigin = TowerStarts[0].Location;
+}
+
 event Tick(float DeltaTime)
 {
 	local delegate<TickDelegate> ToTickDelegate;
@@ -213,4 +241,47 @@ final function UnRegisterForPreAsyncTick(delegate<TickDelegate> Tick)
 		ToTick.Remove(RemoveIndex, 1);
 	}
 	// Don't disable Tick since TowerGame has timers!
+}
+
+/** Returns the FactionLocation that the given point is in.
+Useful for determining who's land the Point is on. */
+function FactionLocation GetPointFactionLocation(Vector Point)
+{
+	if(Point dot Borders[0] > 0)
+	{
+		// NegX or PosY.
+		if(Point dot Borders[1] > 0)
+		{
+			return FL_PosY;
+		}
+		else if(Point dot Borders[3] > 0)
+		{
+			return FL_NegX;
+		}
+	}
+	// PosX or NegY.
+	else if(Point dot Borders[1] > 0)
+	{
+		return FL_PosX;
+	}
+	else if(Point dot Borders[3] > 0)
+	{
+		return FL_NegY;
+	}
+	ScriptTrace();
+	`warn("Determined FactionLocation was FL_None for point:"@Point$"!");
+	return FL_None;
+}
+
+function Vector GridLocationToVector(out const IVector GridLocation)
+{
+	local Vector NewBlockLocation;
+	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
+	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
+	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
+	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
+	//@TODO - Are we doing this here or what?
+	// Pivot point in middle, bump it up.
+//	NewBlockLocation.Z += 128;
+	return NewBlockLocation;
 }

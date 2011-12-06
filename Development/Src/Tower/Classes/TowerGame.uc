@@ -42,8 +42,6 @@ var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, Veh
 /** The root TowerStart for the world, represents space (0,0,0) for GridLocations. Typically the first player's spot. */
 var TowerStart RootTowerStart;
 
-var const Vector Borders[4];
-
 event PostBeginPlay()
 {
 //	local TowerModInfo ZMOd;
@@ -174,36 +172,6 @@ function PopulateSpawnPointArrays()
 final function CheckTowerStarts()
 {
 
-}
-
-/** Returns the FactionLocation that the given point is in.
-Useful for determining who's land the Point is on. */
-function FactionLocation GetPointFactionLocation(Vector Point)
-{
-	if(Point dot Borders[0] > 0)
-	{
-		// NegX or PosY.
-		if(Point dot Borders[1] > 0)
-		{
-			return FL_PosY;
-		}
-		else if(Point dot Borders[3] > 0)
-		{
-			return FL_NegX;
-		}
-	}
-	// PosX or NegY.
-	else if(Point dot Borders[1] > 0)
-	{
-		return FL_PosX;
-	}
-	else if(Point dot Borders[3] > 0)
-	{
-		return FL_NegY;
-	}
-	ScriptTrace();
-	`warn("Determined FactionLocation was FL_None for point:"@Point$"!");
-	return FL_None;
 }
 
 function GenericPlayerInitialization(Controller C)
@@ -933,19 +901,6 @@ function RemoveBlock(Tower Tower, TowerBlock Block)
 function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent)
 {
 	return (IsGridLocationOnGrid(GridLocation) && (Parent == None || !IsBlockFallingOntoBlock(GridLocation, Parent)));
-}
-
-static function Vector GridLocationToVector(out const IVector GridLocation, optional class<TowerBlock> BlockClass)
-{
-	local Vector NewBlockLocation;
-	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (GridLocation.X * 256);
-	NewBlockLocation.Y = (GridLocation.Y * 256);
-	NewBlockLocation.Z = (GridLocation.Z * 256);
-	//@TODO - Are we doing this here or what?
-	// Pivot point in middle, bump it up.
-//	NewBlockLocation.Z += 128;
-	return NewBlockLocation;
 }
 
 /** Returns TRUE if the GridLocation is inside the bounds specified in TowerMapInfo. */
