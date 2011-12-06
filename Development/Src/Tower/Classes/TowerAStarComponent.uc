@@ -9,6 +9,13 @@ struct PathRoot
 	var TowerAIObjective ObjectiveStart;
 	var TowerBlock Start, Finish;
 	var int ID;
+	
+	/*structdefaultproperties
+	{
+		ID=-1
+		bReady=true
+		bSuccess=false
+	}*/
 };
 
 var const private PathRoot NullPathRoot;
@@ -25,8 +32,6 @@ var private array<delegate<OnPathGenerated> > PathGeneratedDelegates;
 var private TowerGame Game;
 var private TowerFactionAIHivemind Hivemind;
 
-/** Current PathID we're working on the path of. */
-var deprecated private int CurrentPathID;
 /** Next PathID to use when we need one for GeneratePath. */
 var private int NextPathID;
 /** Current Path we're working on. Should it be first-come first-serve or what? */
@@ -89,7 +94,7 @@ final event PreAsyncTick(float DeltaTime)
 Used to call GeneratePath for our CurrentPathID, for maximum efficiency. */
 final event AsyncTick(float DeltaTime)
 {
-	GeneratePath(CurrentPath.Start,CurrentPath.Finish,CurrentPathID);
+	GeneratePath(CurrentPath.Start,CurrentPath.Finish,CurrentPath.ID);
 }
 
 final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate, 
@@ -166,9 +171,9 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 		Path.Finish = Finish;
 		CurrentPath = Path;
 		QueuedPaths.AddItem(Path);
-		if(CurrentPathID == -1)
+		if(CurrentPath.ID == -1)
 		{
-			CurrentPathID = PathID;
+			CurrentPath.ID = PathID;
 		}
 		if(bDeferSearching && IterationsPerTick > 0)
 		{
@@ -440,9 +445,9 @@ private final function ConstructPath(TowerBlock Finish)
 	}
 	`log("Path construction complete!",,'AStar');
 	DebugLogPaths();
-	PathReady(CurrentPathID, true);
+	PathReady(CurrentPath.ID, true);
 	Hivemind.UnRegisterForAsyncTick(AsyncTick);
-	CurrentPathID = -1;
+	CurrentPath.ID = -1;
 	CurrentPath = NullPathRoot;
 }
 
@@ -687,7 +692,6 @@ private final function DebugDrawBlockFitness(Canvas Canvas)
 
 DefaultProperties
 {
-	CurrentPathID=-1
 	NextPathID=0
 	NullPathRoot=(ID=-1,bReady=true,bSuccess=false)
 }

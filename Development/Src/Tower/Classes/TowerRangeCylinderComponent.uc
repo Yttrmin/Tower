@@ -11,6 +11,10 @@ event Initialize()
 	Super.Initialize();
 //	AttachComponent(RangeArea);
 	SkeletalMeshComponent(MeshComponent).AttachComponentToSocket(RangeArea, CylinderCenterSocketName);
+	if(Outer.ParentDirection.Z != 0)
+	{
+		RangeArea.SetCylinderSize(RangeArea.CollisionHeight*2, RangeArea.CollisionRadius/2);
+	}
 	RangeArea.SetActorCollision(true, false, true);
 	CollisionComponent=RangeArea;
 }

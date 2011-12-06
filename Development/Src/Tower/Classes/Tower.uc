@@ -57,7 +57,7 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local IVector ParentDir;
 	local Vector SpawnLocation;
 	
-	SpawnLocation = class'TowerGame'.static.GridLocationToVector(GridLocation);
+	SpawnLocation = TowerGameBase(WorldInfo.Game).GridLocationToVector(GridLocation);
 	SpawnLocation.Z += 128;
 	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 	if(Parent != None)
@@ -215,7 +215,7 @@ function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocat
 	local IVector StartGridLocation;
 	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
 	StartGridLocation = GridLocation + ParentDirection;
-	StartLocation = TowerGame(WorldInfo.Game).GridLocationToVector(StartGridLocation);
+	StartLocation = TowerGameBase(WorldInfo.Game).GridLocationToVector(StartGridLocation);
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
 	StartLocation.Z += 128;
 	EndLocation.X = StartLocation.X + 10;

@@ -123,25 +123,3 @@ final function Dispose()
 {
 	Heap.Remove(0, Heap.Length);
 }
-
-//@DELETEME - Commit once just in case we don't like using macros for whatever reason.
-/*
-private final function int GetParent(out int ChildIndex)
-{
-	return (ChildIndex-1)/2;
-}
-
-private final function GetChildren(const out int Index, out int Left, out int Right)
-{
-	Left = 2 * Index + 1;
-	Right = Left+1;
-}
-
-private final function Swap(out int A, out int B)
-{
-	local TowerBlock AObj;
-	AObj = Heap[A];
-	Heap[A] = Heap[B];
-	Heap[B] = AObj;
-}
-*/
