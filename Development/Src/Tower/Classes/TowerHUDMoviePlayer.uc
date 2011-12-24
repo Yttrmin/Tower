@@ -4,7 +4,8 @@
 * The UnrealScript side of the Flash HUD SWF.
 * This will work in the iOS build starting with the March UDK version.
 */
-class TowerHUDMoviePlayer extends GFxMoviePlayer;
+class TowerHUDMoviePlayer extends GFxMoviePlayer
+	config(Tower);
 
 var TowerHUD HUD;
 var float MouseX, MouseY;
@@ -12,6 +13,7 @@ var float MouseX, MouseY;
 var GFxScrollingList BuildList;
 var array<int> BuildIndexes;
 
+var private const bool bUseGFxBlockPreview;
 var protectedwrite bool bInMenu;
 
 const SWF_WIDTH = 1024;
@@ -28,6 +30,17 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 		return TRUE;
 	}
 	return FALSE;
+}
+
+/** Called from TowerHUD::DrawHUD. */
+event DrawHUD(Canvas Canvas)
+{
+	if(!bUseGFxBlockPreview)
+	{
+		// 674 on a 1024x768.
+		Canvas.SetPos(421, 64);
+		Canvas.DrawTextureBlended(HUD.GetPreviewRenderTarget(), 640/1024, BLEND_Opaque);
+	}
 }
 
 /** Takes Vector2D and fills it with current mouse coordinates.
@@ -54,6 +67,10 @@ function ExpandBuildMenu()
 	UnlockMouse(true);
 	MoveCursor();
 	SetBuildMenuInfo(HUD.PlaceBlock);
+	if(bUseGFxBlockPreview)
+	{
+		SetVariableBool("_root.BuildMenu.BlockPreview._visible", true);
+	}
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
 }
 
@@ -165,7 +182,9 @@ DefaultProperties
 	bIgnoreMouseInput=TRUE
 
 	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
-
+	// Nope, crashes too.
+//	ExternalTextures(0)={(Resource="HUDPreview",Texture=TextureRenderTarget2D'TowerHUD.HUDPreview0')}
+	bUseGFxBlockPreview=false
 	bDisplayWithHudOff=false
 	bLogUnhandedWidgetInitializations=true
 	TimingMode=TM_Game
