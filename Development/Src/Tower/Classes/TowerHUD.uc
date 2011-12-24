@@ -61,6 +61,10 @@ function DrawHUD()
 			PostRenderedActors[i].PostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
 		}
 	}
+	if(HUDMovie.bInMenu)
+	{
+		HUDMovie.DrawHUD(Canvas);
+	}
 }
 
 event OnMouseClick(int Button)

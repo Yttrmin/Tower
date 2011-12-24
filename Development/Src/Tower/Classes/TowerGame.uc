@@ -563,7 +563,8 @@ exec function TestRTHUD(bool bUseRenderTargetTexture)
 	local GFxMoviePlayer Movie;
 	Movie = new class'GFxMoviePlayer';
 	Movie.MovieInfo = SwfMovie'TestRTHUD.RTHUD';
-	Movie.Start();
+	Movie.bAutoPlay = true;
+	Movie.Init();
 	if(bUseRenderTargetTexture)
 	{
 		Movie.SetExternalTexture("MyRenderTarget", TextureRenderTarget2D'TestRTHUD.RenderTargetTexture');

@@ -3,6 +3,7 @@ TowerSaveSystem
 
 Class used to save and load games on the PC and iOS. */
 class TowerSaveSystem extends Object
+	//@TODO - Dedicated config file since it holds save information?
 	config(Tower);
 
 struct SaveInfo

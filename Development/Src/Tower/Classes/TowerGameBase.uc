@@ -285,3 +285,10 @@ function Vector GridLocationToVector(out const IVector GridLocation)
 //	NewBlockLocation.Z += 128;
 	return NewBlockLocation;
 }
+
+function IVector VectorToGridLocation(out const Vector RealLocation)
+{
+	// Do we have to round the subtraction or division or anything?
+	return IVect((RealLocation.X-GridOrigin.X)/256, (RealLocation.Y-GridOrigin.Y)/256, 
+		(RealLocation.Z-GridOrigin.Z)/256);
+}
