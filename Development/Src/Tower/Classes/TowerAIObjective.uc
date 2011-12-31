@@ -3,8 +3,7 @@ TowerAIObjective
 
 Used to mark a TowerBlock target for AI, and stores points where units should go to get a good shot at the target.
 */
-class TowerAIObjective extends UDKGameObjective
-	dependson(TowerGame);
+class TowerAIObjective extends UDKGameObjective;
 
 /** Represents what you'll have to pull of to get to THIS objective!
 So a OT_ClimbUp objective means you have to climb up to achieve it/get to THIS! */

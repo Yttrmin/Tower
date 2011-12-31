@@ -8,7 +8,6 @@ Keep in mind this class and its children will likely be opened up to modding!
 class TowerBlock extends TowerBlockBase
 	config(Tower)
 	HideCategories(Attachment,Collision,Physics,Advanced,Object)
-	dependson(TowerGame)
 	ClassGroup(Tower)
 	placeable
 	abstract;
@@ -140,6 +139,7 @@ simulated event PostBeginPlay()
 
 simulated event Destroyed()
 {
+	Super.Destroyed();
 	if(Role == Role_Authority && Obstacle != None)
 	{
 		Obstacle.UnRegisterObstacle();
@@ -160,6 +160,16 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 //	SetOwner(OwnerPRI);
 }
 
+function Vector GetLocation()
+{
+	return OwnerPRI.Tower.GridLocationToVector(GridLocation);
+}
+
+function IVector GetGridLocation()
+{
+	return OwnerPRI.Tower.VectorToGridLocation(Location);
+}
+
 static function TowerPurchasableComponent GetPurchasableComponent(TowerBlock Archetype)
 {
 	return Archetype.PurchasableComponent;
@@ -177,16 +187,17 @@ simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=t
 	local Actor TempBase;
 	if(bUpdateGridLocation)
 	{
-		GridLocation.X = Round(int(Location.X) / 256);
-		GridLocation.Y = Round(int(Location.Y) / 256);
-		GridLocation.Z = Round(int(Location.Z) / 256);
+		GridLocation = GetGridLocation();
 	}
 	if(bUpdateRelativeLocation)
 	{
+		NewLocation = GetLocation();
+		/*
 		NewLocation.X = 256 * (GridLocation.X);
 		NewLocation.Y = 256 * (GridLocation.Y);
 		//@TODO - No magic number.
 		NewLocation.Z = 256 * (GridLocation.Z) + 128;
+		*/
 		// Base is lost when you do SetLocation, so we have to reset it afterwards.
 		TempBase = Base;
 		SetLocation(NewLocation);

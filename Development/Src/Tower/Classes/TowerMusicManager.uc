@@ -1,4 +1,5 @@
 class TowerMusicManager extends Info
+	deprecated
 	config(Tower);
 
 enum MusicType
@@ -31,7 +32,7 @@ var globalconfig bool bIgnoreMusicEventsWhenOverride;
 
 var AudioComponent CurrentSong;
 var TowerMusicList CurrentMusicList;
-
+/*
 function Initialize()
 {
 	CurrentMusicList = TowerMusicList(DynamicLoadObject(MusicListPath, class'TowerMusicList', false));
@@ -82,4 +83,4 @@ DefaultProperties
 		
 	End Object
 	CurrentSong=Music
-}
+}*/

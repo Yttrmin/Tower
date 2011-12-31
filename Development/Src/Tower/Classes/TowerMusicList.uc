@@ -8,7 +8,7 @@ class TowerMusicList extends Object
 	AutoExpandCategories(TowerMusicList)
 	placeable;
 
-var() array<SoundCue> OverrideMusic;
-var() array<SoundCue> BuildMusic;
-var() array<SoundCue> RoundMusic;
+var() array<MusicTrackStruct> OverrideMusic;
+var() array<MusicTrackStruct> BuildMusic;
+var() array<MusicTrackStruct> RoundMusic;
 

@@ -7,5 +7,10 @@ var() const byte PlayerNumber<ClampMin=1|ClampMax=4|UIMin=1|UIMax=4>;
 
 DefaultProperties
 {
-	
+	Begin Object Class=SpriteComponent Name=GameSprite
+		Sprite=Texture2D'EditorResources.S_NavP'
+		HiddenGame=false
+		HiddenEditor=false
+	End Object
+	Components.Add(GameSprite)
 }

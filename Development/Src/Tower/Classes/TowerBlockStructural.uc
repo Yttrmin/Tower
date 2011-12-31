@@ -173,7 +173,7 @@ simulated state UnstableParent extends Unstable
 	}
 	event EndState(Name NextStateName)
 	{
-		ClearTimer('DroppedSpace');
+		ClearTimer(NameOf(DroppedSpace));
 	}
 };
 

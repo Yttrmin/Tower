@@ -1,4 +1,5 @@
 class TowerFaction extends TeamInfo
+	dependson(TowerGameBase)
 	abstract;
 
 var(InGame) editconst int Budget;

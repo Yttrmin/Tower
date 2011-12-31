@@ -57,8 +57,9 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	local IVector ParentDir;
 	local Vector SpawnLocation;
 	
-	SpawnLocation = TowerGameBase(WorldInfo.Game).GridLocationToVector(GridLocation);
-	SpawnLocation.Z += 128;
+	SpawnLocation = GridLocationToVector(GridLocation);
+	// Done in GridLocationToVector.
+//	SpawnLocation.Z += 128;
 	NewBlock = Spawn(BlockArchetype.class, ((Parent!=None) ? Parent : None) ,, SpawnLocation,,BlockArchetype);
 	if(Parent != None)
 	{
@@ -181,8 +182,7 @@ private function bool IsThereAir(out IVector GridLocation)
 	local TowerBlock Block;
 	local TowerBlockAir Air;
 	local Vector StartLocation;
-	StartLocation = ToVect(GridLocation)*256;
-	StartLocation.Z += 128;
+	StartLocation = GridLocationToVector(GridLocation);
 	//@TODO - If there's a block adjacent to the air assume there must be air?
 	foreach OverlappingActors(class'TowerBlock', Block, 130,StartLocation,true)
 	{
@@ -201,9 +201,6 @@ function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
 {
 	local IVector Difference;
 	Difference = INormal(Other.GridLocation - Origin.GridLocation);
-//	Difference.X = (Abs(Origin.GridLocation.X) - Abs(Other.GridLocation.X));
-//	Difference.Y = (Abs(Origin.GridLocation.Y) - Abs(Other.GridLocation.Y));
-//	Difference.Z = (Abs(Other.GridLocation.Z) - Abs(Origin.GridLocation.Z));
 	return Difference;
 }
 
@@ -215,9 +212,10 @@ function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocat
 	local IVector StartGridLocation;
 	local Vector StartLocation, EndLocation, HitNormal, HitLocation;
 	StartGridLocation = GridLocation + ParentDirection;
-	StartLocation = TowerGameBase(WorldInfo.Game).GridLocationToVector(StartGridLocation);
+	StartLocation = GridLocationToVector(StartGridLocation);
+	// Done in GridLocationToVector.
 	// The origin of blocks is on their bottom, so bump it up a bit so we're not on the edge.
-	StartLocation.Z += 128;
+	//StartLocation.Z += 128;
 	EndLocation.X = StartLocation.X + 10;
 	EndLocation.Y = StartLocation.Y + 10;
 	EndLocation.Z = StartLocation.Z + 10;
@@ -249,14 +247,14 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	}
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
-//		`log("Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+		`log(Node@"Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
 		{
 			Node.SetBase(Block);
 			Node.SetOwner(Block);
 			TowerBlockStructural(Node).ReplicatedBase = Block;
 			Node.AdoptedParent();
-//			`log("And it's good!");
+			`log(Node@"And it's good!"@Block);
 			return TRUE;
 		}
 	}
@@ -292,6 +290,28 @@ private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBloc
 {
 	// IBO and GBM both clocked out at 0.0250 ms. Virtually identical.
 	return Block.IsBasedOn(Root) && !Block.IsBasedOn(InvalidBase);
+}
+
+function Vector GridLocationToVector(out const IVector GridLocation)
+{
+	local Vector NewBlockLocation;
+	local Vector GridOrigin;
+	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
+	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
+	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
+	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
+	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
+	// Pivot point in middle, bump it up.
+	NewBlockLocation.Z += 128;
+	return NewBlockLocation;
+}
+
+function IVector VectorToGridLocation(out const Vector RealLocation)
+{
+	local Vector GridOrigin;
+	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
+	return IVect(Round(RealLocation.X-GridOrigin.X)/256, Round(RealLocation.Y-GridOrigin.Y)/256, 
+		Round(RealLocation.Z-GridOrigin.Z)/256);
 }
 
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
