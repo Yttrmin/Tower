@@ -11,8 +11,9 @@ var array<TowerBlock> Blocks;
 var bool bModsLoaded;
 var repnotify int ModCount;
 var repnotify TowerModInfo RootMod;
-var repnotify MusicEvent MusicEvent;
 var repnotify byte Round;
+
+var Vector GridOrigin;
 
 var TowerPlayerReplicationInfo ServerTPRI;
 
@@ -23,9 +24,14 @@ var private bool bRootModReplicated;
 replication
 {
 	if(bNetDirty)
-		bRoundInProgress, MusicEvent, Round;
+		bRoundInProgress, Round;
 	if(bNetInitial)
-		ModCount, RootMod, ServerTPRI;
+		ModCount, RootMod, ServerTPRI, GridOrigin;
+}
+
+simulated event PreBeginPlay()
+{
+	Super.PreBeginPlay();
 }
 
 simulated event PostBeginPlay()
@@ -36,11 +42,7 @@ simulated event PostBeginPlay()
 simulated event ReplicatedEvent(name VarName)
 {
 	Super.ReplicatedEvent(VarName);
-	if(VarName == 'MusicEvent')
-	{
-		TowerPlayerController(GetALocalPlayerController()).OnMusicEvent(MusicEvent);
-	}
-	else if(VarName == 'Round')
+	if(VarName == 'Round')
 	{
 		TowerPlayerController(GetALocalPlayerController()).UpdateRoundNumber(Round);
 	}

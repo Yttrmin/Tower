@@ -3,7 +3,6 @@ class TowerPlayerController extends GamePlayerController
 	config(Tower);
 
 var TowerSaveSystem SaveSystem;
-var TowerMusicManager MusicManager;
 var byte PreviewAreaIndex;
 `if(`isdefined(DEBUG))
 var TowerEnemyController PossessedPawnController;
@@ -13,8 +12,6 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SaveSystem = new class'Tower.TowerSaveSystem';
-	MusicManager = Spawn(class'Tower.TowerMusicManager');
-	MusicManager.Initialize();
 //	SaveSystem.TestInt = 123456;
 //	SaveSystem.TransTestInt = 345678;
 //	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
@@ -361,40 +358,6 @@ exec function DebugUnSpectate()
 	SetViewTarget(None);
 }
 
-/** Plays the music at the given index */
-exec function DebugPlayMusic(int Index)
-{
-	MusicManager.PlayOverrideMusic(Index);
-}
-
-exec function DebugStopMusic()
-{
-	MusicManager.StopMusic();
-}
-
-/** Lists all music in the MusicManager's MusicList as well as the currently playing song. */
-exec function DebugListMusic()
-{
-	local SoundCue Cue;
-	local int i;
-	`log("=================================================");
-	`log("Override Music. Count:"@MusicManager.CurrentMusicList.OverrideMusic.Length);
-	foreach MusicManager.CurrentMusicList.OverrideMusic(Cue, i)
-	{
-		`log(i$"):"@Cue.Name@Cue.Duration@"Seconds");
-	}
-	`log("-------------------------------------------------");
-	if(MusicManager.CurrentSong.SoundCue != None)
-	{
-		`log("Currently playing:"@MusicManager.CurrentSong.SoundCue.Name@MusicManager.CurrentSong.PlaybackTime$"/"$MusicManager.CurrentSong.SoundCue.Duration@"Seconds");
-	}
-	else
-	{
-		`log("Currently playing: Nothing");
-	}
-	`log("=================================================");
-}
-
 /** Logs what you're looking at. */
 exec function DebugLookingAt()
 {
@@ -416,7 +379,7 @@ exec function DebugLookingAt()
 	{
 		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"B:"@LookingBlock.Base@"GL:"
 			@"("$LookingBlock.GridLocation.X$","@LookingBlock.GridLocation.Y$","@LookingBlock.GridLocation.Z$")"@"L:"
-			@LookingBlock.Location,,'LookingAt');
+			@LookingBlock.Location@"L!:"@GetTower().GridLocationToVector(LookingBlock.GridLocation),,'LookingAt');
 	}
 }
 
@@ -556,10 +519,19 @@ exec function DebugUberBlockTestPLAYER()
 exec function WhereIs(int X, int Y, int Z)
 {
 	local Vector SpawnLocation;
-	SpawnLocation.X = X * 256;
-	SpawnLocation.Y = Y * 256;
-	SpawnLocation.Z = Z * 256 + 128;
+	local IVector V;
+	V =	IVect(X,Y,Z);
+	SpawnLocation = GetTower().GridLocationToVector(V);
 	Spawn(class'TowerDebugMarker',,,SpawnLocation);
+}
+
+exec function DrawAt(int X, int Y, int Z)
+{
+	local Vector Vect;
+	Vect.X = X;
+	Vect.Y = Y;
+	Vect.Z = Z;
+	DrawDebugSphere(Vect, 32, 64, 255, 0, 0, true); 
 }
 
 exec function DebugAllBlocksPlaceable(bool bNewAllBlocksPlaceable)
@@ -627,12 +599,6 @@ reliable server function ServerSetTowerName(string NewName)
 simulated function UpdateRoundNumber(byte NewRound)
 {
 	TowerHUD(myHUD).HUDMovie.SetRoundNumber(NewRound);
-}
-
-/** TowerMusicManager doesn't exist on servers, so forward me to the MusicManager, thanks! */
-reliable client function OnMusicEvent(MusicEvent Event)
-{
-	MusicManager.OnMusicEvent(Event);
 }
 
 simulated function Tower GetTower()

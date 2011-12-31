@@ -6,7 +6,7 @@ Right now this mode is leaning towards regular game with drop-in/drop-out co-op.
 */
 
 class TowerGame extends TowerGameBase
-	dependson(TowerMusicManager)
+	dependson(TowerMusicManager, MusicTrackDataStructures)
 	config(Tower);
 
 `define debugconfig `if(`isdefined(debug)) config `else `define debugconfig `endif
@@ -23,6 +23,14 @@ enum DifficultyLevel
 	DL_Impossible
 };
 
+enum MusicEvent
+{
+	ME_None,
+	ME_StartBuilding,
+	ME_StartRound,
+	ME_EndRound
+};
+
 struct DifficultySettings
 {
 	var int BlockPriceMultiplier;
@@ -36,6 +44,10 @@ var const config float CoolDownTime;
 var const config array<String> FactionAIs;
 var const config bool bLogGameplayEvents;
 var const config float GameplayEventsHeartbeatDelta;
+
+/** Path to a TowerMusicList. It will be DynamicLoadObject()'d. */
+var globalconfig string MusicListPath;
+var TowerMusicList CurrentMusicList;
 
 var array<TowerSpawnPoint> SpawnPoints; //,InfantryPoints, ProjectilePoints, VehiclePoints;
 
@@ -53,6 +65,7 @@ event PostBeginPlay()
 		`log("Gameplay logging enabled.");
 		`RecordGameIntStat(MAX_EVENTID, 12345);
 	}
+	CurrentMusicList = TowerMusicList(DynamicLoadObject(MusicListPath, class'TowerMusicList', false));
 	PopulateSpawnPointArrays();
 	CheckTowerStarts();
 	if(WorldInfo.NetMode != NM_DedicatedServer)
@@ -224,19 +237,6 @@ exec function DebugKillAllTargetables()
 //	GotoState('CoolDown');
 }
 
-/** Forces the server and all clients to play this index on their OverrideMusic list. */
-exec function DebugServerMusicForcePlay(byte Index)
-{
-	local TowerPlayerController Controller;
-	Controller = TowerPlayerController(GetALocalPlayerController());
-	PlaySound(Controller.MusicManager.CurrentMusicList.OverrideMusic[Index], false, false, true);
-}
-
-exec function DebugServerMusicForceStop()
-{
-
-}
-
 exec function DebugListSpawnPoints()
 {
 	local TowerSpawnPoint Point;
@@ -303,21 +303,6 @@ exec function DebugForceGarbageCollection(optional bool bFullPurge)
 	WorldInfo.ForceGarbageCollection(bFullPurge);
 }
 
-/*
-exec function DebugAllBlocksToKActor()
-{
-	local TowerBlockStructural Block;
-	local StaticMeshComponent ToKactor;
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		`log(Block@Block.MeshComponent@"GO");
-		TOKactor = Block.MeshComponent;
-		class'KActorFromStatic'.static.MakeDynamic(TOKactor)
-			.ApplyImpulse(Vect(0,0,1), 25000, Vect(0,0,0));
-	}
-}
-*/
-
 exec function DebugRecursionStateTest()
 {
 	Spawn(class'TowerGameUberTest').DebugStartRecursionTest();
@@ -373,9 +358,9 @@ final function OnReadFriendsForAvatars(bool bWasSuccessful)
 	foreach Friends(Friend)
 	{
 		if(Friend.NickName != "[Lurking] KNAPKINATOR")
-		OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(Friend.UniqueID, OnReadAvatar);
+		OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(Friend.UniqueID, 184, OnReadAvatar);
 	}
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(LocalPlayer(GetALocalPlayerController().Player).GetUniqueNetID(), OnReadAvatar);
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(LocalPlayer(GetALocalPlayerController().Player).GetUniqueNetID(), 184, OnReadAvatar);
 }
 
 final function OnReadAvatar(const UniqueNetId PlayerNetId, Texture2D Avatar)
@@ -597,7 +582,6 @@ function StartMatch()
 	GotoState('CoolDown');
 }
 
-
 private final function AddFaction(class<TowerFaction> FactionClass, FactionLocation Faction, 
 	optional PlayerController Controller, optional TowerFactionAI Archetype)
 {
@@ -704,6 +688,23 @@ function bool IsRoundInProgress()
 	return false;
 }
 
+function UpdateMusic(MusicEvent Event)
+{
+	local MusicTrackStruct NewTrack;
+	switch(Event)
+	{
+	case ME_None:
+		break;
+	case ME_StartBuilding:
+		NewTrack = CurrentMusicList.BuildMusic[Rand(CurrentMusicList.BuildMusic.Length)];
+		break;
+	case ME_StartRound:
+		NewTrack = CurrentMusicList.RoundMusic[Rand(CurrentMusicList.RoundMusic.Length)];
+		break;
+	}
+	WorldInfo.UpdateMusicTrack(NewTrack);
+}
+
 function ToggleShowHUDCoolDown(bool bVisible)
 {
 	local TowerPlayerController Controller;
@@ -718,6 +719,7 @@ state CoolDown
 {
 	event BeginState(Name PreviousStateName)
 	{
+		UpdateMusic(ME_StartBuilding);
 		SetTimer(CoolDownTime, false, NameOf(CoolDownExpire));
 		SetTimer(1, true, NameOf(UpdateHUDCoolDown));
 		ToggleShowHUDCoolDown(true);
@@ -765,11 +767,11 @@ state RoundInProgress
 	{
 		local TeamInfo Faction;
 		local int BudgetPerFaction;
+		UpdateMusic(ME_StartRound);
 		TowerGameReplicationInfo(GameReplicationInfo).CheckRoundInProgress();
 		IncrementRound();
 		ToggleShowHUDCoolDown(false);
 		CalculateRemainingActiveFactions();
-		SendMusicEvent(ME_StartRound);
 		//@FIXME - Remove +1
 		BudgetPerFaction = 50 / (GetFactionAICount()+1);
 		foreach GameReplicationInfo.Teams(Faction)
@@ -845,12 +847,6 @@ Begin:
 	NotifyGameOver();
 	DrawDebugString(Vect(0,0,400), "GAME OVER");
 	DrawDebugString(Vect(0,0,256), "* IMAGINE A COOL GAME OVER CINEMATIC HERE *");
-}
-
-function SendMusicEvent(MusicEvent Event)
-{
-	TowerGameReplicationInfo(GameReplicationInfo).MusicEvent = Event;
-	TowerGameReplicationInfo(GameReplicationInfo).ReplicatedEvent('MusicEvent');
 }
 
 function byte GetFactionAICount()

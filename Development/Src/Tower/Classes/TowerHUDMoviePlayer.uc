@@ -70,6 +70,7 @@ function ExpandBuildMenu()
 	if(bUseGFxBlockPreview)
 	{
 		SetVariableBool("_root.BuildMenu.BlockPreview._visible", true);
+		SetExternalTexture("HUDPreview", HUD.GetPreviewRenderTarget());
 	}
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
 }

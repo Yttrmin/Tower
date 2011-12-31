@@ -1,6 +1,8 @@
 class TowerGameBase extends FrameworkGame
 	Config(Tower);
 
+`define IVectStr(IV) "("$`IV.X$","@`IV.Y$","@`IV.Z$")"
+
 enum FactionLocation
 {
 	FL_None,
@@ -55,11 +57,12 @@ event PreBeginPlay()
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	`log("Max supported controllers:"@class'UIRoot'.const.MAX_SUPPORTED_GAMEPADS);
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 }
 
-event PreLogin(string Options, string Address, out string ErrorMessage)
+event PreLogin(string Options, string Address, const UniqueNetId UniqueId, bool bSupportsAuth, out string ErrorMessage)
 {
 	`if(`notdefined(DEMO))
 	//@TODO - Check mod list in Options.
@@ -72,7 +75,7 @@ event PreLogin(string Options, string Address, out string ErrorMessage)
 	local String ModsList, VersionString;
 	local array<String> ModNames;
 	`endif
-	Super.PreLogin(Options, Address, ErrorMessage);
+	Super.PreLogin(Options, Address, UniqueID, bSupportsAuth, ErrorMessage);
 	`if(`notdefined(DEMO))
 	ModsList = ParseOption(Options, "Mods");
 	ModNames = SplitString(ModsList, ";");
@@ -209,6 +212,7 @@ private function DetermineTowerStarts()
 		`warn("There are only"@ArrayCount(TowerStarts)@"TowerStarts, but this game mode supports"@MaxPlayersAllowed@"players!");
 	}
 	GridOrigin = TowerStarts[0].Location;
+	TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin = GridOrigin;
 }
 
 event Tick(float DeltaTime)
@@ -273,6 +277,8 @@ function FactionLocation GetPointFactionLocation(Vector Point)
 	return FL_None;
 }
 
+/*
+//@TODO - Can't go here since clients need it. Can't be static because of GridOrigin.
 function Vector GridLocationToVector(out const IVector GridLocation)
 {
 	local Vector NewBlockLocation;
@@ -282,13 +288,19 @@ function Vector GridLocationToVector(out const IVector GridLocation)
 	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
 	//@TODO - Are we doing this here or what?
 	// Pivot point in middle, bump it up.
-//	NewBlockLocation.Z += 128;
+	NewBlockLocation.Z += 128;
 	return NewBlockLocation;
 }
 
+//@TODO - Can't go here since clients need it. Can't be static because of GridOrigin.
 function IVector VectorToGridLocation(out const Vector RealLocation)
 {
+	local IVector Result;
 	// Do we have to round the subtraction or division or anything?
-	return IVect((RealLocation.X-GridOrigin.X)/256, (RealLocation.Y-GridOrigin.Y)/256, 
-		(RealLocation.Z-GridOrigin.Z)/256);
+	//@TODO - Debugging. Just return for release.
+	Result = IVect(Round(RealLocation.X-GridOrigin.X)/256, Round(RealLocation.Y-GridOrigin.Y)/256, 
+		Round(RealLocation.Z-GridOrigin.Z)/256);
+	`log(RealLocation@`IVectStr(Result));
+	return Result;
 }
+*/

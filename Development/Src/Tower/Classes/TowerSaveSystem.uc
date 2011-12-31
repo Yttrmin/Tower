@@ -1,10 +1,9 @@
 /** 
 TowerSaveSystem
 
-Class used to save and load games on the PC and iOS. */
+Class used to save and load games on the PC, Mac, and iOS. */
 class TowerSaveSystem extends Object
-	//@TODO - Dedicated config file since it holds save information?
-	config(Tower);
+	config(TowerSaves);
 
 struct SaveInfo
 {
@@ -15,12 +14,18 @@ struct SaveInfo
 
 struct immutable BlockSaveInfo
 {
+	/** Single letters are used to cut down on file size, since variable names are saved. */
 	// ModIndex, ModBlockIndex, Health.
 	var int M, I, H;
 	// GridLocation, ParentDirection.
 	var IVector G, P;
 	// State.
 	var Name S;
+};
+
+struct immutable TowerInfo
+{
+
 };
 
 struct immutable PlayerSaveInfo
@@ -87,7 +92,7 @@ final function bool LoadGame(string FileName, bool bJustTower, TowerPlayerContro
 	return NativeLoadGame(FileName, bJustTower, Player);
 }
 
-/** Saves the game using Engine.uc's BasicSaveObject function, serializing this object. PC and iOS. */
+/** Saves the game using Engine.uc's BasicSaveObject function, serializing this object. PC, Mac, and iOS. */
 final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local TowerBlock Block;
@@ -133,7 +138,7 @@ final function bool NativeSaveGame(string FileName, bool bJustTower, TowerPlayer
 
 //@TODO - We have a player by then?
 //@SOLVED - Yes, it's called from Login.
-/** Loads the game using Engine.uc's BasicLoadObject function, serializing this object. PC and iOS.
+/** Loads the game using Engine.uc's BasicLoadObject function, serializing this object. PC, Mac, and iOS.
 Called from TowerGame::Login(). Guaranteed to be called on an empty map with towers but no blocks (including root).*/
 final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
