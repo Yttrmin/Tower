@@ -144,8 +144,6 @@ exec function QuickLoad();
 
 exec function SaveGame(string FileName)
 {
-	//@TODO - Move verification stuff to TowerSaveSystem or DLL since people definitely won't get that
-	// stuff publically.
 	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
 		`log("Trying to save while the round is in progress! This isn't allowed!");
@@ -596,12 +594,41 @@ reliable server function ServerSetTowerName(string NewName)
 	TowerGame(WorldInfo.Game).SetTowerName(GetTower(), NewName);
 }
 
-simulated function UpdateRoundNumber(byte NewRound)
+reliable client event WaitFor(float Seconds)
+{
+	//@DELETEME
+	class'Engine'.static.StopMovie(true);
+	`log("Server suggests waiting for"@Seconds@"seconds. Will do.",,'CDNet');
+	SetTimer(Seconds, false, NameOf(DoneWaiting));
+}
+
+private event DoneWaiting()
+{
+	`log("Done waiting, asking server for mods.",,'CDNet');
+	RequestModList();
+}
+
+//@NOTE - If there's concern about people reducing the wait time, have the server do a timestamp check.
+reliable server function RequestModList()
+{
+	`log("Client done waiting, passing along ModList.",,'CDNet');
+	LoadMods(TowerGameBase(WorldInfo.Game).RootMod.GetList(false));
+}
+
+reliable client event LoadMods(string ModList)
+{
+	`log("Received ModList!"@ModList,,'CDNet');
+	TowerGameReplicationInfo(WorldInfo.GRI).RootMod = class'TowerGameBase'.static.LoadMods(ModList, true);
+	`assert(TowerGameReplicationInfo(WorldInfo.GRI).RootMod != None);
+	TowerHUD(myHUD).SetupBuildList();
+}
+
+function UpdateRoundNumber(byte NewRound)
 {
 	TowerHUD(myHUD).HUDMovie.SetRoundNumber(NewRound);
 }
 
-simulated function Tower GetTower()
+function Tower GetTower()
 {
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower;
 }

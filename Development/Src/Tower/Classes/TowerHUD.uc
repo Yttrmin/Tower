@@ -106,9 +106,22 @@ function SetupBuildList()
 {
 	//@TODO - Order list.
 	local array<String> BuildStrings;
+	local array<TowerModInfo> Mods;
+	local array<TowerBlock> Blocks;
+	local TowerModInfo Mod;
 	local TowerBlock IteratedBlock;
 	local int i;
-	foreach TowerGameReplicationInfo(WorldInfo.GRI).Blocks(IteratedBlock, i)
+	TowerGameReplicationInfo(WorldInfo.GRI).RootMod.GetAllMods(Mods);
+	/** We need a contiguous array of blocks, or i will reset to 0 
+		every mod and completely throw off the index mapping. */
+	foreach Mods(Mod)
+	{
+		foreach Mod.ModBlocks(IteratedBlock)
+		{
+			Blocks.AddItem(IteratedBlock);
+		}
+	}
+	foreach Blocks(IteratedBlock, i)
 	{
 		if(IteratedBlock.bAddToBuildList)
 		{

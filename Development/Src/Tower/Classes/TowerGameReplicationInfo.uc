@@ -6,11 +6,8 @@ var protectedwrite bool bRoundInProgress;
 // RENAME ME
 var int MaxEnemyCount;
 
-var array<TowerBlock> Blocks;
-
 var bool bModsLoaded;
-var repnotify int ModCount;
-var repnotify TowerModInfo RootMod;
+var TowerModInfo RootMod;
 var repnotify byte Round;
 
 var Vector GridOrigin;
@@ -26,7 +23,7 @@ replication
 	if(bNetDirty)
 		bRoundInProgress, Round;
 	if(bNetInitial)
-		ModCount, RootMod, ServerTPRI, GridOrigin;
+		ServerTPRI, GridOrigin;
 }
 
 simulated event PreBeginPlay()
@@ -37,6 +34,7 @@ simulated event PreBeginPlay()
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	`log("TGRI PBP");
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -45,69 +43,6 @@ simulated event ReplicatedEvent(name VarName)
 	if(VarName == 'Round')
 	{
 		TowerPlayerController(GetALocalPlayerController()).UpdateRoundNumber(Round);
-	}
-	else if(VarName == 'ModCount')
-	{
-		`log("MOD COUNT REPLICATED:"@ModCount);
-	}
-	else if(VarName == 'RootMod')
-	{
-		OnModReplicated(RootMod);
-	}
-}
-
-/** Called when a TowerModInfo's NextMod was replicated. */
-simulated function OnModReplicated(TowerModInfo Mod)
-{
-	if(Role < ROLE_Authority)
-	{
-		if(Mod != None)
-		{
-			Loadmod(Mod);
-		}
-		// We always assume TowerMod exists or will exist, so a ModCount of 0 means the value wasn't replicated yet!
-		if(!bModsLoaded)
-		{
-			if(ModCount == 0)
-			{
-				PushState('WaitForModCount');
-			}
-			// Watch out in case RootMod is replicated after another mod (very possible).
-			if(RootMod != None && RootMod.GetModCount() == ModCount)
-			{
-				`log("All mods are loaded!");
-				bModsLoaded = true;
-				ConstructBuildList();
-				class'Engine'.static.StopMovie(true);
-			}
-		}
-	}
-}
-
-simulated state WaitForModCount
-{
-Begin:
-	`log("WAITFORMODCOUNT");
-	if(ModCount == 0)
-	{
-		`log("LOOP AGAIN");
-		goto 'Begin';
-	}
-	OnModReplicated(None);
-	PopState();
-}
-
-/**private*/ simulated function LoadMod(TowerModInfo Mod)
-{
-	local TowerBlock Block;
-	if(!Mod.bLoaded)
-	{
-		foreach Mod.ModBlocks(Block)
-		{
-			Blocks.AddItem(Block);
-		}
-		Mod.bLoaded = true;
-		`log("Loaded Mod:"@Mod@Mod.AuthorName@Mod.Contact@Mod.Website@Mod.Description@Mod.MajorVersion$"."$Mod.MinorVersion);
 	}
 }
 

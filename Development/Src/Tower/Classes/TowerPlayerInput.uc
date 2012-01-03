@@ -5,16 +5,14 @@ class TowerPlayerInput extends PlayerInput within TowerPlayerController;
 delegate OnMouseMove(float DeltaX, float DeltaY);
 
 /** I predict this'll be painfully slow. If you use it definitely store the result! */
-`debugexec function name GetKeyFromCommand(string Command)
+`debugexec function name GetKeyFromCommand(string Command, optional bool bLog=false)
 {
 	local KeyBind Bind;
 	foreach Bindings(Bind)
 	{
 		if(Bind.Command == Command)
 		{
-			`if(`isdefined(debug))
-				`log(Bind.Name);
-			`endif
+			`log(Bind.Name,bLog);
 			return Bind.Name;
 		}
 	}

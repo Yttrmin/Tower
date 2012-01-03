@@ -92,6 +92,7 @@ event InitGame(string Options, out string ErrorMessage)
 
 event PostLogin(PlayerController NewPlayer)
 {
+	local TowerFactionHuman Faction;
 	Super.PostLogin(NewPlayer);
 	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
 	if(bPendingLoad)
@@ -107,10 +108,17 @@ event PostLogin(PlayerController NewPlayer)
 		bPendingLoad = false;
 		PendingLoadFile = "";
 	}
-	//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
-	AddFaction(class'TowerFactionHuman', FL_None, NewPlayer);
+
+	// Lazy initialize the Human faction if needed, and then add the NewPlayer to it.
+	Faction = GetHumanFaction();
+	if(Faction == None)
+	{
+		Faction = TowerFactionHuman(AddFaction(class'TowerFactionHuman', FL_None));
+	}
+	Faction.AddToTeam(NewPlayer);
 	if(NewPlayer.Pawn == None)
 	{
+		//@TODO - bDelayedStart == true means RestartPlayer() isn't called for clients, so we do it here.
 		RestartPlayer(newPlayer);
 	}
 	if(!MatchIsInProgress())
@@ -119,6 +127,21 @@ event PostLogin(PlayerController NewPlayer)
 	}
 	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
 		SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+	//@LOOKATME - No NO NO NO NO! This will completely destroy any clients if you uncomment! NEVER uncomment!
+////Controller.SetOwner(Faction);
+}
+
+private final function TowerFactionHuman GetHumanFaction()
+{
+	local TeamInfo Faction;
+	foreach GameReplicationInfo.Teams(Faction)
+	{
+		if(TowerFactionHuman(Faction) != None)
+		{
+			return TowerFactionHuman(Faction);
+		}
+	}
+	return None;
 }
 
 //
@@ -577,13 +600,13 @@ function StartMatch()
 	for(i = 0; i < 4 && i+1 <= FactionAIs.length; i++)
 	{
 		Archetype = TowerFactionAI(DynamicLoadObject(FactionAIs[i], class'TowerFactionAI', true));
-		AddFaction(Archetype.class, FactionLocation(1+i),, Archetype);
+		AddFaction(Archetype.class, FactionLocation(1+i), Archetype);
 	}
 	GotoState('CoolDown');
 }
 
-private final function AddFaction(class<TowerFaction> FactionClass, FactionLocation Faction, 
-	optional PlayerController Controller, optional TowerFactionAI Archetype)
+private final function TowerFaction AddFaction(class<TowerFaction> FactionClass, FactionLocation Faction, 
+	optional TowerFactionAI Archetype)
 {
 	local TowerFaction NewFaction;
 	local int TeamIndex;
@@ -608,8 +631,7 @@ private final function AddFaction(class<TowerFaction> FactionClass, FactionLocat
 		TowerFactionAI(NewFaction).ReceiveSpawnPoints(FactionSpawnPoints);
 	}
 	GameReplicationInfo.SetTeam(TeamIndex, NewFaction);
-	NewFaction.AddToTeam(Controller);
-	Controller.SetOwner(NewFaction);
+	return NewFaction;
 }
 
 function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional string TowerName="")
