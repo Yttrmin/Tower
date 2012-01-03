@@ -48,17 +48,18 @@ struct immutable FactionInfo
 
 struct immutable ModInfo
 {
-	// ModName.
-	var String M;
-	// MajorVersion, MinorVersion.
-	var byte Ma, Mi;
+	// Safe name, no version.
+	var String N;
+	// Version.
+	var int V;
 };
 
-const SAVE_FILE_VERSION = 4;
+const SAVE_FILE_VERSION = 5;
 const SAVE_FILE_EXTENSION = ".bin";
 const SAVE_FILE_PATH = "../../UDKGame/Saves/";
 
 var string SaveTowerName;
+/** Current mods in TowerGameBase::ModPackages at the time of saving, in order. */
 var array<ModInfo> SaveMods;
 var array<BlockSaveInfo> Blocks;
 var PlayerSaveInfo PlayerInfo;
@@ -143,9 +144,10 @@ Called from TowerGame::Login(). Guaranteed to be called on an empty map with tow
 final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayerController Player)
 {
 	local int i;
-	local TowerGameReplicationInfo GRI;
+	local TowerModInfo RootMod;
 	local BlockSaveInfo BlockInfo;
 	local TowerModInfo Mod;
+	/** Since block type and mod they belong to uses indices, might as well temporarily use a mod array. */
 	local array<TowerModInfo> ModsArray;
 	/** The actual mod index to use. The mod indexes used when saving are used as the indexes in this array. */
 	local array<int> TranslatedMods;
@@ -154,7 +156,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 
 	FileName $= SAVE_FILE_EXTENSION;
 	`log("Loading:"@FileName,,'NativeLoad');
-	GRI = TowerGameReplicationInfo(Player.WorldInfo.GRI);
+	RootMod = TowerGameReplicationInfo(Player.WorldInfo.GRI).RootMod;
 	CleanupSaveLoadVariables();
 
 	bLoaded = class'Engine'.static.BasicLoadObject(Self, GetFilePath(FileName), true, SAVE_FILE_VERSION);
@@ -169,17 +171,16 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	}
 
 	TowerGame(Player.WorldInfo.Game).SetTowerName(Player.GetTower(), Self.SaveTowerName);
-	for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
-	{
-		ModsArray.AddItem(Mod);
-	}
+	RootMod.GetAllMods(ModsArray);
 	foreach SaveMods(Info, i)
 	{
-		for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
+		Mod = RootMod.FindModBySafeName(Info.N);
+		if(!VerifyMod(Mod, Info)) {return false;}
+		for(Mod = RootMod; Mod != None; Mod = Mod.NextMod)
 		{
-			if(Info.M == Mod.ModName)
+			if(Info.N == Mod.GetSafeName(false))
 			{
-				TranslatedMods[i] = GRI.RootMod.GetModIndex(Mod);
+				TranslatedMods[i] = RootMod.GetModIndex(Mod);
 			}
 		}
 	}
@@ -218,8 +219,26 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 
 	// Mods don't need the extension.
 	FileName -= SAVE_FILE_EXTENSION;
-	GRI.RootMod.GameLoaded(FileName);
+	RootMod.GameLoaded(FileName);
 	return true;
+}
+
+private final function bool VerifyMod(TowerModInfo Mod, out ModInfo Info)
+{
+	if(Mod == None)
+	{
+		`log("Missing Mod: \""$Info.N$"\", aborting!",,'NativeLoad');
+		return false;
+	}
+	else if(Mod.Version != Info.V)
+	{
+		`log("Mod \""$Info.N$"\" is outdated! Game Version:"$Mod.Version@"Save Version:"$Info.V);
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> ModArray)
@@ -228,9 +247,8 @@ final function PopulateModList(TowerGameReplicationInfo GRI, out array<ModInfo> 
 	local TowerModInfo Mod;
 	for(Mod = GRI.RootMod; Mod != None; Mod = Mod.NextMod)
 	{
-		Info.M = Mod.ModName;
-		Info.Ma = Mod.MajorVersion;
-		Info.Mi = Mod.MinorVersion;
+		Info.N = Mod.GetSafeName(false);
+		Info.V = Mod.Version;
 		ModArray.AddItem(Info);
 	}
 }

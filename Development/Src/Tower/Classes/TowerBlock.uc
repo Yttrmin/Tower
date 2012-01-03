@@ -74,14 +74,14 @@ simulated event ReplicatedEvent(name VarName)
 {
 	if(VarName == 'GridLocation')
 	{
-		SetGridLocation(true, false);
+//		SetGridLocation(true, false);
 	}
 	else if(VarName == 'bUpdateRotation')
 	{
 		//@FIXME - Race condition!?
 		// Only a problem with blocks there before joining.
 		//`assert(OwnerPRI.Tower != None);
-		CalculateBlockRotation();
+//		CalculateBlockRotation();
 		/*
 		if(OwnerPRI.Tower == None)
 		{

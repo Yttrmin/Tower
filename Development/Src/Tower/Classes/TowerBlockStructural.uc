@@ -53,15 +53,15 @@ simulated event ReplicatedEvent(name VarName)
 	{
 		if(GridLocation != default.GridLocation)
 		{
-			SetGridLocation(true, false);
-			SetBase(ReplicatedBase);
+//			SetGridLocation(true, false);
+//			SetBase(ReplicatedBase);
 			//@BUG I DONT UNDERSTAND
 //			CalculateBlockRotation();
 		}
 	}
 	else if(VarName == 'GridLocation')
 	{
-		SetGridLocation(true, false);
+		//SetGridLocation(true, false);
 		if(ReplicatedBase != None)
 		{
 			ReplicatedEvent('ReplicatedBase');
@@ -256,7 +256,7 @@ event AdoptedChild()
 DefaultProperties
 {
 	bAddToBuildList=true
-	bReplicateMovement=false
+	bReplicateMovement=true
 	GridLocation=(X=-1,Y=-1,Z=-1)
 
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0
