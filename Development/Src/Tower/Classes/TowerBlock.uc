@@ -50,7 +50,7 @@ var private const globalconfig bool bEnableNavMeshObstacleGeneration;
 
 /** Unit vector pointing in direction of this block's parent.
 Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other purpose. */
-var protectedwrite editconst IVector ParentDirection;
+var repnotify protectedwrite IVector ParentDirection;
 /** Block's position on the grid. */
 var(InGame) repnotify protectedwrite editconst IVector GridLocation;
 
@@ -67,7 +67,7 @@ replication
 	if(bNetInitial)
 		OwnerPRI, bUpdateRotation/*, ParentDirection*/;
 	if(bNetDirty || bNetInitial)
-		GridLocation;
+		GridLocation, ParentDirection;
 }
 
 simulated event ReplicatedEvent(name VarName)
@@ -160,12 +160,12 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 //	SetOwner(OwnerPRI);
 }
 
-function Vector GetLocation()
+simulated function Vector GetLocation()
 {
 	return OwnerPRI.Tower.GridLocationToVector(GridLocation);
 }
 
-function IVector GetGridLocation()
+simulated function IVector GetGridLocation()
 {
 	return OwnerPRI.Tower.VectorToGridLocation(Location);
 }
