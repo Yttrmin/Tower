@@ -8,8 +8,6 @@
 //=============================================================================
 class TowerBlockStructural extends TowerBlock;
 
-/** Tells the client what state this block should enter. */
-var repnotify bool bFallingParent, bFallingChild;
 /** This block's current base, only used by clients since Base isn't replicated. */
 var repnotify TowerBlock ReplicatedBase;
 
@@ -22,11 +20,12 @@ var repnotify TowerBlock ReplicatedBase;
 replication
 {
 	if(bNetDirty)
-		bFallingParent, bFallingChild, ReplicatedBase;
+		ReplicatedBase;
 }
 
 simulated event ReplicatedEvent(name VarName)
 {
+	/*
 	if(VarName == 'bFallingParent')
 	{
 		if(bFallingParent)
@@ -49,12 +48,22 @@ simulated event ReplicatedEvent(name VarName)
 			GotoState('Stable');
 		}
 	}
-	else if(VarName == 'ReplicatedBase')
+	*/
+	if(VarName == 'ReplicatedBase')
 	{
-		if(GridLocation != default.GridLocation)
+		if(GridLocation != default.GridLocation && (Base == None || Base != ReplicatedBase))
 		{
-//			SetGridLocation(true, false);
-//			SetBase(ReplicatedBase);
+//			`log(self@"ReplicatedBase:"@ReplicatedBase);
+			SetBase(ReplicatedBase);
+			if(Base == None)
+			{
+				GotoState('UnstableParent');
+			}
+			else
+			{
+
+			}
+			SetGridLocation(true, false);
 			//@BUG I DONT UNDERSTAND
 //			CalculateBlockRotation();
 		}
@@ -71,14 +80,14 @@ simulated event ReplicatedEvent(name VarName)
 	Super.ReplicatedEvent(VarName);
 }
 
-final function float TimeToDrop()
+simulated final function float TimeToDrop()
 {
 	local float Time;
 	Time = 256 / DropRate;	
 	return Time;
 }
 
-function bool IsTouchingGround(bool bChildrenCheck)
+simulated function bool IsTouchingGround(bool bChildrenCheck)
 {
 	local TowerBlockStructural Block;
 	SetGridLocation(false);
@@ -111,6 +120,16 @@ auto simulated state Stable
 	}
 }
 
+simulated event BaseChange()
+{
+	/*
+	if(Role < ROLE_Authority)
+	{
+		`log(Self@"BaseChange:"@Base@GetStateName());
+	}
+	*/
+}
+
 /** State for blocks that are part of an orphan branch, but not the root of it. */
 simulated state Unstable
 {
@@ -129,6 +148,17 @@ simulated state Unstable
 /** State for root blocks of orphan branches. Block falls with all its attachments. */
 simulated state UnstableParent extends Unstable
 {
+	simulated event BeginState(name PreviousStateName)
+	{
+		if(IsTouchingGround(true))
+		{
+			GotoState('InActive');
+		}
+		else
+		{
+			SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
+		}
+	}
 	simulated event Tick(float DeltaTime)
 	{
 		local Vector NewLocation;
@@ -141,37 +171,33 @@ simulated state UnstableParent extends Unstable
 	}
 
 	/** Called after block should have dropped 256 units.  */
-	event DroppedSpace()
+	simulated event DroppedSpace()
 	{
 		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
-			bFallingParent = false;
 		}
 		// Make sure our children check for bases too.
 		if(OwnerPRI.Tower.FindNewParent(Self, None, true))
 		{
 //			`log("Found parent:"@Base);
 			GotoState('Stable');
-			bFallingParent = false;
 		}
 		//@TODO - NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
 		
 	}
-	event BeginState(name PreviousStateName)
+	simulated event BaseChange()
 	{
-		if(IsTouchingGround(true))
+		Global.BaseChange();
+		if(Role < ROLE_Authority)
 		{
-			GotoState('InActive');
-			bFallingParent = false;
-		}
-		else
-		{
-//			bReplicateMovement = false;
-			SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
+			if(Base != None)
+			{
+				GotoState('Stable');
+			}
 		}
 	}
-	event EndState(Name NextStateName)
+	simulated event EndState(Name NextStateName)
 	{
 		ClearTimer(NameOf(DroppedSpace));
 	}
@@ -204,7 +230,6 @@ Begin:
 event OrphanedParent()
 {
 	local TowerBlock Node;
-	bFallingParent = true;
 	GotoState('UnstableParent');
 	OwnerPRI.Tower.OrphanRoots.AddItem(Self);
 	foreach BasedActors(class'TowerBlock', Node)
@@ -218,7 +243,6 @@ event OrphanedParent()
 event OrphanedChild()
 {
 	local TowerBlock Node;
-	bFallingChild = true;
 	GotoState('Unstable');
 	foreach BasedActors(class'TowerBlock', Node)
 	{
@@ -233,7 +257,6 @@ event AdoptedParent()
 	local TowerBlockStructural Node;
 	SetGridLocation(true);
 	GotoState('Stable');
-	bFallingParent = false;
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
 	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
@@ -246,7 +269,6 @@ event AdoptedChild()
 	local TowerBlockStructural Node;
 	SetGridLocation(false);
 	GotoState('Stable');
-	bFallingChild = false;
 	foreach BasedActors(class'TowerBlockStructural', Node)
 	{
 		Node.AdoptedChild();
@@ -256,7 +278,7 @@ event AdoptedChild()
 DefaultProperties
 {
 	bAddToBuildList=true
-	bReplicateMovement=true
+	bReplicateMovement=false
 	GridLocation=(X=-1,Y=-1,Z=-1)
 
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0

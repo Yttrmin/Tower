@@ -247,7 +247,8 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	}
 	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
 	{
-		`log(Node@"Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+//		`log(Node@"Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
+//		`log(OldParent != Block @ TraceNodeToRoot(Block, OldParent) @ Node != Block);
 		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
 		{
 			Node.SetBase(Block);
@@ -289,10 +290,10 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBlock InvalidBase)
 {
 	// IBO and GBM both clocked out at 0.0250 ms. Virtually identical.
-	return Block.IsBasedOn(Root) && !Block.IsBasedOn(InvalidBase);
+	return Block.GetBaseMost().Class == class'TowerBlockRoot' && !Block.IsBasedOn(InvalidBase);
 }
 
-function Vector GridLocationToVector(out const IVector GridLocation)
+simulated function Vector GridLocationToVector(out const IVector GridLocation)
 {
 	local Vector NewBlockLocation;
 	local Vector GridOrigin;
@@ -306,7 +307,7 @@ function Vector GridLocationToVector(out const IVector GridLocation)
 	return NewBlockLocation;
 }
 
-function IVector VectorToGridLocation(out const Vector RealLocation)
+simulated function IVector VectorToGridLocation(out const Vector RealLocation)
 {
 	local Vector GridOrigin;
 	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;

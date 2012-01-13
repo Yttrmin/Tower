@@ -604,8 +604,32 @@ reliable client event WaitFor(float Seconds)
 
 private event DoneWaiting()
 {
-	`log("Done waiting, asking server for mods.",,'CDNet');
-	RequestModList();
+	if(HaveEssentialsReplicated())
+	{
+		`log("Done waiting, asking server for mods.",,'CDNet');
+		UpdateAllBlocks();
+		RequestModList();
+	}
+	else
+	{
+		`log("Certain items still not replicated. Waiting another second.");
+		SetTimer(1.0, false, NameOf(DoneWaiting));
+	}
+}
+
+private function bool HaveEssentialsReplicated()
+{
+	return WorldInfo.GRI != None && TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower != None;
+}
+
+private function UpdateAllBlocks()
+{
+	local TowerBlockStructural Block;
+	foreach DynamicActors(class'TowerBlockStructural', Block)
+	{
+		Block.SetGridLocation(true, false);
+		//Block.bReplicateMovement = false;
+	}
 }
 
 //@NOTE - If there's concern about people reducing the wait time, have the server do a timestamp check.
