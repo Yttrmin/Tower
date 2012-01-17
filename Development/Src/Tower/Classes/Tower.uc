@@ -35,7 +35,7 @@ replication
 }
 
 //@TODO - Take all needed vars here.
-event Initialize()
+simulated event Initialize()
 {
 	if(bDebugDrawHierarchy)
 	{
@@ -66,16 +66,9 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 		NewBlock.SetBase(Parent);
 		if(NewBlock.class != class'TowerBlockAir')
 		{
-			if(TowerBlockStructural(NewBlock) != None)
-			{
-				// Why do only TBS get this?
-				// Because they don't replicate actor stuff IDIOT.
-				TowerBlockStructural(NewBlock).ReplicatedBase = Parent;
-			}
-			else
-			{
-				NewBlock.bUpdateRotation = true;
-			}
+			// Why do only TBS get this? // NOT JUST THEM ANYMORE.
+			// Because they don't replicate actor stuff IDIOT.
+			NewBlock.ReplicatedBase = Parent;
 			NewBlock.CalculateBlockRotation();
 		}
 		ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
@@ -101,13 +94,16 @@ function bool RemoveBlock(TowerBlock Block)
 	{
 		if(IteratorBlock.class != class'TowerBlockAir')
 		{
+			/*
 			if(TowerBlockModule(IteratorBlock) != None)
 			{
+				// @BUG - VERY A BUG vvvvvv
 				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
 				// being modified, right?
 				IteratorBlock.OrphanedParent();
 				continue;
 			}
+			*/
 			ToIterate.AddItem(IteratorBlock);
 			//@README DON'T DO THIS YOU IDIOT, FINDNEWPARENT CHANGES BASES, AND WE'RE IN A BASEDACTORS() ITERATOR. THINK.
 			//FindNewParent(IteratorBlock, Block, true);
@@ -119,7 +115,14 @@ function bool RemoveBlock(TowerBlock Block)
 	}
 	foreach ToIterate(IteratorBlock)
 	{
+		if(TowerBlockModule(IteratorBlock) != None)
+		{
+			IteratorBlock.OrphanedParent();
+		}
+		else
+		{
 		FindNewParent(IteratorBlock, Block, true);
+		}
 	}
 	foreach ToDelete(IteratorAir)
 	{
@@ -325,7 +328,7 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	}
 }
 
-function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, Color DrawColor)
+simulated function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, Color DrawColor)
 {
 	local TowerBlock Block;
 	local Vector Begin, End;

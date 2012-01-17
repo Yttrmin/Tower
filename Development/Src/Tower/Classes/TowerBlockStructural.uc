@@ -8,20 +8,12 @@
 //=============================================================================
 class TowerBlockStructural extends TowerBlock;
 
-/** This block's current base, only used by clients since Base isn't replicated. */
-var repnotify TowerBlock ReplicatedBase;
-
 //=============================================================================
 // Replication Notes
 //
 // TowerBlockStructurals have bReplicateMovement set to false. This means the following variables aren't replicated:
 // Location, Rotation, Base, RelativeRotation, RelativeLocation, Velocity, and Physics.
 //=============================================================================
-replication
-{
-	if(bNetDirty)
-		ReplicatedBase;
-}
 
 simulated event ReplicatedEvent(name VarName)
 {

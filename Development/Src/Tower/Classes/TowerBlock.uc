@@ -12,8 +12,6 @@ class TowerBlock extends TowerBlockBase
 	placeable
 	abstract;
 
-var repnotify bool bUpdateRotation;
-
 //=========================================================
 // Used in archetypes when creating new blocks.
 /** User-friendly name. Used for things like the build menu. 
@@ -53,6 +51,8 @@ Used in loading to allow TowerTree to reconstruct the hierarchy. Has no other pu
 var repnotify protectedwrite IVector ParentDirection;
 /** Block's position on the grid. */
 var(InGame) repnotify protectedwrite editconst IVector GridLocation;
+/** This block's current base, only used by clients since Base isn't replicated. */
+var repnotify TowerBlock ReplicatedBase;
 
 var protectedwrite MaterialInstanceConstant MaterialInstance;
 var protectedwrite TowerPlayerReplicationInfo OwnerPRI;
@@ -64,39 +64,21 @@ var int ModIndex, ModBlockIndex;
 
 replication
 {
+	// ParentDirection never changes does it?
 	if(bNetInitial)
-		OwnerPRI, bUpdateRotation/*, ParentDirection*/;
+		OwnerPRI/*, ParentDirection*/;
 	if(bNetDirty || bNetInitial)
-		GridLocation, ParentDirection;
+		GridLocation, ParentDirection, ReplicatedBase;
 }
 
-simulated event ReplicatedEvent(name VarName)
+/*simulated event ReplicatedEvent(name VarName)
 {
 	if(VarName == 'GridLocation')
 	{
 //		SetGridLocation(true, false);
 	}
-	else if(VarName == 'bUpdateRotation')
-	{
-		//@FIXME - Race condition!?
-		// Only a problem with blocks there before joining.
-		//`assert(OwnerPRI.Tower != None);
-//		CalculateBlockRotation();
-		/*
-		if(OwnerPRI.Tower == None)
-		{
-			OwnerPRI.bBlocksNeedRotation = true;
-			`log(Self@"No Tower"@Location);
-		}
-		else
-		{
-			`log(Self@"Tower"@Location);
-			OwnerPRI.Tower.CalculateBlockRotation(self);
-		}
-		*/
-	}
 	Super.ReplicatedEvent(VarName);
-}
+}*/
 
 //@FIXED - Normally Detach turns rigid body physics for some insane reason. Let's not do that.
 event Detach(Actor Other){}
@@ -123,6 +105,7 @@ simulated event PostBeginPlay()
 	Super.PostBeginPlay();
 	if(MeshComponent != None)
 	{
+		AttachComponent(MeshComponent);
 		MaterialInstance = MeshComponent.CreateAndSetMaterialInstanceConstant(0);
 	}
 	if(bEnableNavMeshObstacleGeneration && Location.Z == 128 && Role == Role_Authority)
@@ -153,10 +136,6 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	GridLocation = NewGridLocation;
 	ParentDirection = NewParentDirection;
 	OwnerPRI = NewOwnerPRI;
-	if(MeshComponent != None)
-	{
-		AttachComponent(MeshComponent);
-	}
 //	SetOwner(OwnerPRI);
 }
 

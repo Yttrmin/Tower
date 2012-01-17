@@ -1,4 +1,5 @@
-class TowerRangeGlobalComponent extends TowerRangeComponent;
+class TowerRangeGlobalComponent extends TowerRangeComponent
+	AutoExpandCategories(TowerRangeGlobalComponent);
 
 struct RangeCallbacks
 {
