@@ -1,4 +1,5 @@
-class TowerRangeStaticMeshComponent extends TowerRangeComponent;
+class TowerRangeStaticMeshComponent extends TowerRangeComponent
+	AutoExpandCategories(TowerRangeStaticMeshComponent);
 
 var() const name MeshCenterSocketName;
 var() const instanced StaticMeshComponent RangeMesh;

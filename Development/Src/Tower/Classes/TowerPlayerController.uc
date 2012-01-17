@@ -357,13 +357,15 @@ exec function DebugUnSpectate()
 }
 
 /** Logs what you're looking at. */
-exec function DebugLookingAt()
+exec function DebugLookingAt(optional bool bPrintBases)
 {
 	local Vector WorldOrigin, WorldDir;
 	local Rotator PlayerDir;
 	local Vector HitLocation, HitNormal;
 	local Actor LookingAt;
+	local Actor BaseIterator;
 	local TowerBlockStructural LookingBlock;
+	local int i;
 	GetPlayerViewPoint(WorldOrigin, PlayerDir);
 	WorldDir = Vector(PlayerDir);
 	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
@@ -378,6 +380,15 @@ exec function DebugLookingAt()
 		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"B:"@LookingBlock.Base@"GL:"
 			@"("$LookingBlock.GridLocation.X$","@LookingBlock.GridLocation.Y$","@LookingBlock.GridLocation.Z$")"@"L:"
 			@LookingBlock.Location@"L!:"@GetTower().GridLocationToVector(LookingBlock.GridLocation),,'LookingAt');
+	}
+	if(bPrintBases && LookingAt != None)
+	{
+		i = 0;
+		foreach LookingAt.BasedActors(class'Actor', BaseIterator)
+		{
+			`log("Base#"$i$":"@BaseIterator,,'LookingAt');
+			i++;
+		}
 	}
 }
 
@@ -551,6 +562,11 @@ exec function DebugPossess()
 }
 `endif
 
+exec function DebugStopMovie()
+{
+	class'Engine'.static.StopMovie(true);
+}
+
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
 	if(!GetTPRI().Tower.IsInState('Inactive'))
@@ -604,9 +620,14 @@ reliable client event WaitFor(float Seconds)
 
 private event DoneWaiting()
 {
+	local PlayerReplicationInfo PRI;
 	if(HaveEssentialsReplicated())
 	{
 		`log("Done waiting, asking server for mods.",,'CDNet');
+		foreach WorldInfo.GRI.PRIArray(PRI)
+		{
+			TowerPlayerReplicationInfo(PRI).Tower.Initialize();
+		}
 		UpdateAllBlocks();
 		RequestModList();
 	}

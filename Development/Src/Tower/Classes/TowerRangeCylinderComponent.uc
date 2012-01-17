@@ -1,7 +1,9 @@
-class TowerRangeCylinderComponent extends TowerRangeComponent;
+class TowerRangeCylinderComponent extends TowerRangeComponent
+	AutoExpandCategories(TowerRangeCylinderComponent);
 
 /**  */
-var() const name CylinderCenterSocketName;
+var() const deprecated name CylinderCenterSocketName;
+var() const Vector StaticMeshTranslationPoint;
 /** Set the Module's CollisionComponent to this to receive Touch/UnTouch events. */
 var() const instanced CylinderComponent RangeArea;
 var private byte TouchingEnemies;
@@ -10,7 +12,18 @@ event Initialize()
 {
 	Super.Initialize();
 //	AttachComponent(RangeArea);
-	SkeletalMeshComponent(MeshComponent).AttachComponentToSocket(RangeArea, CylinderCenterSocketName);
+	if(CylinderCenterSocketName != 'None')
+	{
+		SkeletalMeshComponent(MeshComponent).AttachComponentToSocket(RangeArea, CylinderCenterSocketName);
+	}
+	else
+	{
+		// Yep.
+		AttachComponent(RangeArea);
+		// If someone set absolute translation, unset it.
+		RangeArea.SetAbsolute(false);
+		RangeArea.SetTranslation(StaticMeshTranslationPoint);
+	}
 	if(Outer.ParentDirection.Z != 0)
 	{
 		RangeArea.SetCylinderSize(RangeArea.CollisionHeight*2, RangeArea.CollisionRadius/2);

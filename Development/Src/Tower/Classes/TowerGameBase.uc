@@ -28,6 +28,7 @@ var privatewrite TowerBlock AirArchetype;
 //@TODO - Decouple loading from Tower/TowerGame. Make these private.
 var protected bool bPendingLoad;
 var protected string PendingLoadFile;
+var private globalconfig const string DedicatedServerLoadFile;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
 
@@ -51,6 +52,7 @@ event PreBeginPlay()
 	Super.PreBeginPlay();
 	DetermineTowerStarts();
 	CheckForMods();
+	WorldInfo.MyFractureManager.Destroy();
 }
 
 event PostBeginPlay()

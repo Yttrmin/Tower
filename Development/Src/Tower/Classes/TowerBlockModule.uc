@@ -25,6 +25,35 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 	}
 }
 
+simulated event ReplicatedEvent(name VarName)
+{
+	if(VarName == NameOf(ParentDirection))
+	{
+		CalculateBlockRotation();
+	}
+	else if(VarName == NameOf(ReplicatedBase))
+	{
+		if(ReplicatedBase == None)
+		{
+			Destroy();
+		}
+		else if(Base != ReplicatedBase)
+		{
+			SetBase(ReplicatedBase);
+		}
+	}
+	else if(VarName == 'GridLocation')
+	{
+		//SetGridLocation(true, false);
+		if(ReplicatedBase != None)
+		{
+			SetGridLocation(true, false);
+		}
+		return;
+	}
+	Super.ReplicatedEvent(VarName);
+}
+
 simulated event OnEnterRange(TowerTargetable Targetable);
 
 simulated event OnExitRange(TowerTargetable Targetable);
@@ -67,5 +96,5 @@ simulated event Destroyed()
 
 DefaultProperties
 {
-	
+	bReplicateMovement=false
 }
