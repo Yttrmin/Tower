@@ -160,14 +160,11 @@ final function TowerBlock GetParent()
 }
 
 //@TODO - UpdateGridLocation()?
-simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=true, optional bool bUpdateGridLocation=true)
+simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=true, optional bool bUpdateGridLocation=true
+	, optional bool bMaintainBase=true)
 {
 	local Vector NewLocation;
 	local Actor TempBase;
-	if(bUpdateGridLocation)
-	{
-		GridLocation = GetGridLocation();
-	}
 	if(bUpdateRelativeLocation)
 	{
 		NewLocation = GetLocation();
@@ -179,9 +176,22 @@ simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=t
 		*/
 		// Base is lost when you do SetLocation, so we have to reset it afterwards.
 		TempBase = Base;
+		SetBase(None);
 		SetLocation(NewLocation);
-		SetBase(TempBase);
+		if(bMaintainBase)
+		{
+			SetBase(TempBase);
+		}
 	}
+	if(bUpdateGridLocation)
+	{
+		GridLocation = GetGridLocation();
+	}
+}
+
+simulated final function CalculateLocations()
+{
+
 }
 
 simulated function CalculateBlockRotation()

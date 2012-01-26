@@ -28,7 +28,10 @@ var privatewrite TowerBlock AirArchetype;
 //@TODO - Decouple loading from Tower/TowerGame. Make these private.
 var protected bool bPendingLoad;
 var protected string PendingLoadFile;
+
 var private globalconfig const string DedicatedServerLoadFile;
+var private globalconfig const bool bDedicatedServerGivesLoadedBlocksToFirstPlayer;
+var private Tower DedicatedServerTower;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
 
@@ -60,6 +63,13 @@ event PostBeginPlay()
 	Super.PostBeginPlay();
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
+	if(WorldInfo.NetMode == NM_DedicatedServer)
+	{
+		if(DedicatedServerLoadFile != "")
+		{
+
+		}
+	}
 }
 
 /** Only called for joining clients in network games. */

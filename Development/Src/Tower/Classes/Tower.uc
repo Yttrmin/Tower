@@ -222,6 +222,7 @@ function TowerBlock GetBlockFromLocationAndDirection(const out IVector GridLocat
 	EndLocation.X = StartLocation.X + 10;
 	EndLocation.Y = StartLocation.Y + 10;
 	EndLocation.Z = StartLocation.Z + 10;
+	//@TODO - Why trace?
 	Block = Trace(HitLocation, HitNormal, EndLocation, StartLocation, TRUE);
 	return TowerBlock(Block);
 }
@@ -248,11 +249,16 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	{
 		Node.SetBase(None); // Redundant with the last SetBase?
 	}
-	foreach Node.CollidingActors(class'TowerBlock', Block, 130, , true,,HitInfo)
+	foreach Node.CollidingActors(class'TowerBlock', Block, 128, , true,,HitInfo)
 	{
 //		`log(Node@"Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 //		`log(OldParent != Block @ TraceNodeToRoot(Block, OldParent) @ Node != Block);
-		if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
+		if(TowerBlockModule(Block) != None)
+		{
+			//@TODO - Destroy block? Module? Check direction first.
+			continue;
+		}
+		else if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
 		{
 			Node.SetBase(Block);
 			Node.SetOwner(Block);
@@ -316,6 +322,27 @@ simulated function IVector VectorToGridLocation(out const Vector RealLocation)
 	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
 	return IVect(Round(RealLocation.X-GridOrigin.X)/256, Round(RealLocation.Y-GridOrigin.Y)/256, 
 		Round(RealLocation.Z-GridOrigin.Z)/256);
+}
+
+simulated final function ReCalculateAllBlockLocations()
+{
+	local array<TowerBlockStructural> Blocks;
+	local array<Actor> BlockBases;
+	local TowerBlockStructural StructBlock;
+	local int i;
+
+	foreach DynamicActors(class'TowerBlockStructural', StructBlock)
+	{
+		Blocks.AddItem(StructBlock);
+		BlockBases.AddItem(StructBlock.Base);
+		StructBlock.SetGridLocation(true, false, false);
+	}
+
+	foreach Blocks(StructBlock, i)
+	{
+		StructBlock.SetBase(BlockBases[i]);
+	}
+	return;
 }
 
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)

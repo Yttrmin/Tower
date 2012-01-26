@@ -41,7 +41,7 @@ simulated event ReplicatedEvent(name VarName)
 		}
 	}
 	*/
-	if(VarName == 'ReplicatedBase')
+	if(VarName == NameOf(ReplicatedBase))
 	{
 		if(GridLocation != default.GridLocation && (Base == None || Base != ReplicatedBase))
 		{
@@ -60,7 +60,7 @@ simulated event ReplicatedEvent(name VarName)
 //			CalculateBlockRotation();
 		}
 	}
-	else if(VarName == 'GridLocation')
+	else if(VarName == NameOf(GridLocation))
 	{
 		//SetGridLocation(true, false);
 		if(ReplicatedBase != None)
@@ -155,6 +155,13 @@ simulated state UnstableParent extends Unstable
 	{
 		local Vector NewLocation;
 		Super.Tick(DeltaTime);
+		//@README - Move is fine, but diagonal blocks will touch each other and prevent each other from falling.
+		// But if we disable collision on falling blocks, won't that break our detection for placing blocks in spots
+		// that other blocks are falling into?
+		/*
+		NewLocation.Z = - (DropRate * DeltaTime);
+		Move(NewLocation);
+		*/
 		NewLocation.X = Location.X;
 		NewLocation.Y = Location.Y;
 		NewLocation.Z = Location.Z - (DropRate * DeltaTime);

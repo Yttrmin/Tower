@@ -36,7 +36,7 @@ protected function Vector GetAimDirection(TowerTargetable Target)
 	local Vector SocketLocation;
 	local Rotator SocketRotation;
 	`assert(SkeletalMeshComponent(MeshComponent).
-		GetSocketWorldLocationAndRotation(StartFireSocketName, SocketLocation, SocketRotation));
+		GetSocketWorldLocationAndRotation(StartFireSocket, SocketLocation, SocketRotation));
 	if(bOnlyFireAlongSocketRotation)
 	{
 		Direction = Vector(SocketRotation);
