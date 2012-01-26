@@ -85,11 +85,6 @@ event PreExit()
 	`log("Shutting down!");
 }
 
-event InitGame(string Options, out string ErrorMessage)
-{
-	Super.InitGame(Options, ErrorMessage);
-}
-
 event PostLogin(PlayerController NewPlayer)
 {
 	local TowerFactionHuman Faction;
@@ -151,8 +146,18 @@ function Logout( Controller Exiting )
 {
 	//@TODO - Remove faction.
 	Super.Logout(Exiting);
+	// The server calls this too when logging out, which will trigger an accessed none when we access the HUD.
+	if(Exiting.RemoteRole == ROLE_AutonomousProxy)
+	{
+		UpdatePlayerCount();
+	}
+}
+
+private final function UpdatePlayerCount()
+{
+	//@TODO - Update number for clients.
 	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
-		SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+			SetVariableString("_root.PlayerCount.text", String(NumPlayers));
 }
 
 function RestartPlayer(Controller NewPlayer)

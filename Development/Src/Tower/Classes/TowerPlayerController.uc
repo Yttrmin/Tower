@@ -446,56 +446,9 @@ exec function DebugReCalculateBlockLocations()
 	{
 		Block.SetGridLocation(true, false);
 	}
-}
-
-exec function DebugReCalculateBlockLocationsRecursive(optional TowerBlock FromBlock)
-{
-	local TowerBlockStructural Block;
-	if(FromBlock == None)
-	{
-		FromBlock = DebugGetNotMyTower().Root;
-		`log("Got"@FromBlock);
-	}
-	FromBlock.SetGridLocation(true, false);
-	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
-	{
-		DebugReCalculateBlockLocationsRecursive(Block);
-	}
-}
-
-exec function DebugReCalculateBlockLocationsRecursiveEx(optional TowerBlock FromBlock)
-{
-	local TowerBlockStructural Block;
-	if(FromBlock == None)
-	{
-		FromBlock = DebugGetNotMyTower().Root;
-		`log("Got"@FromBlock);
-	}
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{
-//		Block.ParentDirection = INormal(Other.GridLocation - Origin.GridLocation);
-		Block.SetBase(None);
-	}
-	DebugReCalculateBlockLocations();
-	/*
-	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
-	{
-		if(TowerBlockAir(Block) == None)
-		{
-			Block.SetGridLocation(true, false);
-		}
-	}
-	foreach FromBlock.BasedActors(class'TowerBlockStructural', Block)
-	{
-		if(TowerBlockAir(Block) == None)
-		{
-			DebugReCalculateBlockLocationsRecursive(Block);
-		}
-	}
-	*/
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		Block.SetBase(GetTower().GetBlockFromLocationAndDirection(Block.GridLocation, Block.ParentDirection));
+		`log(Block@"FinalLocation:"@Block.Location@"FinalRLocation:"@Block.RelativeLocation);
 	}
 }
 
@@ -560,12 +513,12 @@ exec function DebugPossess()
 		return;
 	}
 }
-`endif
 
 exec function DebugStopMovie()
 {
 	class'Engine'.static.StopMovie(true);
 }
+`endif
 
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
@@ -628,7 +581,8 @@ private event DoneWaiting()
 		{
 			TowerPlayerReplicationInfo(PRI).Tower.Initialize();
 		}
-		UpdateAllBlocks();
+//		DebugReCalculateBlockLocations();
+		GetTPRI().Tower.ReCalculateAllBlockLocations();
 		RequestModList();
 	}
 	else
@@ -638,19 +592,22 @@ private event DoneWaiting()
 	}
 }
 
+/**  */
 private function bool HaveEssentialsReplicated()
 {
-	return WorldInfo.GRI != None && TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower != None;
+	// Remember to pack the quickest checks first, as everything after the first FALSE won't get called.
+	return WorldInfo.GRI != None && TowerPlayerReplicationInfo(PlayerReplicationInfo).Tower != None
+		&& AllBlockBasesReplicated() && AllBlockGridLocationsReplicated();
 }
 
-private function UpdateAllBlocks()
+private function bool AllBlockBasesReplicated()
 {
-	local TowerBlockStructural Block;
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		Block.SetGridLocation(true, false);
-		//Block.bReplicateMovement = false;
-	}
+	return true;
+}
+
+private function bool AllBlockGridLocationsReplicated()
+{
+	return true;
 }
 
 //@NOTE - If there's concern about people reducing the wait time, have the server do a timestamp check.

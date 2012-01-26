@@ -11,7 +11,7 @@ RangeGlobalComponent - Ignored.
 RangeCylinderComponent - Uses the socket as the center of the cylinder.
 RangeStaticMeshComponent - ?
  */
-var(Range) const Name RangeCenterSocketName;
+var(Range) const Name RangeCenterSocket;
 /**
 Only used if MeshComponent is NOT a SkeletalMeshComponent.
 
@@ -21,7 +21,7 @@ RangeGlobalComponent - Ignored.
 RangeCylinderComponent - Uses the translation as the center of the cylinder.
 RangeStaticMeshComponent - ?
 */
-var(Range) const Vector RangeCenterTranslationFromMesh;
+var(Range) const Vector RangeCenterPoint;
 
 event Initialize();
 

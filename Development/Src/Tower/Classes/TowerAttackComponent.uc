@@ -64,7 +64,8 @@ var() protected const instanced ParticleSystemComponent ParticleSystem;
 /** What parameters should this component pass to the ParticleSystem? */
 var() private const ParticleSystemParameters ParticleParameters;
 /** Name of the socket where any firing (tracing for hitscan, spawning projectile, etc.) starts. */
-var() protected const name StartFireSocketName;
+var() protected const name StartFireSocket;
+var() protected const Vector StartFirePoint;
 /** Used so often we might as well just make it an instance variable.
 Should be emptied after every attack. */
 var private array<TowerTargetable> Targets;
@@ -82,7 +83,20 @@ event Initialize()
 	Emitter.SetBase(Outer);
 	Emitter.ParticleSystemComponent.ActivateSystem();
 	*/
-	SkeletalMeshComponent(MeshComponent).AttachComponentToSocket(ParticleSystem, StartFireSocketName);
+	if(ParticleSystem != None)
+	{
+		if(SkeletalMeshComponent(MeshComponent) != None && StartFireSocket != 'None')
+		{
+			SkeletalMeshComponent(MeshComponent).AttachComponentToSocket(ParticleSystem, StartFireSocket);
+		}
+		else
+		{
+			AttachComponent(ParticleSystem);
+			ParticleSystem.SetAbsolute(false);
+			ParticleSystem.SetTranslation(StartFirePoint);
+		}
+	}
+	
 }
 
 event ModuleDestroyed();
@@ -192,7 +206,7 @@ protected function Vector GetAimDirection(TowerTargetable Target)
 	local Vector SocketLocation;
 	local Rotator SocketRotation;
 	`assert(SkeletalMeshComponent(MeshComponent).
-		GetSocketWorldLocationAndRotation(StartFireSocketName, SocketLocation, SocketRotation));
+		GetSocketWorldLocationAndRotation(StartFireSocket, SocketLocation, SocketRotation));
 	return Normal(Actor(Target).Location - SocketLocation);
 }
 

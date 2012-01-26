@@ -73,6 +73,8 @@ event OnMouseClick(int Button)
 	local Vector HitNormal;
 	local IVector FinalGridLocation;
 	// Left mouse button.
+	//@BUG @TODO - What's gonna happen when HitNormal isn't perfect?
+	// Can we enforce all-cube collision?
 	if(Button == 0)
 	{
 		if(HUDMovie.bInMenu)
@@ -208,8 +210,6 @@ function TraceForBlock(out TowerBlock Block, out Vector HitNormal)
 	local Vector HitLocation;
 	PlayerOwner.GetPlayerViewPoint(WorldOrigin, PlayerDir);
 	WorldDir = Vector(PlayerDir);
-	/*`log(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
-		(WorldOrigin+WorldDir), TRUE,, HitInfo)@HitLocation);*/
 	Block = TowerBlock(Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
 		(WorldOrigin+WorldDir), TRUE));
 //	DrawDebugLine((WorldOrigin+WorldDir), HitLocation, 255, 0, 0, true);
