@@ -37,7 +37,7 @@ replication
 //@TODO - Take all needed vars here.
 simulated event Initialize()
 {
-	if(bDebugDrawHierarchy)
+	if(bDebugDrawHierarchy && WorldInfo.NetMode != NM_DedicatedServer)
 	{
 		TowerPlayerController(GetALocalPlayerController()).myHUD.AddPostRenderedActor(Self);
 	}

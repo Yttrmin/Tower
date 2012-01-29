@@ -1,0 +1,1 @@
+class TowerGameSettingsTD extends TowerGameSettingsCommon;
