@@ -71,15 +71,6 @@ replication
 		GridLocation, ParentDirection, ReplicatedBase;
 }
 
-/*simulated event ReplicatedEvent(name VarName)
-{
-	if(VarName == 'GridLocation')
-	{
-//		SetGridLocation(true, false);
-	}
-	Super.ReplicatedEvent(VarName);
-}*/
-
 //@FIXED - Normally Detach turns rigid body physics for some insane reason. Let's not do that.
 event Detach(Actor Other){}
 
@@ -141,7 +132,14 @@ event Initialize(out IVector NewGridLocation, out IVector NewParentDirection,
 
 simulated function Vector GetLocation()
 {
-	return OwnerPRI.Tower.GridLocationToVector(GridLocation);
+	if(OwnerPRI.Tower != None)
+	{
+		return OwnerPRI.Tower.GridLocationToVector(GridLocation);
+	}
+	else
+	{
+		return Vect(0,0,0);
+	}
 }
 
 simulated function IVector GetGridLocation()

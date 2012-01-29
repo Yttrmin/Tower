@@ -565,8 +565,8 @@ reliable server function ServerSetTowerName(string NewName)
 
 reliable client event WaitFor(float Seconds)
 {
-	//@DELETEME
-	class'Engine'.static.StopMovie(true);
+	IgnoreMoveInput(true);
+	IgnoreLookInput(true);
 	`log("Server suggests waiting for"@Seconds@"seconds. Will do.",,'CDNet');
 	SetTimer(Seconds, false, NameOf(DoneWaiting));
 }
@@ -577,6 +577,7 @@ private event DoneWaiting()
 	if(HaveEssentialsReplicated())
 	{
 		`log("Done waiting, asking server for mods.",,'CDNet');
+		WorldInfo.MyFractureManager.Destroy();
 		foreach WorldInfo.GRI.PRIArray(PRI)
 		{
 			TowerPlayerReplicationInfo(PRI).Tower.Initialize();
@@ -623,6 +624,9 @@ reliable client event LoadMods(string ModList)
 	TowerGameReplicationInfo(WorldInfo.GRI).RootMod = class'TowerGameBase'.static.LoadMods(ModList, true);
 	`assert(TowerGameReplicationInfo(WorldInfo.GRI).RootMod != None);
 	TowerHUD(myHUD).SetupBuildList();
+
+	ResetPlayerMovementInput();
+	class'Engine'.static.StopMovie(true);
 }
 
 function UpdateRoundNumber(byte NewRound)
@@ -648,7 +652,9 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	Canvas.SetPos(0,440);
 	Canvas.DrawText("Health:"@Pawn.Health);
 	Canvas.SetPos(0,450);
-	Canvas.DrawText("PawnFactionOwner:"@PossessedPawnController.Owner);
+	`if(`isdefined(DEBUG))
+		Canvas.DrawText("PawnFactionOwner:"@PossessedPawnController.Owner);
+	`endif
 }
 
 DefaultProperties

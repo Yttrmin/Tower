@@ -92,6 +92,10 @@ event PostLogin(PlayerController NewPlayer)
 	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
 	if(bPendingLoad)
 	{
+		if(WorldInfo.NetMode == NM_DedicatedServer)
+		{
+			TowerPlayerController(NewPlayer).SaveSystem = new class'TowerSaveSystem';
+		}
 		if(!TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer)))
 		{
 			`log("Failed to load file"@"'"$PendingLoadFile$"' (Should have NO extension)! Does the file exist?"
@@ -99,6 +103,10 @@ event PostLogin(PlayerController NewPlayer)
 				@"there's no solution to it for now.",,'Error');
 			`log("Continuing as a new game due to loading failure.",,'Loading');
 			AddRootBlock(TowerPlayerController(NewPlayer));
+		}
+		if(WorldInfo.NetMode == NM_DedicatedServer)
+		{
+			TowerPlayerController(NewPlayer).SaveSystem = None;
 		}
 		bPendingLoad = false;
 		PendingLoadFile = "";
@@ -120,8 +128,7 @@ event PostLogin(PlayerController NewPlayer)
 	{
 		StartMatch();
 	}
-	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
-		SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+	UpdatePlayerCount();
 	//@LOOKATME - No NO NO NO NO! This will completely destroy any clients if you uncomment! NEVER uncomment!
 ////Controller.SetOwner(Faction);
 }
@@ -146,6 +153,7 @@ function Logout( Controller Exiting )
 {
 	//@TODO - Remove faction.
 	Super.Logout(Exiting);
+	// NumPlayers reflects how many players excluding Exiting. So on a dedicated server it can be 0.
 	// The server calls this too when logging out, which will trigger an accessed none when we access the HUD.
 	if(Exiting.RemoteRole == ROLE_AutonomousProxy)
 	{
@@ -156,15 +164,18 @@ function Logout( Controller Exiting )
 private final function UpdatePlayerCount()
 {
 	//@TODO - Update number for clients.
-	TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
-			SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+	if(WorldInfo.NetMode != NM_DedicatedServer)
+	{
+		TowerHUD(GetALocalPlayerController().myHUD).HUDMovie.
+				SetVariableString("_root.PlayerCount.text", String(NumPlayers));
+	}
 }
 
 function RestartPlayer(Controller NewPlayer)
 {
 	local Vector SpawnLocation;
 	local Rotator SpawnRotation;
-	if(TowerPlayerController(NewPlayer).SaveSystem.bLoaded)
+	if(WorldInfo.NetMode != NM_DedicatedServer && TowerPlayerController(NewPlayer).SaveSystem.bLoaded)
 	{
 		SpawnLocation = TowerPlayerController(NewPlayer).SaveSystem.PlayerInfo.L;
 		SpawnRotation = TowerPlayerController(NewPlayer).SaveSystem.PlayerInfo.R;
@@ -981,6 +992,7 @@ DefaultProperties
 	GameReplicationInfoClass=class'Tower.TowerGameReplicationInfo'
 	DefaultPawnClass=class'Tower.TowerPlayerPawn'
 	HUDType=class'Tower.TowerHUD'
+	OnlineGameSettingsClass=class'Tower.TowerGameSettingsTD'
 
 	Borders[0]=(X=-1,Y=1,Z=0)
 	Borders[1]=(X=1,Y=1,Z=0)

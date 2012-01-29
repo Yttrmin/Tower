@@ -30,7 +30,8 @@ var protected bool bPendingLoad;
 var protected string PendingLoadFile;
 
 var private globalconfig const string DedicatedServerLoadFile;
-var private globalconfig const bool bDedicatedServerGivesLoadedBlocksToFirstPlayer;
+var private globalconfig const bool bResetLevelOnEmptyServer;
+var private globalconfig const bool bPauseLevelOnEmptyServer;
 var private Tower DedicatedServerTower;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
@@ -55,7 +56,10 @@ event PreBeginPlay()
 	Super.PreBeginPlay();
 	DetermineTowerStarts();
 	CheckForMods();
-	WorldInfo.MyFractureManager.Destroy();
+	if(WorldInfo.NetMode != NM_DedicatedServer)
+	{
+		WorldInfo.MyFractureManager.Destroy();
+	}
 }
 
 event PostBeginPlay()
@@ -65,11 +69,26 @@ event PostBeginPlay()
 	Hivemind.Initialize();
 	if(WorldInfo.NetMode == NM_DedicatedServer)
 	{
+		`log("Starting NM_DedicatedServer game. LoadFile:"@DedicatedServerLoadFile);
 		if(DedicatedServerLoadFile != "")
 		{
-
+			bPendingLoad = true;
+			PendingLoadFile = DedicatedServerLoadFile;
 		}
 	}
+}
+
+private function LogStringArray(out array<String> StrArray, String Category)
+{
+	local String Output;
+	local String Temp;
+	local int i;
+	Output @= "\n";
+	foreach StrArray(Temp, i)
+	{
+		Output @= i$":"@StrArray[i]$"\n";
+	}
+	`log(Output,,Name(Category));
 }
 
 /** Only called for joining clients in network games. */
@@ -94,6 +113,7 @@ event PreLogin(string Options, string Address, const UniqueNetId UniqueId, bool 
 	if(bCheckClientMods)
 	{
 		`log("PreLogin:"@Options@Address@ErrorMessage,,'PreLogin');
+		LogStringArray(ModNames, "ModNames");
 		for(Mod = Rootmod; Mod != None; Mod = Mod.NextMod)
 		{
 			ModIndex = ModNames.Find(Mod.GetSafeName(true));
@@ -136,7 +156,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 	Controller = Super.Login(Portal, Options, UniqueID, ErrorMessage);
 	LoadString = ParseOption(Options, "LoadGame");
 //	`log("LoadString:"@LoadString;
-	if(LoadString != "")
+	if(WorldInfo.NetMode != NM_DedicatedServer && LoadString != "")
 	{
 		bPendingLoad = true;
 		PendingLoadFile = LoadString;
@@ -153,8 +173,11 @@ event PostLogin( PlayerController NewPlayer )
 	if(!NewPlayer.IsLocalPlayerController())
 	{
 		// We don't want clients making the server load a game.
-		bPendingLoad = false;
-		PendingLoadFile = "";
+		if(WorldInfo.NetMode != NM_DedicatedServer)
+		{
+			bPendingLoad = false;
+			PendingLoadFile = "";
+		}
 		`log(NewPlayer@"is logged in. Asking to wait 2.5 seconds to help replication.",,'CDNet');
 		TowerPlayerController(NewPlayer).WaitFor(2.5);
 //		TowerPlayerController(NewPlayer).ReceiveModList(RootMod.GetList(false));
@@ -167,6 +190,41 @@ event PostLogin( PlayerController NewPlayer )
 	{
 		`log("Load from file:"@PendingLoadFile);
 	}
+}
+
+function Logout( Controller Exiting )
+{
+	Super.Logout(Exiting);
+	if(WorldInfo.NetMode == NM_DedicatedServer && NumPlayers == 0)
+	{
+		OnEmptyServer();
+	}
+}
+
+/** Only called on NM_DedicatedServer. Called from LogOut when NumPlayers is 0.*/
+private event OnEmptyServer()
+{
+	if(bResetLevelOnEmptyServer || (!bResetLevelOnEmptyServer && !bPauseLevelOnEmptyServer))
+	{
+		ConsoleCommand("ServerTravel?LoadGame="@DedicatedServerLoadFile);
+	}
+	else if(bPauseLevelOnEmptyServer)
+	{
+
+	}
+}
+
+private exec function GetSteamAddress()
+{
+	local String URL;
+	local UniqueNetID ID;
+	local TowerGameSettingsCommon CurGameSettings;
+	CurGameSettings = TowerGameSettingsCommon(OnlineGameInterfaceImpl(GameInterface).GameSettings);
+	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AuthInterfaceImpl.GetServerUniqueId(ID);
+	URL = "steam."$String(ID.UID.A)$String(ID.UID.B);
+	`log(URL,,'SteamAddress');
+	URL = "steam."$CurGameSettings.SteamServerId;
+	`log(URL,,'SteamAddress');
 }
 
 /* ProcessServerTravel()
@@ -322,31 +380,3 @@ function FactionLocation GetPointFactionLocation(Vector Point)
 	`warn("Determined FactionLocation was FL_None for point:"@Point$"!");
 	return FL_None;
 }
-
-/*
-//@TODO - Can't go here since clients need it. Can't be static because of GridOrigin.
-function Vector GridLocationToVector(out const IVector GridLocation)
-{
-	local Vector NewBlockLocation;
-	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
-	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
-	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
-	//@TODO - Are we doing this here or what?
-	// Pivot point in middle, bump it up.
-	NewBlockLocation.Z += 128;
-	return NewBlockLocation;
-}
-
-//@TODO - Can't go here since clients need it. Can't be static because of GridOrigin.
-function IVector VectorToGridLocation(out const Vector RealLocation)
-{
-	local IVector Result;
-	// Do we have to round the subtraction or division or anything?
-	//@TODO - Debugging. Just return for release.
-	Result = IVect(Round(RealLocation.X-GridOrigin.X)/256, Round(RealLocation.Y-GridOrigin.Y)/256, 
-		Round(RealLocation.Z-GridOrigin.Z)/256);
-	`log(RealLocation@`IVectStr(Result));
-	return Result;
-}
-*/

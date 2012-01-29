@@ -17,30 +17,6 @@ class TowerBlockStructural extends TowerBlock;
 
 simulated event ReplicatedEvent(name VarName)
 {
-	/*
-	if(VarName == 'bFallingParent')
-	{
-		if(bFallingParent)
-		{
-			GotoState('UnstableParent');
-		}
-		else
-		{
-			GotoState('Stable');
-		}
-	}
-	else if(VarName == 'bFallingChild')
-	{
-		if(bFallingChild)
-		{
-			GotoState('Unstable');
-		}
-		else
-		{
-			GotoState('Stable');
-		}
-	}
-	*/
 	if(VarName == NameOf(ReplicatedBase))
 	{
 		if(GridLocation != default.GridLocation && (Base == None || Base != ReplicatedBase))
