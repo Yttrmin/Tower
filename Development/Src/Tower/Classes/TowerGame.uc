@@ -935,7 +935,14 @@ function RemoveBlock(Tower Tower, TowerBlock Block)
 /** Returns TRUE if GridLocation is on the grid and there's no Unstable blocks currently falling into GridLocation. */
 function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent)
 {
-	return (IsGridLocationOnGrid(GridLocation) && (Parent == None || !IsBlockFallingOntoBlock(GridLocation, Parent)));
+	return (IsGridLocationOnGrid(GridLocation) && (Parent == None || !IsBlockFallingOntoBlock(GridLocation, Parent))
+		&& !IsGridLocationOccupied(GridLocation));
+}
+
+/** Returns TRUE if there is a TowerBlock (excluding Air) at this GridLocation. */
+function bool IsGridLocationOccupied(out const IVector GridLocation)
+{
+	return true;
 }
 
 /** Returns TRUE if the GridLocation is inside the bounds specified in TowerMapInfo. */
