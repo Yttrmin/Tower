@@ -21,6 +21,7 @@ DefaultProperties
 	bCollideActors=false
 	bCollideWorld=false
 	Components.Remove(MyLightEnvironment)
+	LightEnvironment=None
 	CollisionComponent=None
 	bAddToBuildList=false
 	RemoteRole=ROLE_None

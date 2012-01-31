@@ -520,6 +520,11 @@ exec function DebugStopMovie()
 }
 `endif
 
+exec function OpenBugReportWindow()
+{
+
+}
+
 function AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, out IVector GridLocation)
 {
 	if(!GetTPRI().Tower.IsInState('Inactive'))

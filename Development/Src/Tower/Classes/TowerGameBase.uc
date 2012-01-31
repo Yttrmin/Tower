@@ -54,6 +54,7 @@ delegate TickDelegate(float DeltaTime);
 event PreBeginPlay()
 {
 	Super.PreBeginPlay();
+	TowerMapInfo(WorldInfo.GetMapInfo()).Initialize();
 	DetermineTowerStarts();
 	CheckForMods();
 	if(WorldInfo.NetMode != NM_DedicatedServer)

@@ -10,13 +10,15 @@ struct PreviewArea
 	var Actor LastActivePreviewBlock;
 };
 
+const PREVIEW_AREA_COUNT = 4;
+
 /** Notifies TowerBlockRoot when enemies and projectiles touch this. This will be the absolute
 maximum range of all modules, so this should probably take up most of the level. */
 var() const Volume RadarVolume;
 
 /** Used to generate the previews you see navigating through the build menu. There needs to be one for each split-scren
 player. */
-var() privatewrite PreviewArea PreviewAreas[4];
+var() privatewrite PreviewArea PreviewAreas[PREVIEW_AREA_COUNT];
 
 var() const int XBlocks;
 var() const int YBlocks;
@@ -27,6 +29,26 @@ var bool bRootBlockSet;
 // Move me to TowerGame thanks.
 var() const editconst int BlockWidth;
 var() const editconst int BlockHeight;
+
+final function Initialize()
+{
+	local int i;
+	local PointLightToggleable Light;
+	for(i = 0; i < PREVIEW_AREA_COUNT; i++)
+	{
+		PreviewAreas[i].PreviewSceneCaptureActor.SceneCapture.SetEnabled(false);
+		PreviewAreas[i].PreviewBlockStatic.LightEnvironment.SetEnabled(false);
+		PreviewAreas[i].PreviewBlockSkeletal.LightEnvironment.SetEnabled(false);
+		PreviewAreas[i].PreviewBlockStatic.SetHidden(true);
+		PreviewAreas[i].PreviewBlockSkeletal.SetHidden(true);
+		foreach PreviewAreas[i].PreviewLights(Light)
+		{
+			Light.LightComponent.SetEnabled(false);
+		}
+	}
+}
+
+final function TogglePreviewState(bool bEnable, 
 
 function ActivateHUDPreview(int ControllerID)
 {
