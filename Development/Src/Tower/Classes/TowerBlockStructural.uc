@@ -6,7 +6,15 @@
 // While the root block meets some of these criteria, it is considered a special type and is not
 // a subclass of this.
 //=============================================================================
-class TowerBlockStructural extends TowerBlock;
+class TowerBlockStructural extends TowerBlock
+	implements(SavableDynamic);
+
+const GRID_LOCATION_X_ID = "G_X";
+const GRID_LOCATION_Y_ID = "G_Y";
+const GRID_LOCATION_Z_ID = "G_Z";
+const PARENT_DIRECTION_ID = "P";
+const MOD_INDEX_ID = "M";
+const MOD_BLOCK_ID = "B";
 
 //=============================================================================
 // Replication Notes
@@ -229,11 +237,11 @@ event OrphanedChild()
 /** Called on orphan parent when adopted. */
 event AdoptedParent()
 {
-	local TowerBlockStructural Node;
+	local TowerBlock Node;
 	SetGridLocation(true);
 	GotoState('Stable');
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
-	foreach BasedActors(class'TowerBlockStructural', Node)
+	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.AdoptedChild();
 	}
@@ -241,13 +249,37 @@ event AdoptedParent()
 
 event AdoptedChild()
 {
-	local TowerBlockStructural Node;
+	local TowerBlock Node;
 	SetGridLocation(false);
 	GotoState('Stable');
-	foreach BasedActors(class'TowerBlockStructural', Node)
+	foreach BasedActors(class'TowerBlock', Node)
 	{
 		Node.AdoptedChild();
 	}
+}
+
+/********************************
+Save/Loading
+********************************/
+
+public event String OnSave(SaveType SaveType)
+{
+	local JSonObject JSON;
+	JSON = new () class'JSonObject';
+	if (JSON == None)
+	{
+		`warn(self@"Could not save!");
+		return "";
+	}
+
+	JSon.SetIntValue(GRID_LOCATION_X_ID, GridLocation.X);
+	JSon.SetIntValue(GRID_LOCATION_Y_ID, GridLocation.Y);
+	JSon.SetIntValue(GRID_LOCATION_Z_ID, GridLocation.Z);
+}
+
+public static event OnLoad(JSONObject Data, out const SaveInfo SaveInfo)
+{
+
 }
 
 DefaultProperties

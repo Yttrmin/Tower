@@ -7,6 +7,11 @@ It's also the only block that only exists on the server (as there's no AI on cli
 */
 class TowerBlockAir extends TowerBlock;
 
+event AdoptedChild()
+{
+	SetGridLocation(false);
+}
+
 DefaultProperties
 {
 	/*

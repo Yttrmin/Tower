@@ -162,7 +162,7 @@ MultipleBlockTest:
 			`log("     "$Block,,'Error');
 		}
 	}
-	if(!bool(Iteration%1000)){Sleep(0);}
+	if(!bool(Iteration%(100000/AllBlocks.Length))){Sleep(0);}
 	Iteration++;
 	if(!DebugDecrementIVector(TestGridLocation, NegativeExtent, bHitExtent))
 	{
@@ -181,9 +181,9 @@ PostMultipleBlockTest:
 	LocalErrorCount = 0;
 	`log("-----------------------------------------------------------------------------",,'UberTest');
 	`log("-----------------------------------------------------------------------------",,'UberTest');
-	`log("Testing blocks with no parents, yet not in UnstableParent (exclude TowerBlockRoots)...",,'UberTest');
 	Goto 'NoParentBlockTest';
 NoParentBlockTest:
+	`log("Testing blocks with no parents, yet not in UnstableParent (exclude TowerBlockRoots)...",,'UberTest');
 	Sleep(0);
 	foreach AllBlocks(Block)
 	{
@@ -200,6 +200,39 @@ NoParentBlockTest:
 	TotalErrorCount += LocalErrorCount;
 	LocalErrorCount = 0;
 	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	Goto 'DiagonalBlockTest';
+DiagonalBlockTest:
+	`log("Testing blocks that are diagonal to their parents...",,'UberTest');
+	foreach AllBlocks(Block)
+	{
+		if(Block.class == class'TowerBlockAir')
+		{
+			continue;
+		}
+		if(Block.Base != None && ISizeSq(Block.GridLocation - TowerBlock(Block.Base).GridLocation) == 2)
+		{
+			`log(Block@"at"@`IVectStr(Block.GridLocation)@"fails!",,'Error');
+			LocalErrorCount++;
+		}
+		/*
+		else if(Block.Base != None && VSizeSq(Block.Location - TowerBlock(Block.Base).Location) > 256**2+1)
+		{
+			`log(Block@"at"@Block.Location@"fails! But GridLocation is fine!",,'Error');
+			LocalErrorCount++;
+		}
+		*/
+	}
+	if(LocalErrorCount == 0)
+	{
+		`log("...OK!",,'UberTest');
+	}
+	TotalErrorCount += LocalErrorCount;
+	LocalErrorCount = 0;
+	/*
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	`log("-----------------------------------------------------------------------------",,'UberTest');
+	*/
 	Goto 'Done';
 Done:
 	`log("=============================================================================",,'UberTest');
@@ -229,7 +262,7 @@ ToDecrement = (1, -1, 1), Extent = (1, -1, 1)
 ...
 ?. (-1, 1, 0)
 ?. (-1, 1, -1) - RETURNS FALSE. */
-public final function bool DebugDecrementIVector(out IVector ToDecrement, out const IVector AreaExtent, out byte bHitAreaExtent)
+private final function bool DebugDecrementIVector(out IVector ToDecrement, out const IVector AreaExtent, out byte bHitAreaExtent)
 {
 	if(bHitAreaExtent == 1)
 	{

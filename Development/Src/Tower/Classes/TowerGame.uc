@@ -260,346 +260,6 @@ function GenericPlayerInitialization(Controller C)
 	}
 }
 
-`if(`isdefined(DEBUG))
-exec function DebugGetFactionLocation(Vector Point)
-{
-	`log(GetEnum(Enum'FactionLocation', GetPointFactionLocation(Point)));
-}
-
-exec function DebugKillAllTargetables()
-{
-	local Actor Targetable;
-	foreach DynamicActors(class'Actor', Targetable, class'TowerTargetable')
-	{
-		Targetable.TakeDamage(999999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
-	}
-//	GotoState('CoolDown');
-}
-
-exec function DebugListSpawnPoints()
-{
-	local TowerSpawnPoint Point;
-	local array<TowerSpawnPoint> PosX, NegX, PosY, NegY;
-	foreach WorldInfo.AllNavigationPoints(class'TowerSpawnPoint', Point)
-	{
-		switch(Point.Faction)
-		{
-		case FL_PosX:
-			PosX.AddItem(Point);
-			break;
-		case FL_PosY:
-			PosY.AddItem(Point);
-			break;
-		case FL_NegX:
-			NegX.AddItem(Point);
-			break;
-		case FL_NegY:
-			NegY.AddItem(Point);
-			break;
-		default:
-			`log(Point@"has no assigned faction!"@Point.Location);
-			break;
-		}
-	}
-	`log("=============================================================================");
-	`log("FL_PosX Points:");
-	foreach PosX(Point)
-	{
-		`log(Point@Point.Location);
-	}
-	`log("-----------------------------------------------------------------------------");
-	`log("FL_PosY Points:");
-	foreach PosY(Point)
-	{
-		`log(Point@Point.Location);
-	}
-	`log("-----------------------------------------------------------------------------");
-	`log("FL_NegX Points:");
-	foreach NegX(Point)
-	{
-		`log(Point@Point.Location);
-	}
-	`log("-----------------------------------------------------------------------------");
-	`log("FL_NegY Points:");
-	foreach NegY(Point)
-	{
-		`log(Point@Point.Location);
-	}
-	`log("=============================================================================");
-}
-
-exec function DebugKillAllRootBlocks()
-{
-	local TowerPlayerController Controller;
-	foreach WorldInfo.AllControllers(class'TowerPlayerController', Controller)
-	{
-		Controller.GetTower().Root.TakeDamage(99999, Controller, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
-	}
-}
-
-exec function DebugForceGarbageCollection(optional bool bFullPurge)
-{
-	WorldInfo.ForceGarbageCollection(bFullPurge);
-}
-
-exec function DebugRecursionStateTest()
-{
-	Spawn(class'TowerGameUberTest').DebugStartRecursionTest();
-}
-
-exec function DebugUberBlockTest()
-{
-	Spawn(class'TowerGameUberTest').Start(self);
-}
-
-exec function DebugStep()
-{
-	local TeamInfo Faction;
-	foreach GameReplicationInfo.Teams(Faction)
-	{
-		if(TowerFactionAIAStar(Faction) != None)
-		{
-			TowerFactionAIAStar(Faction).Step();
-		}
-	}
-}
-
-/** STEAM */
-
-final function OnReadFriends(bool bWasSuccessful)
-{
-	local array<OnlineFriend> Friends;
-	local array<UniqueNetID> ToSpam;
-	local OnlineFriend Friend;
-	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).GetFriendsList(0, Friends));
-	//EOnlineFriendState always offline? Only refers to Cube Defense games? bIsOnline accurate.
-	foreach Friends(Friend)
-	{
-		`log(Friend.NickName@Friend.FriendState@Friend.UniqueID.UID.A@Friend.UniqueID.UID.B@Friend.bIsOnline@Friend.bHasVoiceSupport);
-		if(Friend.NickName == "TestBot 300")
-		{
-			/** Nope. Opens up their steam community page in the overlay. */
-//			OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).RemoveFriend(0,Friend.UniqueID);
-		}
-		else if(Friend.NickName == "{Dic6} Galactic Pretty Boy")
-		{
-			ToSpam.AddItem(Friend.UniqueId);
-			`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).SendGameInviteToFriends(0,ToSpam,"MYKE DID YOU GET THIS!?"));
-		}
-	}
-}
-
-final function OnReadFriendsForAvatars(bool bWasSuccessful)
-{
-	local array<OnlineFriend> Friends;
-	local OnlineFriend Friend;
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).GetFriendsList(0, Friends);
-	foreach Friends(Friend)
-	{
-		if(Friend.NickName != "[Lurking] KNAPKINATOR")
-		OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(Friend.UniqueID, 184, OnReadAvatar);
-	}
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadOnlineAvatar(LocalPlayer(GetALocalPlayerController().Player).GetUniqueNetID(), 184, OnReadAvatar);
-}
-
-final function OnReadAvatar(const UniqueNetId PlayerNetId, Texture2D Avatar)
-{
-	local TowerBlockStructural Block;
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		if(bool(Rand(2)))
-		{
-			Block.MaterialInstance.SetTextureParameterValue('BlockTexture', Avatar);
-		}
-	}
-}
-
-
-/** Steam is smart and won't just let you screw up people's stuff.
-SendMessageToFriend() just opens the steam overlay with a chat window to whoever. */
-final function AskMyke(out OnlineFriend Myke)
-{
-	local int i;
-	for(i = 0; i < 5; i++)
-	{
-		`log(Myke.NickName@OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).
-			SendMessageToFriend(0, Myke.UniqueID, "BEEP BOOP MYKE DID YOU GET THIS?!?!?!"));
-	}
-}
-exec function DebugSteamUnlockAchievement(int AchievementID)
-{
-	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).UnlockAchievement(0,AchievementID));
-}
-
-exec function DebugSteamShowAchievementsUI()
-{
-	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ShowAchievementsUI(0));
-}
-
-exec function DebugSteamResetAchievements()
-{
-	`log(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ResetStats(true));
-}
-
-exec function DebugSteamListFriends()
-{
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AddReadFriendsCompleteDelegate(0, OnReadFriends);
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadFriendsList(0, 0);
-}
-
-exec function DebugSteamAddAvatars()
-{
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AddReadFriendsCompleteDelegate(0, OnReadFriendsForAvatars);
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).ReadFriendsList(0, 0);
-}
-
-/** /STEAM */
-
-exec function DebugJump()
-{
-	local TowerEnemyPawn Pawn;
-	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
-	{
-		Pawn.DoJump(false);
-	}
-}
-
-exec function DebugAITaunt()
-{
-	local TowerEnemyPawn Pawn;
-	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', Pawn)
-	{
-		TowerEnemyController(Pawn.Controller).GotoState('Celebrating');
-	}
-}
-
-exec function DebugDestructiblesToRigidBody()
-{
-	local ApexDestructibleActor Actor;
-	foreach AllActors(class'ApexDestructibleActor', Actor)
-	{
-		`log("PHYS_RigidBody'ing"@Actor$"!");
-		//Actor.TakeDamage(MaxInt, None, Actor.Location, Vect(0,0,0), class'DmgType_Telefragged');
-		Actor.SetPhysics(PHYS_RigidBody);
-		//Actor.StaticDestructibleComponent.WakeRigidBody();
-	}
-}
-
-exec function DebugSpawnDestructible()
-{
-	Spawn(class'ApexDestructibleActorSpawnable',,, vect(0,0,1024),, ApexDestructibleActor(DynamicLoadObject("TestDestructible.DebugDestructibleSpawnableArchetype", class'ApexDestructibleActorSpawnable'))).SetPhysics(PHYS_RigidBody);
-}
-
-exec function DebugTestPriorityQueue(optional int Amount=100)
-{
-	local array<TowerBlockStructural> BlockArray, PriorityArray, SortedArray;
-	local PriorityQueue Queue;
-	local int i;
-	local String LogString;
-	local float Time;
-	Queue = new class'PriorityQueue';
-	for(i = 0; i < Amount; i++)
-	{
-		BlockArray.AddItem(Spawn(class'TowerBlockStructural'));
-		BlockArray[BlockArray.length-1].Fitness = i;
-	}
-	for(i = 0; i < Amount; i++)
-	{
-		Swap(i, Rand(Amount), BlockArray);
-	}
-	LogString = "Initial:";
-	for(i = 0; i < Amount; i++)
-	{
-		LogString @= BlockArray[i].Fitness$",";
-	}
-	`log(LogString,,'PriQueTest');
-	for(i = 0; i < Amount; i++)
-	{
-		Queue.Add(BlockArray[i]);
-	}
-	Clock(Time);
-	LogString = "";
-	for(i = 0; i < Amount; i++)
-	{
-		PriorityArray.AddItem(TowerBlockStructural(Queue.Remove()));
-	}
-	for(i = 0; i < Amount; i++)
-	{
-		LogString @= PriorityArray[i].Fitness$",";
-	}
-	UnClock(Time);
-	LogString = "ResultPriorityQueue"@Time@"seconds:"@LogString;
-	Time = 0;
-	`log(LogString,,'PriQueTest');
-	Clock(Time);
-	for(i = 0; i < Amount; i++)
-	{
-		SortedArray[i] = GetBestBlock(BlockArray);
-		BlocKArray.RemoveItem(SortedArray[i]);
-	}
-	UnClock(Time);
-	LogString = "ResultOldWay:"@Time@"seconds:";
-	for(i = 0; i < Amount; i++)
-	{
-		LogString @= SortedArray[i].Fitness$",";
-	}
-	`log(LogString,,'PriQueTest');
-}
-
-final function TowerBlockStructural GetBestBlock(out array<TowerBlockStructural> OpenList)
-{
-	local TowerBlockStructural BestBlock, IteratorBlock;
-	foreach OpenList(IteratorBlock)
-	{
-//		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness,,'AStar');
-		if(BestBlock == None)
-		{
-			BestBlock = IteratorBlock;
-		}
-		else if(IteratorBlock.Fitness < BestBlock.FitNess)
-		{
-			BestBlock = IteratorBlock;
-		}
-	}
-	return BestBlock;
-}
-
-final function Swap(int A, int B, out array<TowerBlockStructural> C)
-{
-	local TowerBlockStructural D;
-	D = C[A];
-	C[A] = C[B];
-	C[B] = D;
-}
-
-final function int PriorityComparator(Object A, Object B)
-{
-	return TowerBlockStructural(A).Fitness - TowerBlockStructural(B).Fitness;
-}
-
-exec function ActivateHUDPreview(int ControllerID)
-{
-	TowerMapInfo(WorldInfo.GetMapInfo()).ActivateHUDPreview(ControllerID);
-}
-
-exec function TestRTHUD(bool bUseRenderTargetTexture)
-{
-	local GFxMoviePlayer Movie;
-	Movie = new class'GFxMoviePlayer';
-	Movie.MovieInfo = SwfMovie'TestRTHUD.RTHUD';
-	Movie.bAutoPlay = true;
-	Movie.Init();
-	if(bUseRenderTargetTexture)
-	{
-		Movie.SetExternalTexture("MyRenderTarget", TextureRenderTarget2D'TestRTHUD.RenderTargetTexture');
-	}
-	else
-	{
-		Movie.SetExternalTexture("MyRenderTarget", Texture2D'TestRTHUD.DefaultDiffuse');
-	}
-}
-`endif
-
 exec function StartGame()
 {
 	StartMatch();
@@ -913,7 +573,7 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 	`assert(BlockArchetype != None);
 //	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
 //		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
-	if(CanAddBlock(GridLocation, Parent) && (Parent != None && TowerBlockModule(Parent) == None 
+	if(CanAddBlock(GridLocation, Parent, Tower) && (Parent != None && TowerBlockModule(Parent) == None 
 		&& Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' || bPendingLoad)
 	{
 		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
@@ -933,16 +593,26 @@ function RemoveBlock(Tower Tower, TowerBlock Block)
 }
 
 /** Returns TRUE if GridLocation is on the grid and there's no Unstable blocks currently falling into GridLocation. */
-function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent)
+function bool CanAddBlock(out const IVector GridLocation, TowerBlock Parent, Tower Tower)
 {
 	return (IsGridLocationOnGrid(GridLocation) && (Parent == None || !IsBlockFallingOntoBlock(GridLocation, Parent))
-		&& !IsGridLocationOccupied(GridLocation));
+		&& !IsGridLocationOccupied(GridLocation, Tower));
 }
 
 /** Returns TRUE if there is a TowerBlock (excluding Air) at this GridLocation. */
-function bool IsGridLocationOccupied(out const IVector GridLocation)
+function bool IsGridLocationOccupied(out const IVector GridLocation, Tower Tower)
 {
-	return true;
+	local Vector TestLocation;
+	local TowerBlock Block;
+	TestLocation = Tower.GridLocationToVector(GridLocation);
+	foreach CollidingActors(class'TowerBlock', Block, 32, TestLocation)
+	{
+		if(TowerBlockAir(Block) == None)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /** Returns TRUE if the GridLocation is inside the bounds specified in TowerMapInfo. */
