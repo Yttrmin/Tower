@@ -306,6 +306,7 @@ simulated function Vector GridLocationToVector(out const IVector GridLocation)
 {
 	local Vector NewBlockLocation;
 	local Vector GridOrigin;
+	// This could be made completely static.
 	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
 	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;

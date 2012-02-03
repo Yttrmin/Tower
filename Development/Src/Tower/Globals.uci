@@ -1,0 +1,1 @@
+`define IVectStr(IV) "("$`IV.X$","@`IV.Y$","@`IV.Z$")"

@@ -2,6 +2,8 @@ class TowerPlayerController extends GamePlayerController
 	dependson(TowerSaveSystem)
 	config(Tower);
 
+var float NextAdminCmdTime;
+
 var TowerSaveSystem SaveSystem;
 var byte PreviewAreaIndex;
 `if(`isdefined(DEBUG))
@@ -12,12 +14,19 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	SaveSystem = new class'Tower.TowerSaveSystem';
-//	SaveSystem.TestInt = 123456;
-//	SaveSystem.TransTestInt = 345678;
-//	class'Engine'.static.BasicSaveObject(SaveSystem, "SaveGame.bin", true, 1);
-//	class'Engine'.static.BasicLoadObject(SaveSystem, "SaveGame.bin", true, 1);
-//	`log(SaveSystem.TestInt);
-//	`log(SaveSystem.TransTestInt);
+}
+
+exec function DevLogin()
+{
+	if(WorldInfo.ComputerName == "JAMESB-PC" && WorldInfo.NetMode == NM_ListenServer)
+	{
+		AdminLogin("DbgPassword");
+		AddCheats(true);
+	}
+	else
+	{
+		`log("Devs only.");
+	}
 }
 
 function InitPlayerReplicationInfo()
@@ -164,362 +173,6 @@ exec function LoadGame(string FileName/*, bool bTowerOnly*/)
 //	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
 
-`if(`isdefined(DEBUG))
-// Only thing that really matters is lighting! (hopefully!)
-//@TODO - But what about when blocks are falling?!
-/** Creates a bunch of blocks and modules (as components) to test how many MeshComponents we can handle! */
-exec function DebugTestManyBlocks(bool bAsComponents, optional bool bUseAAMesh)
-{
-	local int i, u;
-	local Vector NewTranslation;
-	local StaticMeshComponent NewComponent;
-	local TowerBlock Parent;
-	local TowerBlockStructural NewBlock;
-	// Module: StaticMesh'TowerModules.DebugAA'
-	// ModuleSKel: SkeletalMesh'TowerMod.DebugAAMessiah_DebugAA2'
-	Parent = GetTower().Root;
-
-	for(u = 0; u < 5; u++)
-	{
-		NewTranslation = Vect(0, 0, 0);
-		for(i = 0; i < 100; i++)
-		{
-			/*
-			if(u == 0)
-				NewTranslation.X = 256*i;
-			else if(u == 1)
-				NewTranslation.X = -256*i;
-			else if(u == 2)
-				NewTranslation.Y = 256*i;
-			else if(u == 3)
-				NewTranslation.Y = -256*i;
-			else if(u == 4)
-				NewTranslation.Z = 256*i;
-			*/
-			if(bAsComponents)
-			{
-				NewComponent = new class'StaticMeshComponent';
-				if(bUseAAMesh)
-					NewComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
-				else
-					NewComponent.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
-				NewComponent.SetTranslation(NewTranslation);
-				Parent.AttachComponent(NewComponent);
-			}
-			else
-			{
-				NewBlock = Parent.Spawn(class'Tower.TowerBlockStructural',,,NewTranslation,,,false);
-				`log("Spawned NewBlock?:"@NewBlock);
-				NewBlock.SetStaticMesh(StaticMesh'TowerBlocks.DebugBlock');
-			}
-		}
-	}
-}
-
-//@DEBUG
-// 
-exec function DebugMarkerUnitDistance()
-{
-	local TowerFormationAI Formation;
-	local TowerEnemyController Unit;
-	foreach DynamicActors(class'TowerFormationAI', Formation)
-	{
-		for(Unit = Formation.SquadLeader.NextSquadMember; Unit != None; Unit = Unit.NextSquadMember)
-		{
-			`log("Formation:"$Formation@"Unit:"$Unit@"is"@VSize(Unit.Location - Unit.Marker.Location)@"units away from its marker.");
-		}
-	}
-}
-
-//@DEBUG
-exec function DebugKillAllLeaders()
-{
-	local TowerFormationAI Formation;
-	foreach DynamicActors(class'TowerFormationAI', Formation)
-	{
-		Formation.SquadLeader.Pawn.Died(None, class'DmgType_Telefragged', Vect(0,0,0));
-	}
-}
-
-//@DEBUG
-exec function DebugPrintBindings()
-{
-	local KeyBind Bind;
-	foreach PlayerInput.Bindings(Bind)
-	{
-		`log("Name:"@Bind.Name@"Command:"@Bind.Command);
-	}
-}
-
-//@DEBUG - Logs key associated with command. A test of TowerPlayerInput::GetKeyFromCommand().
-exec function DebugGetKeyFromCommand(string Command)
-{
-	Command = Repl(Command, "$", "|");
-	`log("Key:"@String(TowerPlayerInput(PlayerInput).GetKeyFromCommand(Command)));
-}
-
-exec function DebugSpawnAir(int Amount)
-{
-	local int i;
-	for(i = 0; i < Amount; i++)
-	{
-		Spawn(class'TowerBlockAir',,,,,,true);
-	}
-}
-
-exec function DebugTestIterators()
-{
-	local TowerBlock IteratorBlock;
-	`log("=================================================");
-	foreach OverlappingActors(class'TowerBlock', IteratorBlock, 1024, Vect(0,0,128), false)
-	{
-		`log(IteratorBlock@"iterated!");
-	}
-	`log("=================================================");
-}
-
-exec function DebugTestReplicateArchetype()
-{
-	ServerTestReplicateArchetype(TowerGameReplicationInfo(WorldInfo.GRI).RootMod.ModBlocks[0]);
-}
-
-static exec function DebugTestBlockBases()
-{
-	local TowerBlock IteratorBasedBlock;
-	local TowerBlock IteratorBlock;
-	foreach class'WorldInfo'.static.GetWorldInfo().DynamicActors(class'TowerBlock', IteratorBlock)
-	{
-		if(IteratorBlock.class != Class'TowerBlockAir')
-		{
-			`log("=====================================================================");
-			`log(IteratorBlock@"bases:");
-			foreach IteratorBlock.BasedActors(class'TowerBlock', IteratorBasedBlock)
-			{
-				`log(IteratorBasedBlock@""@IteratorBasedBlock.GridLocation.X@IteratorBasedBlock.GridLocation.Y@IteratorBasedBlock.GridLocation.Z);
-			}
-		}
-	}
-}
-
-reliable server function ServerTestReplicateArchetype(TowerBlock Block)
-{
-	`log("STRA:"@Block@Block.class@Block.ObjectArchetype);
-}
-
-/**  */
-exec function DebugSpectateTargetable(optional bool bRetainViewTarget=false)
-{
-	local Vector WorldOrigin, WorldDir;
-	local Rotator PlayerDir;
-	local Vector HitLocation, HitNormal;
-	local TowerTargetable Targetable;
-	GetPlayerViewPoint(WorldOrigin, PlayerDir);
-	WorldDir = Vector(PlayerDir);
-	Targetable = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
-		(WorldOrigin+WorldDir), TRUE);
-	if(Actor(Targetable) != None)
-	{
-		if(ViewTarget != None)
-		{
-			myHUD.RemovePostRenderedActor(ViewTarget);
-		}
-		if(!bRetainViewTarget)
-		{
-			SetViewTarget(Actor(Targetable));
-		}
-		myHUD.AddPostRenderedActor(Actor(Targetable));
-	}
-}
-
-exec function DebugSpectateFactionAI(int Index, optional bool bRetainViewTarget=false)
-{
-	if(WorldInfo.Game.GameReplicationInfo.Teams[Index] != None)
-	{
-		if(ViewTarget != None)
-		{
-			myHUD.RemovePostRenderedActor(ViewTarget);
-		}
-		if(!bRetainViewTarget)
-		{
-			SetViewTarget(WorldInfo.Game.GameReplicationInfo.Teams[Index]);
-		}
-		myHUD.AddPostRenderedActor(WorldInfo.Game.GameReplicationInfo.Teams[Index]);
-	}
-}
-
-exec function DebugUnSpectate()
-{
-	if(ViewTarget != None)
-	{
-		myHUD.RemovePostRenderedActor(ViewTarget);
-	}
-	SetViewTarget(None);
-}
-
-/** Logs what you're looking at. */
-exec function DebugLookingAt(optional bool bPrintBases)
-{
-	local Vector WorldOrigin, WorldDir;
-	local Rotator PlayerDir;
-	local Vector HitLocation, HitNormal;
-	local Actor LookingAt;
-	local Actor BaseIterator;
-	local TowerBlockStructural LookingBlock;
-	local int i;
-	GetPlayerViewPoint(WorldOrigin, PlayerDir);
-	WorldDir = Vector(PlayerDir);
-	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
-		(WorldOrigin+WorldDir), TRUE);
-	LookingBlock = TowerBlockStructural(LookingAt);
-	if(LookingAt != None && LookingBlock == None)
-	{
-		`log(LookingAt,,'LookingAt');
-	}
-	else if(LookingBlock != None)
-	{
-		`log(LookingBlock$":"@"S:"@LookingBlock.GetStateName()@"B:"@LookingBlock.Base@"GL:"
-			@"("$LookingBlock.GridLocation.X$","@LookingBlock.GridLocation.Y$","@LookingBlock.GridLocation.Z$")"@"L:"
-			@LookingBlock.Location@"L!:"@GetTower().GridLocationToVector(LookingBlock.GridLocation),,'LookingAt');
-	}
-	if(bPrintBases && LookingAt != None)
-	{
-		i = 0;
-		foreach LookingAt.BasedActors(class'Actor', BaseIterator)
-		{
-			`log("Base#"$i$":"@BaseIterator,,'LookingAt');
-			i++;
-		}
-	}
-}
-
-exec function DebugListBlocksAt(IVector GridLocation)
-{
-	local TowerBlock Block;
-	local array<TowerBlock> Blocks;
-	foreach DynamicActors(class'TowerBlock', Block)
-	{
-		if(Block.GridLocation == GridLocation)
-		{
-			Blocks.AddItem(Block);
-		}
-	}
-	`log("=============================================================================");
-	foreach Blocks(Block)
-	{
-		`log(Block);
-	}
-	`log("=============================================================================");
-}
-
-exec function DebugTestRenderTime()
-{
-	`log(GetTower().Root.LastRenderTime@WorldInfo.TimeSeconds@GetTower().Root.LastRenderTime==WorldInfo.TimeSeconds);
-}
-
-exec function DebugListSaveGames()
-{
-	local SaveInfo Info;
-	foreach SaveSystem.Saves(Info)
-	{
-		`log(Info.FileName@Info.bVisible);
-	}
-}
-
-exec function DebugTryClientSideHierarchyDrawing()
-{
-	GetTower().Initialize();
-}
-
-exec function DebugReCalculateBlockRotations()
-{
-	local TowerBlockStructural Block;
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		Block.CalculateBlockRotation();
-	}
-}
-
-exec function DebugReCalculateBlockLocations()
-{
-	local TowerBlockStructural Block;
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		Block.SetGridLocation(true, false);
-	}
-	foreach DynamicActors(class'TowerBlockStructural', Block)
-	{
-		`log(Block@"FinalLocation:"@Block.Location@"FinalRLocation:"@Block.RelativeLocation);
-	}
-}
-
-function Tower DebugGetNotMyTower()
-{
-	local Tower Tower;
-	foreach DynamicActors(class'Tower', Tower)
-	{
-		if(Tower.Name == 'Tower_0')
-		{
-			`log("Returning"@Tower);
-			return Tower;
-		}
-	}
-	`warn("No other towers?");
-	return None;
-}
-
-exec function DebugKillRootBlock()
-{
-	GetTower().Root.TakeDamage(99999, Self, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
-}
-
-/** Similar to TowerGame::DebugUberBlockTest(), although less extensive since clients don't have as much info. */
-exec function DebugUberBlockTestPLAYER()
-{
-
-}
-
-exec function WhereIs(int X, int Y, int Z)
-{
-	local Vector SpawnLocation;
-	local IVector V;
-	V =	IVect(X,Y,Z);
-	SpawnLocation = GetTower().GridLocationToVector(V);
-	Spawn(class'TowerDebugMarker',,,SpawnLocation);
-}
-
-exec function DrawAt(int X, int Y, int Z)
-{
-	local Vector Vect;
-	Vect.X = X;
-	Vect.Y = Y;
-	Vect.Z = Z;
-	DrawDebugSphere(Vect, 32, 64, 255, 0, 0, true); 
-}
-
-exec function DebugAllBlocksPlaceable(bool bNewAllBlocksPlaceable)
-{
-
-}
-
-exec function DebugPossess()
-{
-	local TowerEnemyPawn IteratorPawn;
-	foreach WorldInfo.AllPawns(class'TowerEnemyPawn', IteratorPawn)
-	{
-		PossessedPawnController = TowerEnemyController(IteratorPawn.Controller);
-		Possess(IteratorPawn, false);
-		PossessedPawnController.PushState('PawnTaken');
-		myHUD.AddPostRenderedActor(self);
-		return;
-	}
-}
-
-exec function DebugStopMovie()
-{
-	class'Engine'.static.StopMovie(true);
-}
-`endif
-
 exec function OpenBugReportWindow()
 {
 
@@ -560,6 +213,16 @@ function RemoveBlock(TowerBlock Block)
 
 reliable server function ServerRemoveBlock(TowerBlock Block)
 {
+	// It's possible for a client to send multiple ServerRemoveBlock() calls for the same block, which won't exist on
+	// the server past the first call.
+	if(Block == None)
+	{
+		if(WorldInfo.NetMode == NM_StandAlone)
+		{
+			`warn("ServerRemoveBlock() passed None in an NM_StandAlone game. How did this happen?");
+		}
+		return;
+	}
 	TowerGame(WorldInfo.Game).RemoveBlock(GetTower(), Block);
 }
 
@@ -662,9 +325,153 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	`endif
 }
 
+/******************************************
+ Admin functions
+ ******************************************/
+
+function bool AdminCmdOk()
+{
+	//If we are the server then commands are ok
+	if (WorldInfo.NetMode == NM_ListenServer && LocalPlayer(Player) != None)
+	{
+		return true;
+	}
+
+	if (WorldInfo.TimeSeconds < NextAdminCmdTime)
+	{
+		return false;
+	}
+
+	NextAdminCmdTime = WorldInfo.TimeSeconds + 5.0;
+	return true;
+}
+
+exec function AdminLogin(string Password)
+{
+	if (Password != "" && AdminCmdOk() )
+	{
+		ServerAdminLogin(Password);
+	}
+}
+
+reliable server function ServerAdminLogin(string Password)
+{
+	if ( (WorldInfo.Game.AccessControl != none) && AdminCmdOk() )
+	{
+		if ( WorldInfo.Game.AccessControl.AdminLogin(self, Password) )
+		{
+			WorldInfo.Game.AccessControl.AdminEntered(Self);
+		}
+	}
+}
+
+exec function AdminLogOut()
+{
+	if ( AdminCmdOk() )
+	{
+		ServerAdminLogOut();
+	}
+}
+
+reliable server function ServerAdminLogOut()
+{
+	if ( WorldInfo.Game.AccessControl != none )
+	{
+		if ( WorldInfo.Game.AccessControl.AdminLogOut(self) )
+		{
+			WorldInfo.Game.AccessControl.AdminExited(Self);
+		}
+	}
+}
+
+// Execute an administrative console command on the server.
+exec function Admin( string CommandLine )
+{
+	if (PlayerReplicationInfo.bAdmin)
+	{
+		ServerAdmin(CommandLine);
+	}
+}
+
+reliable server function ServerAdmin( string CommandLine )
+{
+	local string Result;
+
+	if ( PlayerReplicationInfo.bAdmin )
+	{
+		Result = ConsoleCommand( CommandLine );
+		if( Result!="" )
+			ClientMessage( Result );
+	}
+}
+
+exec function AdminKickBan( string S )
+{
+	if (PlayerReplicationInfo.bAdmin)
+	{
+		ServerKickBan(S,true);
+	}
+}
+
+
+exec function AdminKick( string S )
+{
+	if ( PlayerReplicationInfo.bAdmin )
+	{
+		ServerKickBan(S,false);
+	}
+}
+
+/** Allows the local player or admin to kick a player */
+reliable server function ServerKickBan(string PlayerToKick, bool bBan)
+{
+	if (PlayerReplicationInfo.bAdmin || LocalPlayer(Player) != none )
+	{
+		if (bBan)
+		{
+			WorldInfo.Game.AccessControl.KickBan(PlayerToKick);
+		}
+		else
+		{
+			WorldInfo.Game.AccessControl.Kick(PlayerToKick);
+		}
+	}
+}
+
+exec function AdminPlayerList()
+{
+	local PlayerReplicationInfo PRI;
+
+	if (PlayerReplicationInfo.bAdmin)
+	{
+		ClientMessage("Player List:");
+		foreach DynamicActors(class'PlayerReplicationInfo', PRI)
+		{
+			ClientMessage(PRI.PlayerID$"."@PRI.PlayerName @ "Ping:" @ INT((float(PRI.Ping) / 250.0 * 1000.0)) $ "ms)");
+		}
+	}
+}
+
+exec function AdminRestartMap()
+{
+	if (PlayerReplicationInfo.bAdmin)
+	{
+		ServerRestartMap();
+	}
+}
+
+reliable server function ServerRestartMap()
+{
+	if ( PlayerReplicationInfo.bAdmin )
+	{
+		WorldInfo.ServerTravel("?restart", false);
+	}
+}
+
 DefaultProperties
 {
 	bCheatFlying=true
+	CheatClass=class'TowerCheatManagerTD'
 
 	InputClass=class'Tower.TowerPlayerInput'
 	CollisionType=COLLIDE_BlockAllButWeapons

@@ -48,7 +48,10 @@ final function Initialize()
 	}
 }
 
-final function TogglePreviewState(bool bEnable, 
+final function TogglePreviewState(bool bEnable, int ControllerID)
+{
+
+}
 
 function ActivateHUDPreview(int ControllerID)
 {

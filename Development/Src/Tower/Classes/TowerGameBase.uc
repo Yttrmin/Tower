@@ -1,8 +1,6 @@
 class TowerGameBase extends FrameworkGame
 	Config(Tower);
 
-`define IVectStr(IV) "("$`IV.X$","@`IV.Y$","@`IV.Z$")"
-
 enum FactionLocation
 {
 	FL_None,
@@ -156,6 +154,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 	local PlayerController Controller;
 	Controller = Super.Login(Portal, Options, UniqueID, ErrorMessage);
 	LoadString = ParseOption(Options, "LoadGame");
+	
 //	`log("LoadString:"@LoadString;
 	if(WorldInfo.NetMode != NM_DedicatedServer && LoadString != "")
 	{
@@ -168,6 +167,7 @@ event PlayerController Login(string Portal, string Options, const UniqueNetID Un
 event PostLogin( PlayerController NewPlayer )
 {
 	Super.PostLogin(NewPlayer);
+	
 	/* We can only confirm now whether or not this is us or a client joining.
 	You could have technically used GetNumPlayers() earlier but then you have to 
 	account for dedicated or listen server and such. */
@@ -217,15 +217,25 @@ private event OnEmptyServer()
 
 private exec function GetSteamAddress()
 {
+	`log(GetSteamServerID());
+}
+
+//@TODO - Is this accessible on clients?
+static final function string GetSteamServerID()
+{
 	local String URL;
 	local UniqueNetID ID;
-	local TowerGameSettingsCommon CurGameSettings;
-	CurGameSettings = TowerGameSettingsCommon(OnlineGameInterfaceImpl(GameInterface).GameSettings);
-	OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AuthInterfaceImpl.GetServerUniqueId(ID);
-	URL = "steam."$String(ID.UID.A)$String(ID.UID.B);
-	`log(URL,,'SteamAddress');
-	URL = "steam."$CurGameSettings.SteamServerId;
-	`log(URL,,'SteamAddress');
+
+	if(OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).AuthInterfaceImpl.GetServerUniqueId(ID))
+	{
+		URL = "steam."$OnlineSubsystemSteamworks(class'GameEngine'.static.GetOnlineSubsystem()).UniqueNetIdToInt64(ID);
+	}
+	else
+	{
+		`warn("GetServerUniqueId() call in TowerGameBase::GetSteamServerID() failed! Are you using Steam sockets?");
+		URL = "";
+	}
+	return URL;
 }
 
 /* ProcessServerTravel()
@@ -331,6 +341,11 @@ event Tick(float DeltaTime)
 	{
 		ToTickDelegate(DeltaTime);
 	}
+}
+
+function bool AllowCheats(PlayerController P)
+{
+	return ( WorldInfo.NetMode == NM_Standalone );
 }
 
 final function RegisterForPreAsyncTick(delegate<TickDelegate> Tick)

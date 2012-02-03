@@ -3,6 +3,7 @@ TowerSaveSystem
 
 Class used to save and load games on the PC, Mac, and iOS. */
 class TowerSaveSystem extends Object
+	dependson(TowerGameBase)
 	config(TowerSaves);
 
 struct SaveInfo

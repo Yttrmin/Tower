@@ -139,6 +139,11 @@ event PostInitAnimTree(SkeletalMeshComponent SkelComp)
 	`log("PostInitAnimTree!");
 }
 
+unreliable server function ServerFire(Vector Direction)
+{
+	// Apply inaccuracy.
+}
+
 function Shoot(Vector Direction)
 {
 	local vector HitLocation, HitNormal;
