@@ -27,7 +27,8 @@ var() int HealthMax;
 /**  */
 var() editinline TowerPurchasableComponent PurchasableComponent;
 //=========================================================
-
+var const LinearColor BlackColor;
+var const LinearColor UnownedColor;
 //=========================================================
 // A*-related
 /** Base cost to go "through" (destroy) this block in AStar. */
@@ -233,13 +234,11 @@ simulated function CalculateBlockRotation()
 final simulated function Highlight()
 {
 	MaterialInstance.SetVectorParameterValue('HighlightColor', 
-		OwnerPRI.HighlightColor);
+		OwnerPRI != None ? OwnerPRI.HighlightColor : UnOwnedColor);
 }
 
 final simulated function UnHighlight()
 {
-	local LinearColor BlackColor;
-	BlackColor = MakeLinearColor(0,0,0,0);
 	MaterialInstance.SetVectorParameterValue('HighlightColor', BlackColor);
 }
 
@@ -348,6 +347,9 @@ DefaultProperties
 	BaseCost=10
 
 	CustomTimeDilation=1
+
+	BlackColor=(R=0,G=0,B=0,A=0)
+	UnOwnedColor=(R=6,G=6,B=6,A=1)
 
 	bCollideWorld=false
 	bAlwaysRelevant = true

@@ -7,6 +7,10 @@ class Tower extends TowerFaction
 	config(Tower)
 	dependson(TowerBlock);
 
+/** Save IDs. */
+const TOWER_NAME_ID = "N";
+const PLAYER_NUMBER_ID = "P";
+
 `if(`isdefined(debug)) 
 	`define simulateddebug simulated 
 	`else 
@@ -446,6 +450,35 @@ simulated state Inactive
 Begin:
 	TowerPlayerController(GetALocalPlayerController()).myHUD.RemovePostRenderedActor(Self);
 }
+
+/********************************
+Save/Loading
+********************************/
+
+/** Called when saving a game. Returns a JSON object, or None to not save this. */
+public event JSonObject OnSave(const SaveType SaveType)
+{
+	local JSonObject JSON;
+	JSON = Super.OnSave(SaveType);
+	if(JSON == None)
+	{
+		JSON = new class'JSonObject';
+	}
+	if (JSON == None)
+	{
+		`warn(self@"Could not save!");
+		return None;
+	}
+
+	JSON.SetStringValue(TOWER_NAME_ID, TowerName);
+//	JSON.SetStringValue
+
+	return JSON;
+}
+
+/** Called when loading a game. This function is intended for dynamic objects, who should create a new object and load
+this data into it. */
+public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo){}
 
 DefaultProperties
 {
