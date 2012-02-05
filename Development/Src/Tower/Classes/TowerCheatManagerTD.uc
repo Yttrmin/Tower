@@ -377,6 +377,183 @@ exec function DebugIVectSq(int X1, int Y1, int Z1, int X2, int Y2, int Z2)
 	`log("V:"@VSizeSq(AV - BV));
 }
 
+exec function DebugTestJSON()
+{
+	local JSONObject JSON, Root, RootBlock;
+	Root = new class'JSonObject';
+	RootBlock = new class'JSonObject';
+	JSON = new class'JSonObject';
+
+	JSON = new class'JsonObject';
+	JSON.SetStringValue("accesstoken", "01010101");
+	JSON.SetIntValue("level", 5);
+	JSON.SetIntValue("currentXP", 123123);
+	JSON.SetIntValue("nextLevelXP", 125000);
+	JSON.SetIntValue("statHealth", 84);
+	/*JSON.SetIntValue("statShield", 15);
+	JSON.SetIntValue("statDamage", 18);
+	JSON.SetIntValue("statMagic", 60);
+	JSON.SetIntValue("avaiableStatPoints", 5);
+	JSON.SetIntValue("rebalanceStatsCount", 3);
+	JSON.SetIntValue("currentBloodline", 2);
+	JSON.SetIntValue("currentPlaythrough", 1);
+	JSON.SetIntValue("godKingLevel", 99);
+	JSON.SetIntValue("currentGold", 45000);*/
+	Root.SetObject("Header", JSON);
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 18);
+	JSON.SetIntValue("statMagic", 60);
+	JSON.SetIntValue("avaiableStatPoints", 5);
+	RootBlock.SetObject("0", JSON);
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 425);
+	JSON.SetIntValue("statMagic", 60231);
+	JSON.SetIntValue("avaiableStatPoints", 125);
+	RootBlock.SetObject("1", JSON);
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 421);
+	JSON.SetIntValue("statMagic", 86);
+	JSON.SetIntValue("avaiableStatPoints", 321);
+	RootBlock.SetObject("2", JSON);
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 48696);
+	JSON.SetIntValue("statMagic", 123);
+	JSON.SetIntValue("avaiableStatPoints", 1358574);
+	RootBlock.SetObject("3", JSON);
+
+	Root.SetObject("Blocks", RootBlock);
+	`log(class'JSonObject'.static.EncodeJson(Root));
+
+
+
+	Root = new class'JSonObject';
+	RootBlock = new class'JSonObject';
+	JSON = new class'JSonObject';
+
+	JSON.SetStringValue("accesstoken", "01010101");
+	JSON.SetIntValue("level", 5);
+	JSON.SetIntValue("currentXP", 123123);
+	JSON.SetIntValue("nextLevelXP", 125000);
+	JSON.SetIntValue("statHealth", 84);
+	/*JSON.SetIntValue("statShield", 15);
+	JSON.SetIntValue("statDamage", 18);
+	JSON.SetIntValue("statMagic", 60);
+	JSON.SetIntValue("avaiableStatPoints", 5);
+	JSON.SetIntValue("rebalanceStatsCount", 3);
+	JSON.SetIntValue("currentBloodline", 2);
+	JSON.SetIntValue("currentPlaythrough", 1);
+	JSON.SetIntValue("godKingLevel", 99);
+	JSON.SetIntValue("currentGold", 45000);*/
+		Root.ObjectArray[Root.ObjectArray.length] = JSON;
+
+	JSON = new class'JsonObject';
+		JSON.SetIntValue("statDamage", 18);
+		JSON.SetIntValue("statMagic", 60);
+		JSON.SetIntValue("avaiableStatPoints", 5);
+		RootBlock.ObjectArray[Root.ObjectArray.length] = JSON;
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 425);
+	JSON.SetIntValue("statMagic", 60231);
+	JSON.SetIntValue("avaiableStatPoints", 125);
+		RootBlock.ObjectArray[Root.ObjectArray.length] = JSON;
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 421);
+	JSON.SetIntValue("statMagic", 86);
+	JSON.SetIntValue("avaiableStatPoints", 321);
+		RootBlock.ObjectArray[Root.ObjectArray.length] = JSON;
+
+	JSON = new class'JsonObject';
+	JSON.SetIntValue("statDamage", 48696);
+	JSON.SetIntValue("statMagic", 123);
+	JSON.SetIntValue("avaiableStatPoints", 1358574);
+		RootBlock.ObjectArray[Root.ObjectArray.length] = JSON;
+
+	Root.ObjectArray[Root.ObjectArray.Length] = RootBlock;
+	/*`log(class'JSonObject'.static.EncodeJson(Root));*/ // Crashes.
+}
+
+exec function TestBugReport()
+{
+	local SaveSystemJSON SS;
+	local HttpRequestInterface R;
+	local string Query;
+
+	SS = new class'SaveSystemJSON';
+	Query = "JSON="$SS.SaveGame("TEST", Outer);
+//	Query="fname=NAME&age=AGE";
+	R = class'HttpFactory'.static.CreateRequest();
+	R.SetRequestCompleteDelegate(OnRequestComplete);
+	R.SetURL(class'SaveSystemJSON'.const.SITE_URL);
+	R.SetVerb("POST");
+	R.SetContent(ConvertToByteArray(Query));
+	R.SetHeader("Host", "www.cubedefense.com");
+	R.SetHeader("User-Agent", "Cube Defense");
+	
+	
+	R.SetHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	R.SetHeader("Accept-Language", "en-us,en;q=0.5");
+//	R.SetHeader("Accept-Charset", "*");
+	R.SetHeader("Accept-Encoding", "gzip, deflate");
+	R.SetHeader("DNT", "1");
+	R.SetHeader("Connection", "keep-alive");
+//	R.SetHeader("Cookie", "__qca=P0-866094574-1304235263718; optimizelyEndUserId=oeu1304368225184r0.0014794187385734903; optimizelyBuckets=%7B%7D; __utma=182971897.2125256563.1314042924.1328305185.1328317302.75; __utmz=182971897.1326062946.55.11.utmcsr=bootstrap.cubedefense.com|utmccn=(referral)|utmcmd=referral|utmcct=/; __utmc=182971897");
+	R.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+//	`log("?JSON"@R.GetURLParameter("JSON"));
+	R.ProcessRequest();
+}
+
+exec function TestLoadJSON()
+{
+	local JSOnObject J;
+	J = class'JSonObject'.static.DecodeJSON("{\"Blocks\":{\"INTERNAL_COUNT\":4,\"0\":{\"M\":0,\"B\":1,\"G_X\":0,\"G_Y\":0,\"G_Z\":1,\"P_X\":0,\"P_Y\":0,\"P_Z\":-1,\"S\":\"Stable\"},\"1\":{\"M\":0,\"B\":1,\"G_X\":0,\"G_Y\":0,\"G_Z\":2,\"P_X\":0,\"P_Y\":0,\"P_Z\":-1,\"S\":\"Stable\"},\"2\":{\"M\":0,\"B\":1,\"G_X\":0,\"G_Y\":0,\"G_Z\":3,\"P_X\":0,\"P_Y\":0,\"P_Z\":-1,\"S\":\"Stable\"},\"3\":{\"M\":0,\"B\":1,\"G_X\":0,\"G_Y\":0,\"G_Z\":4,\"P_X\":0,\"P_Y\":0,\"P_Z\":-1,\"S\":\"Stable\"}},\"Towers\":{\"INTERNAL_COUNT\":1,\"0\":{\"B\":99999,\"F\":0,\"N\":\"MAKE_SURE_I_GET_SET\"}},\"Factions\":{\"INTERNAL_COUNT\":1,\"0\":{\"B\":0,\"F\":1,\"A\":\"TowerMod.AStarFaction\"}},\"Players\":{\"INTERNAL_COUNT\":1,\"0\":{\"L_X\":1470.8695,\"L_Y\":1504.3987,\"L_Z\":2146.3967,\"R_P\":61297,\"R_Y\":-23266,\"R_R\":0}},\"Header\":{\"Mods\":{\"0\":{\"SafeName\":\"TowerMod\",\"Version\":1},\"1\":{\"SafeName\":\"TestMod\",\"Version\":1}}}}");
+	`log(J.GetObject("Blocks"));
+	`log(J.GetObject("Blocks").GetObject("2"));
+	`log(J.GetObject("Blocks").GetObject("2").GetStringValue("S"));
+	`log(class'JSOnObject'.static.EncodeJSON(J));
+}
+
+private function array<byte> ConvertToByteArray(out String String)
+{
+	local int i;
+	local array<Byte> OutArray;
+	for(i = 0; i < Len(String); i++)
+	{
+		OutArray[i] = Asc(Mid(String, i, 1));
+	}
+	return OutArray;
+}
+
+function OnRequestComplete(HttpResponseInterface Response, bool bSucceeded)
+{
+	local array<String> Headers;
+	local String Header;
+
+	`log("Got response!!!!!!! Succeeded="@bSucceeded);
+	`log("URL="@Response.GetURL());
+	// if we didn't succeed, we can't really trust the payload, so you should always really check this.
+	if (bSucceeded)
+	{
+		Headers = Response.GetHeaders();
+		foreach Headers(Header)
+		{
+			`log("Header:"@Header);
+		}
+		// GetContentAsString will make a copy of the payload to add the NULL terminator,
+		// then copy it again to convert it to TCHAR, so this could be fairly inefficient.
+		// This call also assumes the payload is UTF8 right now, as truly determining the encoding
+		// is content-type dependent.
+		// You also can't trust the content-length as you don't always get one. You should instead
+		// always trust the length of the content payload you receive.
+		`log("Payload:"@Response.GetContentAsString());
+	}
+}
+
 /***********************************************
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

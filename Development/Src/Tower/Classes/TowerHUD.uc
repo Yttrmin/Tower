@@ -47,7 +47,7 @@ function DrawHUD()
 		LastHighlightedBlock.UnHighlight();
 		LastHighlightedBlock = None;
 	}
-	if(TracedBlock != None && !HUDMovie.bInMenu)
+	if(TracedBlock != None && TracedBlock != LastHighlightedBlock && !HUDMovie.bInMenu)
 	{
 		TracedBlock.Highlight();
 		LastHighlightedBlock = TracedBlock;

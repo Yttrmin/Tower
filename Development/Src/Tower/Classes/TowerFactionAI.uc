@@ -14,6 +14,8 @@ class TowerFactionAI extends TowerFaction
 	placeable // Please don't actually place me. =(
 	/*abstract*/;
 
+const ARCHETYPE_ID = "A";
+
 /**
 Archetype? - Just like everything else, easy to mod! Different types of FactionAIs then?
 Hardcoded? - Ehh. Might even be harder.
@@ -532,6 +534,30 @@ event OnTargetableDeath(TowerTargetable Targetable, TowerTargetable TargetableKi
 
 event OnVIPDeath(TowerTargetable VIP)
 {
+}
+
+/********************************
+Save/Loading
+********************************/
+
+/** Called when saving a game. Returns a JSON object, or None to not save this. */
+public event JSonObject OnSave(const SaveType SaveType)
+{
+	local JSonObject JSON;
+	JSON = Super.OnSave(SaveType);
+	if(JSON == None)
+	{
+		JSON = new class'JSonObject';
+	}
+	if (JSON == None)
+	{
+		`warn(self@"Could not save!");
+		return None;
+	}
+
+	JSON.SetStringValue(ARCHETYPE_ID, PathName(ObjectArchetype));
+
+	return JSON;
 }
 
 DefaultProperties

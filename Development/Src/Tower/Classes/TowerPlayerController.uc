@@ -1,6 +1,15 @@
 class TowerPlayerController extends GamePlayerController
+	implements(SavableDynamic)
 	dependson(TowerSaveSystem)
 	config(Tower);
+
+/** Save IDs. */
+const LOCATION_X = "L_X";
+const LOCATION_Y = "L_Y";
+const LOCATION_Z = "L_Z";
+const ROTATION_PITCH = "R_P";
+const ROTATION_YAW = "R_Y";
+const ROTATION_ROLL = "R_R";
 
 var float NextAdminCmdTime;
 
@@ -151,13 +160,22 @@ exec function QuickSave();
 
 exec function QuickLoad();
 
-exec function SaveGame(string FileName)
+exec function SaveGame(string FileName, optional bool bUseJSON)
 {
+	local SaveSystemJSON JSONSave;
 	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
 		`log("Trying to save while the round is in progress! This isn't allowed!");
 	}
-	SaveSystem.SaveGame(FileName, false, self);
+	if(bUseJSON)
+	{
+		JSONSave = new class'SaveSystemJSON';
+		JSONSave.SaveGame("TEST", self);
+	}
+	else
+	{
+		SaveSystem.SaveGame(FileName, false, self);
+	}
 }
 
 exec function LoadGame(string FileName/*, bool bTowerOnly*/)
@@ -467,6 +485,36 @@ reliable server function ServerRestartMap()
 		WorldInfo.ServerTravel("?restart", false);
 	}
 }
+
+/********************************
+Save/Loading
+********************************/
+
+/** Called when saving a game. Returns a JSON object, or None to not save this. */
+public event JSonObject OnSave(const SaveType SaveType)
+{
+	local JSonObject JSON;
+	JSON = new class'JSonObject';
+	if (JSON == None)
+	{
+		`warn(self@"Could not save!");
+		return None;
+	}
+
+	JSON.SetFloatValue(LOCATION_X, Pawn.Location.X);
+	JSON.SetFloatValue(LOCATION_Y, Pawn.Location.Y);
+	JSON.SetFloatValue(LOCATION_Z, Pawn.Location.Z);
+
+	JSON.SetIntValue(ROTATION_PITCH, Pawn.Rotation.Pitch);
+	JSON.SetIntValue(ROTATION_YAW, Pawn.Rotation.Yaw);
+	JSON.SetIntValue(ROTATION_ROLL, Pawn.Rotation.Roll);
+
+	return JSON;
+}
+
+/** Called when loading a game. This function is intended for dynamic objects, who should create a new object and load
+this data into it. */
+public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo){}
 
 DefaultProperties
 {

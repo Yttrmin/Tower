@@ -13,8 +13,12 @@ const GRID_LOCATION_X_ID = "G_X";
 const GRID_LOCATION_Y_ID = "G_Y";
 const GRID_LOCATION_Z_ID = "G_Z";
 const PARENT_DIRECTION_ID = "P";
+const PARENT_DIRECTION_X_ID = "P_X";
+const PARENT_DIRECTION_Y_ID = "P_Y";
+const PARENT_DIRECTION_Z_ID = "P_Z";
 const MOD_INDEX_ID = "M";
 const MOD_BLOCK_ID = "B";
+const STATE_ID = "S";
 
 //=============================================================================
 // Replication Notes
@@ -262,22 +266,32 @@ event AdoptedChild()
 Save/Loading
 ********************************/
 
-public event String OnSave(SaveType SaveType)
+public event JSonObject OnSave(const SaveType SaveType)
 {
 	local JSonObject JSON;
 	JSON = new () class'JSonObject';
 	if (JSON == None)
 	{
 		`warn(self@"Could not save!");
-		return "";
+		return None;
 	}
+
+	JSon.SetIntValue(MOD_INDEX_ID, ModIndex);
+	JSon.SetIntValue(MOD_BLOCK_ID, ModBlockIndex);
 
 	JSon.SetIntValue(GRID_LOCATION_X_ID, GridLocation.X);
 	JSon.SetIntValue(GRID_LOCATION_Y_ID, GridLocation.Y);
 	JSon.SetIntValue(GRID_LOCATION_Z_ID, GridLocation.Z);
+	
+	JSon.SetIntValue(PARENT_DIRECTION_X_ID, ParentDirection.X);
+	JSon.SetIntValue(PARENT_DIRECTION_Y_ID, ParentDirection.Y);
+	JSon.SetIntValue(PARENT_DIRECTION_Z_ID, ParentDirection.Z);
+
+	JSon.SetStringValue(STATE_ID, String(GetStateName()));
+	return JSon;
 }
 
-public static event OnLoad(JSONObject Data, out const SaveInfo SaveInfo)
+public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo)
 {
 
 }
