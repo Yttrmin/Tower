@@ -14,6 +14,7 @@ var protectedwrite globalconfig LinearColor HighlightColor;
 /** How much to mutliply HighlightColor by, so it actually glows. Setting this to 0 disables it.
 Setting this to 1 means no bloom assuming HighlightColor has no colors over 1.*/
 var protectedwrite globalconfig byte HighlightFactor;
+var privatewrite byte PlayerNumber;
 
 /** When TRUE, TPRI needs to iterate through ALL blocks and calculate their rotations.
 Done to avoid a race condition between Tower and TowerBlocks being replicated. */
@@ -27,7 +28,7 @@ var protected globalconfig bool bDebugMods;
 replication
 {
 	if(bNetInitial)
-		Tower, HighlightColor;
+		Tower, HighlightColor, PlayerNumber;
 }
 
 simulated event ReplicatedEvent(Name VarName)
@@ -42,6 +43,15 @@ simulated event ReplicatedEvent(Name VarName)
 		}
 	}
 	Super.ReplicatedEvent(VarName);
+}
+
+function SetPlayerNumber(byte NewNumber)
+{
+	if(PlayerNumber != default.PlayerNumber)
+	{
+		`warn(Self$"::SetPlayerNumber() called more than once! Was:"@PlayerNumber@"Now:"@NewNumber);
+	}
+	PlayerNumber = NewNumber;
 }
 
 simulated function UpdateAllBlockRotations()
@@ -80,4 +90,5 @@ simulated function TowerPlayerController GetPlayerController()
 DefaultProperties
 {
 	bSkipActorPropertyReplication=False
+	PlayerNumber=0
 }

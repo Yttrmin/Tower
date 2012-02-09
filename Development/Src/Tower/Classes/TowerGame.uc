@@ -44,6 +44,7 @@ var const config float CoolDownTime;
 var const config array<String> FactionAIs;
 var const config bool bLogGameplayEvents;
 var const config float GameplayEventsHeartbeatDelta;
+var const config bool bUsePlayerPawns;
 
 /** Path to a TowerMusicList. It will be DynamicLoadObject()'d. */
 var globalconfig string MusicListPath;
@@ -184,30 +185,37 @@ function RestartPlayer(Controller NewPlayer)
 	{
 		SpawnLocation = Vect(500,200,90);
 	}
-	if (NewPlayer.Pawn == None)
+	if(bUsePlayerPawns)
 	{
-		NewPlayer.Pawn = Spawn(DefaultPawnClass,,,SpawnLocation, SpawnRotation);
-	}
-	if (NewPlayer.Pawn == None)
-	{
-		`log("failed to spawn player at "/*$StartSpot*/);
-		NewPlayer.GotoState('Dead');
-		if ( PlayerController(NewPlayer) != None )
+		if (NewPlayer.Pawn == None)
 		{
-			PlayerController(NewPlayer).ClientGotoState('Dead','Begin');
+			NewPlayer.Pawn = Spawn(DefaultPawnClass,,,SpawnLocation, SpawnRotation);
+		}
+		if (NewPlayer.Pawn == None)
+		{
+			`log("failed to spawn player at ");
+			NewPlayer.GotoState('Dead');
+			if ( PlayerController(NewPlayer) != None )
+			{
+				PlayerController(NewPlayer).ClientGotoState('Dead','Begin');
+			}
+		}
+		else
+		{
+			NewPlayer.Possess(NewPlayer.Pawn, false);
+			NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
+			SetPlayerDefaults(NewPlayer.Pawn);
+			NewPlayer.GotoState('PlayerFlying');
+		}
+		if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
+		{
+			`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
+			return;
 		}
 	}
 	else
 	{
-		NewPlayer.Possess(NewPlayer.Pawn, false);
-		NewPlayer.ClientSetRotation(NewPlayer.Pawn.Rotation, TRUE);
-		SetPlayerDefaults(NewPlayer.Pawn);
-		NewPlayer.GotoState('PlayerFlying');
-	}
-	if( bRestartLevel && WorldInfo.NetMode!=NM_DedicatedServer && WorldInfo.NetMode!=NM_ListenServer )
-	{
-		`warn("bRestartLevel && !server, abort from RestartPlayer"@WorldInfo.NetMode);
-		return;
+		NewPlayer.GotoState('PawnLess');
 	}
 }
 

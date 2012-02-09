@@ -30,6 +30,7 @@ var() privatewrite const array<TowerFactionAI> ModFactionAIs;
 
 //@TODO - Does this need to be an array, or should each mod just have one?
 var() privatewrite const array<TowerMusicList> ModMusicLists;
+var() privatewrite const ApexDestructibleDamageParameters ModAPEXDamageParameters;
 
 var privatewrite TowerModInfo NextMod;
 
@@ -195,6 +196,16 @@ simulated event Initialize()
 // Save/Load events.
 // Note that custom blocks are saved and loaded by the game, there's no need to save/load them yourself.
 // Please be nice and call these functions for NextMod!
+
+/** Called when the player's SaveSystemJSON is created. Use this to add your own Class-Key mappings with
+SaveSystem.AddClassKeyMapping(), if you need to. */
+event OnSaveSystemInit(const out SaveSystemJSON SaveSystem)
+{
+	if(NextMod != None)
+	{
+		NextMod.OnSaveSystemInit(SaveSystem);
+	}
+}
 
 /** Called by TowerGame during a regular save. */
 event GameSaved();

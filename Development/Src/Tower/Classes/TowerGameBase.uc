@@ -396,3 +396,23 @@ function FactionLocation GetPointFactionLocation(Vector Point)
 	`warn("Determined FactionLocation was FL_None for point:"@Point$"!");
 	return FL_None;
 }
+
+final function byte GetNextAvailablePlayerNumber()
+{
+	local array<byte> Available;
+	local byte i;
+	local TowerPlayerController Controller; 
+
+	for(i = 1; i <= MaxPlayersAllowed; i++)
+	{
+		Available.AddItem(i);
+	}
+
+	foreach WorldInfo.AllControllers(class'TowerPlayerController', Controller)
+	{
+		Available.RemoveItem(TowerPlayerReplicationInfo(Controller.PlayerReplicationInfo).PlayerNumber);
+	}
+
+	`assert(Available.Length != 0 && Available[0] != 0);
+	return Available[0];
+}
