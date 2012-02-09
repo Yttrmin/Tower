@@ -41,6 +41,8 @@ struct IntKeyValue
 {
 	var int Key;
 	var int Value;
+	/** If TRUE, uses SavableDynamic. If FALSE, uses SavableStatic. */
+	var bool bDynamic;
 };
 
 struct GlobalSaveInfo
@@ -60,12 +62,15 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 	local JSonObject SaveRoot;
 	local JSonObject SaveInfo;
 	local JSonObject UndefinedObject;
+//	local JSONObject DynamicRoot, StaticRoot;
 
 	local String Key;
 	local int Count;
 	local JSonObject Obj;
 
 	SaveRoot = new class'JSonObject';
+//	DynamicRoot = new class'JSONObject';
+//	StaticRoot = new class'JSONObject';
 	InitializeSaveObjects(SaveRoot);
 
 	UndefinedObject = new class'JSonObject';
@@ -107,9 +112,16 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 	return class'JSonObject'.static.EncodeJSon(SaveRoot);
 }
 
-public function AddClassCategoryMapping(ClassKeyValue NewMapping)
+public function bool AddClassKeyMapping(class<Actor> NewClass, const String Key, class<Interface> SaveInterfaceClass)
 {
+	if(SaveInterfaceClass != class'SavableDynamic' && SaveInterfaceClass != class'SavableStatic')
+	{
+		`warn("Failed to add Class-Key:"@NewClass$"-"$Key$";"@SaveInterfaceClass@"is not a valid save interface class!"@
+			"Try SavableDynamic or SavableStatic!");
+		return false;
+	}
 
+	return true;
 }
 
 private final function String GetKeyFromClass(class TestClass)
@@ -148,11 +160,15 @@ private function InitializeSaveObjects(out JSonObject Root)
 
 private function SerializeSaveInfo(TowerPlayerController Player, out JSonObject JSon)
 {
-	local JSonObject Mods;
+	local JSonObject Mods, WorldInfo;
 	Mods = new class'JSOnObject';
+	WorldInfo = new class'JSONObject';
 
 	PopulateModList(TowerGameReplicationInfo(Player.WorldInfo.GRI), Mods);
 	JSon.SetObject("Mods", Mods);
+
+	WorldInfo.SetStringValue("Map", Player.WorldInfo.GetMapName(true));
+	WorldInfo.SetStringValue("GameInfo", PathName(Player.WorldInfo.Game));
 }
 
 private final function PopulateModList(TowerGameReplicationInfo GRI, out JSonObject JSon)

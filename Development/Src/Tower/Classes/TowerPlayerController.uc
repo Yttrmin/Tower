@@ -41,6 +41,8 @@ exec function DevLogin()
 function InitPlayerReplicationInfo()
 {
 	Super.InitPlayerReplicationInfo();
+	TowerPlayerReplicationInfo(PlayerReplicationInfo).
+		SetPlayerNumber(TowerGameBase(WorldInfo.Game).GetNextAvailablePlayerNumber());
 	if(Role == Role_Authority && TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI == None)
 	{
 		TowerGameReplicationInfo(WorldInfo.GRI).ServerTPRI = TowerPlayerReplicationInfo(PlayerReplicationInfo);
@@ -110,6 +112,19 @@ state PlayerFlying
 		else
 			ProcessMove(DeltaTime, Pawn.Acceleration, DCLICK_None, rot(0,0,0));
 		*/
+	}
+}
+
+state PawnLess extends PlayerWaiting
+{
+	/*function bool IsSpectating()
+	{
+		return false;
+	}*/
+
+	exec function StartFire( optional byte FireModeNum )
+	{
+		Global.StartFire(FireModeNum);
 	}
 }
 
@@ -519,9 +534,11 @@ public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo){}
 DefaultProperties
 {
 	bCheatFlying=true
-	CheatClass=class'TowerCheatManagerTD'
 
+	CheatClass=class'TowerCheatManagerTD'
 	InputClass=class'Tower.TowerPlayerInput'
+	CameraClass=class'Tower.TowerCamera'
+
 	CollisionType=COLLIDE_BlockAllButWeapons
 	bCollideActors=true
 	bCollideWorld=true

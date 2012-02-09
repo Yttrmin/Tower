@@ -9,6 +9,9 @@
 class TowerBlockStructural extends TowerBlock
 	implements(SavableDynamic);
 
+`define Push(A, I) `A.AddItem(`I);
+`define Pop(A) `A[`A.Length-1];`A.Remove(`A.Length-1,1);
+
 const GRID_LOCATION_X_ID = "G_X";
 const GRID_LOCATION_Y_ID = "G_Y";
 const GRID_LOCATION_Z_ID = "G_Z";
@@ -67,15 +70,19 @@ simulated final function float TimeToDrop()
 	return Time;
 }
 
+//@TODO - No recursion!
+/** Returns TRUE if the block is touching the "ground" (GridLocation.Z == 0).
+If bChildrenCheck is TRUE, returns TRUE if any block in the hierarchy is touching the ground. */
 simulated function bool IsTouchingGround(bool bChildrenCheck)
 {
 	local TowerBlockStructural Block;
-	SetGridLocation(false);
+//	SetGridLocation(false);
 	if(GridLocation.Z == 0)
 	{
-		`log(Self@"is touching the ground!");
+//		`log(Self@"is touching the ground!");
 		return true;
 	}
+	//@BUG - Need to SetGridLocation for children even when we're on the ground. Why here?
 	if(bChildrenCheck)
 	{
 		foreach BasedActors(class'TowerBlockStructural', Block)
@@ -85,6 +92,58 @@ simulated function bool IsTouchingGround(bool bChildrenCheck)
 				return true;
 			}
 		}
+	}
+	return false;
+}
+
+// Recursion can suck it.
+// If we ever need the specific block touching, add an optional out TowerBlockStructural.
+/** Returns TRUE if the block is touching the "ground" (GridLocation.Z == 0).
+If bCheckHierarchy is TRUE, returns TRUE if any block in the hierarchy (through parent or children) is touching the ground.
+If bCheckHierarchyFromSelf is TRUE, only this block and its children are checked for touching.
+GridLocation is NOT updated before checking anymore! */
+simulated final function bool IsTouchingGroundIterative(optional bool bCheckHierarchy=true, 
+	optional bool bCheckHierarchyFromSelf=false)
+{
+	// "Stack" to replace recursion. Please don't do non-stack things to it (Find, RemoveItem, etc).
+	local array<TowerBlockStructural> BlockStack;
+	local TowerBlockStructural CurrentBlock, ItrBlock;
+
+	if(GridLocation.Z == 0 || GetBaseMost().Class == class'TowerBlockRoot')
+	{
+		return true;
+	}
+	if(bCheckHierarchy)
+	{
+		// If we're checking the entire hierarchy, start from our root.
+		if(!bCheckHierarchyFromSelf)
+		{
+			if(Base != None)
+			{
+				return TowerBlockStructural(GetBaseMost()).IsTouchingGroundIterative(bCheckHierarchy,
+					bCheckHierarchyFromSelf);
+			}
+		}
+
+		CurrentBlock = Self;
+		// Convenience macros so we can think like a stack. See top of file for definitions.
+		// We know we're done if we iterate all the way back to None.
+		`Push(BlockStack, None);
+
+		// Check through children now. Loop until the stack is back at index 0...
+		while(CurrentBlock != None)
+		{
+			if(CurrentBlock.GridLocation.Z == 0)
+			{
+				return true;
+			}
+			foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+			{
+				`Push(BlockStack, ItrBlock);
+			}
+			CurrentBlock = `Pop(BlockStack);
+		}
+		`assert(BlockStack.Length == 0); 
 	}
 	return false;
 }

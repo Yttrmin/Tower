@@ -158,6 +158,7 @@ final function TowerBlock GetParent()
 	return TowerBlock(Base);
 }
 
+//@DEPRECATED - Is garbage.
 //@TODO - UpdateGridLocation()?
 simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=true, optional bool bUpdateGridLocation=true
 	, optional bool bMaintainBase=true)
@@ -186,6 +187,23 @@ simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=t
 	{
 		GridLocation = GetGridLocation();
 	}
+}
+
+simulated final function UpdateGridLocation()
+{
+	GridLocation = GetGridLocation();
+}
+
+simulated final function UpdateLocation()
+{
+	local Vector NewLocation;
+	local Actor TempBase;
+
+	NewLocation = GetLocation();
+	TempBase = Base;
+	SetBase(None);
+	SetLocation(NewLocation);
+	SetBase(TempBase);
 }
 
 simulated final function CalculateLocations()

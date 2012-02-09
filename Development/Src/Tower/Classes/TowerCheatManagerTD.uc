@@ -554,6 +554,83 @@ function OnRequestComplete(HttpResponseInterface Response, bool bSucceeded)
 	}
 }
 
+exec function ExecClassIsChildOf()
+{
+	local TowerBlockStructural T;
+	`log("Testing TowerBlockStructural.");
+	`log("Is TowerBlockStructural SavableDynamic:"@ClassIsChildOf(class'TowerBlockStructural', class'SavableDynamic'));
+	`log("Is TowerBlockStructural SavableStatic:"@ClassIsChildOf(class'TowerBlockStructural', class'SavableStatic'));
+	`log("Is TowerBlockStructural SavableDynamic:"@ClassIsChildOf(class'SavableDynamic', class'TowerBlockStructural'));
+	`log("Is TowerBlockStructural SavableStatic:"@ClassIsChildOf(class'SavableStatic', class'TowerBlockStructural'));
+	foreach DynamicActors(class'TowerBlockStructural', T)
+	{
+		`log("Is TowerBlockStructural SavableDynamic:"@T.IsA('SavableDynamic'));
+		`log("Is TowerBlockStructural SavableStatic:"@T.IsA('SavableStatic'));
+		`log("Is TowerBlockStructural SavableDynamic:"@class'TowerBlockStructural'.IsA('SavableDynamic'));
+		`log("Is TowerBlockStructural SavableStatic:"@class'TowerBlockStructural'.IsA('SavableStatic'));
+		return;
+	}
+}
+
+exec function DebugTestIsTouchingGround(optional int IterationCount)
+{
+	local float Time;
+	local bool RecurResult, IterResult;
+	local float RecurSum, IterSum;
+
+	local Vector WorldOrigin, WorldDir;
+	local Rotator PlayerDir;
+	local Vector HitLocation, HitNormal;
+	local Actor LookingAt;
+	local TowerBlockStructural LookingBlock;
+	local int i;
+	GetPlayerViewPoint(WorldOrigin, PlayerDir);
+	WorldDir = Vector(PlayerDir);
+	LookingAt = Trace(HitLocation, HitNormal, (WorldOrigin+WorldDir)+WorldDir*10000,
+		(WorldOrigin+WorldDir), TRUE);
+	LookingBlock = TowerBlockStructural(LookingAt);
+	
+	if(LookingBlock != None)
+	{
+		IterResult = LookingBlock.IsTouchingGroundIterative(true);
+		RecurResult = LookingBlock.IsTouchingGround(true);
+		for(i = 0; i < IterationCount; i++)
+		{
+			Clock(Time);
+			LookingBlock.IsTouchingGround(true);
+			UnClock(Time);
+			RecurSum += Time;
+			Time = 0;
+
+			Clock(Time);
+			LookingBlock.IsTouchingGroundIterative(true);
+			UnClock(Time);
+			IterSum += Time;
+			Time = 0;
+		}
+		`log("Recursive Result:"@RecurResult@"      "@"Iterative Result:"@IterResult,,'ITG');
+		`log("Did"@IterationCount@"iterations over"@GetBlockCountInChain(LookingBlock)@"children. Avg Recursive Time:"
+			@RecurSum/IterationCount@"Avg Iteration Time:"@IterSum/IterationCount,,'ITG');
+	}
+	else
+	{
+		`log("Not a block.",,'ITG');
+	}
+}
+
+function int GetBlockCountInChain(TowerBlockStructural Start)
+{
+	local TowerBlockStructural Block;
+	local int ReturnInt;
+	ReturnInt = 0;
+	foreach Start.BasedActors(class'TowerBlockStructural', Block)
+	{
+		ReturnInt++;
+		ReturnInt += GetBlockCountInChain(Block);
+	}
+	return ReturnInt;
+}
+
 /***********************************************
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
