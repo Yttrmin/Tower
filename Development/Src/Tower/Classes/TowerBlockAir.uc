@@ -9,7 +9,7 @@ class TowerBlockAir extends TowerBlock;
 
 event AdoptedChild()
 {
-	SetGridLocation(false);
+	UpdateGridLocation();
 }
 
 DefaultProperties

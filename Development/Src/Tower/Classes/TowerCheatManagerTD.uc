@@ -290,7 +290,7 @@ exec function DebugReCalculateBlockLocations()
 	local TowerBlockStructural Block;
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{
-		Block.SetGridLocation(true, false);
+		Block.UpdateLocation();
 	}
 	foreach DynamicActors(class'TowerBlockStructural', Block)
 	{

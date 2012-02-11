@@ -1,1 +1,6 @@
+/** Converts an IVector to a string formatted: (X, Y, Z) */
 `define IVectStr(IV) "("$`IV.X$","@`IV.Y$","@`IV.Z$")"
+
+/** Convenience macros just to make thinking like a stack with an array easier. */
+`define Push(A, I) `A.AddItem(`I);
+`define Pop(A) `A[`A.Length-1];`A.Remove(`A.Length-1,1);
