@@ -158,52 +158,89 @@ final function TowerBlock GetParent()
 	return TowerBlock(Base);
 }
 
-//@DEPRECATED - Is garbage.
-//@TODO - UpdateGridLocation()?
-simulated final function SetGridLocation(optional bool bUpdateRelativeLocation=true, optional bool bUpdateGridLocation=true
-	, optional bool bMaintainBase=true)
-{
-	local Vector NewLocation;
-	local Actor TempBase;
-	if(bUpdateRelativeLocation)
-	{
-		NewLocation = GetLocation();
-		/*
-		NewLocation.X = 256 * (GridLocation.X);
-		NewLocation.Y = 256 * (GridLocation.Y);
-		//@TODO - No magic number.
-		NewLocation.Z = 256 * (GridLocation.Z) + 128;
-		*/
-		// Base is lost when you do SetLocation, so we have to reset it afterwards.
-		TempBase = Base;
-		SetBase(None);
-		SetLocation(NewLocation);
-		if(bMaintainBase)
-		{
-			SetBase(TempBase);
-		}
-	}
-	if(bUpdateGridLocation)
-	{
-		GridLocation = GetGridLocation();
-	}
-}
-
+/** Calculates the GridLocation based on current Location. */
 simulated final function UpdateGridLocation()
 {
 	GridLocation = GetGridLocation();
 }
 
-simulated final function UpdateLocation()
+/** Convenience function for calling UpdateGridLocation() on our hierarchy without recursion.
+If bStartFromRoot is TRUE, we start the calls at GetBaseMost() (if valid) instead of Self. */
+simulated final function UpdateGridLocationIterative(bool bStartFromRoot)
+{
+	local array<TowerBlockStructural> BlockStack;
+	local TowerBlockStructural ItrBlock;
+	local TowerBlock CurrentBlock;
+	local TowerBlockAir AirBlock;
+	local TowerBlockModule ModuleBlock;
+
+	if(bStartFromRoot && (TowerBlockStructural(GetBaseMost()) != None || TowerBlockRoot(GetBaseMost()) != None))
+	{
+		CurrentBlock = TowerBlock(GetBaseMost());
+	}
+	else
+	{
+		CurrentBlock = Self;
+	}
+
+	`Push(BlockStack, None);
+
+	while(CurrentBlock != None)
+	{
+		CurrentBlock.UpdateGridLocation();
+		foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+		{
+			`Push(BlockStack, ItrBlock);
+		}
+		// Don't bother pushing airs onto stack, they can't have children.
+		foreach CurrentBlock.BasedActors(class'TowerBlockAir', AirBlock)
+		{
+			AirBlock.UpdateGridLocation();
+		}
+		foreach CurrentBlock.BasedActors(class'TowerBlockModule', ModuleBlock)
+		{
+			ModuleBlock.UpdateGridLocation();
+		}
+		CurrentBlock = `Pop(BlockStack);
+	}
+	`assert(BlockStack.Length == 0); 
+}
+
+/** Calculates the Location based on current GridLocation.
+If bPreserveBase is FALSE, Base is guaranteed to be None on return. */
+simulated final function UpdateLocation(optional bool bPreserveBase=true)
 {
 	local Vector NewLocation;
 	local Actor TempBase;
-
 	NewLocation = GetLocation();
 	TempBase = Base;
 	SetBase(None);
 	SetLocation(NewLocation);
-	SetBase(TempBase);
+	if(bPreserveBase)
+	{
+		SetBase(TempBase);
+	}
+}
+
+simulated final function UpdateLocationIterative(bool bStartFromRoot)
+{
+	local array<TowerBlockStructural> BlockStack;
+	local TowerBlock CurrentBlock;
+	local TowerBlockStructural ItrBlock;
+			
+	CurrentBlock = Self;
+	`Push(BlockStack, None);
+
+	while(CurrentBlock != None)
+	{
+		CurrentBlock.UpdateLocation();
+		foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+		{
+			`Push(BlockStack, ItrBlock);
+		}
+		CurrentBlock = `Pop(BlockStack);
+	}
+	`assert(BlockStack.Length == 0); 
 }
 
 simulated final function CalculateLocations()

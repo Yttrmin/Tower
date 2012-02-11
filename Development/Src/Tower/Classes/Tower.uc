@@ -91,7 +91,8 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 function bool RemoveBlock(TowerBlock Block)
 {
 	local TowerBlock IteratorBlock;
-	local TowerBlockAir ITeratorAir;
+	local TowerBlockAir IteratorAir;
+	local TowerBlockStructural DroppingBlock;
 	local array<TowerBlockAir> ToDelete;
 	local array<TowerBlock> ToIterate;
 	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
@@ -125,7 +126,32 @@ function bool RemoveBlock(TowerBlock Block)
 		}
 		else
 		{
-		FindNewParent(IteratorBlock, Block, true);
+			if(!FindNewParent(IteratorBlock, Block, true))
+			{
+				if(Block.IsInState('UnstableParent'))
+				{
+					DroppingBlock = TowerBlockStructural(Block);
+				}
+				else if(Block.IsInState('Unstable'))
+				{
+					DroppingBlock = TowerBlockStructural(Block.GetBaseMost());
+				}
+				`assert(DroppingBlock != None || Block.IsInState('Stable'));
+				if(DroppingBlock != None)
+				{
+					if(DroppingBlock.IsTimerActive('DroppedSpace'))
+					{
+						IteratorBlock.SetTimer(DroppingBlock.GetRemainingTimeForTimer('DroppedSpace'), 
+							false, 'DroppedSpaceInitial');
+					}
+					else
+					{
+						// DroppedSpaceInitial is active.
+						IteratorBlock.SetTimer(DroppingBlock.GetRemainingTimeForTimer('DroppedSpaceInitial'),
+							false, 'DroppedSpaceInitial');
+					}
+				}
+			}
 		}
 	}
 	foreach ToDelete(IteratorAir)
@@ -253,7 +279,8 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 	{
 		Node.SetBase(None); // Redundant with the last SetBase?
 	}
-	foreach Node.CollidingActors(class'TowerBlock', Block, 128, , true,,HitInfo)
+	// If we make it 128 then the slightest inaccuracy causes this to miss a potential parent.
+	foreach Node.CollidingActors(class'TowerBlock', Block, 132, , true,,HitInfo)
 	{
 //		`log(Node@"Found Potential Parent:"@Block@HitInfo.HitComponent@HitInfo.HitComponent.class);
 //		`log(OldParent != Block @ TraceNodeToRoot(Block, OldParent) @ Node != Block);
@@ -340,7 +367,7 @@ simulated final function ReCalculateAllBlockLocations()
 	{
 		Blocks.AddItem(StructBlock);
 		BlockBases.AddItem(StructBlock.Base);
-		StructBlock.SetGridLocation(true, false, false);
+		StructBlock.UpdateLocation(false);
 	}
 
 	foreach Blocks(StructBlock, i)

@@ -9,9 +9,6 @@
 class TowerBlockStructural extends TowerBlock
 	implements(SavableDynamic);
 
-`define Push(A, I) `A.AddItem(`I);
-`define Pop(A) `A[`A.Length-1];`A.Remove(`A.Length-1,1);
-
 const GRID_LOCATION_X_ID = "G_X";
 const GRID_LOCATION_Y_ID = "G_Y";
 const GRID_LOCATION_Z_ID = "G_Z";
@@ -46,14 +43,13 @@ simulated event ReplicatedEvent(name VarName)
 			{
 
 			}
-			SetGridLocation(true, false);
+			//UpdateLocation();
 			//@BUG I DONT UNDERSTAND
 //			CalculateBlockRotation();
 		}
 	}
 	else if(VarName == NameOf(GridLocation))
 	{
-		//SetGridLocation(true, false);
 		if(ReplicatedBase != None)
 		{
 			ReplicatedEvent('ReplicatedBase');
@@ -65,9 +61,7 @@ simulated event ReplicatedEvent(name VarName)
 
 simulated final function float TimeToDrop()
 {
-	local float Time;
-	Time = 256 / DropRate;	
-	return Time;
+	return 256 / DropRate; 
 }
 
 //@TODO - No recursion!
@@ -177,10 +171,10 @@ simulated state Unstable
 		local TowerBlock BaseMost;
 		BaseMost = TowerBlock(GetBaseMost());
 		SetBase(None);
-		`log(Self@"saying LostOrphan!");
+//		`log(Self@"saying LostOrphan!");
 		BaseMost.LostOrphan();
 		Super.Destroyed();
-		`log(Self@"destroying.");
+//		`log(Self@"destroying.");
 	}
 };
 
@@ -189,13 +183,20 @@ simulated state UnstableParent extends Unstable
 {
 	simulated event BeginState(name PreviousStateName)
 	{
-		if(IsTouchingGround(true))
+		if(PreviousStateName == 'Unstable')
 		{
-			GotoState('InActive');
+//			SetTimer(TimeToDrop(), false, NameOf(DroppedSpaceInitial));
 		}
 		else
 		{
-			SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
+			if(IsTouchingGround(true))
+			{
+				GotoState('InActive');
+			}
+			else
+			{
+				SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
+			}
 		}
 	}
 	simulated event Tick(float DeltaTime)
@@ -219,6 +220,7 @@ simulated state UnstableParent extends Unstable
 	/** Called after block should have dropped 256 units.  */
 	simulated event DroppedSpace()
 	{
+		UpdateGridLocation();
 		if(IsTouchingGround(true))
 		{
 			GotoState('InActive');
@@ -232,6 +234,13 @@ simulated state UnstableParent extends Unstable
 		//@TODO - NEED TO CHANGE GRID LOCATION FOR CHILDREN TOO
 		
 	}
+
+	simulated event DroppedSpaceInitial()
+	{
+		DroppedSpace();
+		SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
+	}
+
 	simulated event BaseChange()
 	{
 		Global.BaseChange();
@@ -242,6 +251,16 @@ simulated state UnstableParent extends Unstable
 				GotoState('Stable');
 			}
 		}
+	}
+	simulated event Destroyed()
+	{
+		/*local TowerBlockStructural Block;
+		foreach BasedActors(class'TowerBlockStructural', Block)
+		{
+			`log(GetRemainingTimeForTimer(NameOf(DroppedSpace)));
+			SetTimer(GetRemainingTimeForTimer(NameOf(DroppedSpace)), false, NameOf(DroppedSpaceInitial), Block);
+		}*/
+		Super.Destroyed();
 	}
 	simulated event EndState(Name NextStateName)
 	{
@@ -257,6 +276,7 @@ simulated state InActive
 	}
 	event LostOrphan()
 	{
+		//@BUG
 		if(!IsTouchingGround(true))
 		{
 			GotoState('UnstableParent');
@@ -300,25 +320,35 @@ event OrphanedChild()
 /** Called on orphan parent when adopted. */
 event AdoptedParent()
 {
-	local TowerBlock Node;
-	SetGridLocation(true);
-	GotoState('Stable');
+	local array<TowerBlockStructural> BlockStack;
+	local TowerBlock CurrentBlock;
+	local TowerBlockStructural ItrBlock;
+	
 	OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
-	foreach BasedActors(class'TowerBlock', Node)
+	GotoState('Stable');
+	UpdateGridLocationIterative(false);
+
+	CurrentBlock = Self;
+	`Push(BlockStack, None);
+
+	while(CurrentBlock != None)
 	{
-		Node.AdoptedChild();
+		foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+		{
+			`Push(BlockStack, ItrBlock);
+		}
+		CurrentBlock = `Pop(BlockStack);
+		if(CurrentBlock != None)
+		{
+			CurrentBlock.AdoptedChild();
+		}
 	}
+	`assert(BlockStack.Length == 0); 
 }
 
 event AdoptedChild()
 {
-	local TowerBlock Node;
-	SetGridLocation(false);
 	GotoState('Stable');
-	foreach BasedActors(class'TowerBlock', Node)
-	{
-		Node.AdoptedChild();
-	}
 }
 
 /********************************

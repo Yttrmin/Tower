@@ -28,6 +28,7 @@ var protected bool bPendingLoad;
 var protected string PendingLoadFile;
 
 var private globalconfig const string DedicatedServerLoadFile;
+var protected globalconfig const bool bAIGame;
 var private globalconfig const bool bResetLevelOnEmptyServer;
 var private globalconfig const bool bPauseLevelOnEmptyServer;
 var private Tower DedicatedServerTower;

@@ -47,7 +47,7 @@ simulated event ReplicatedEvent(name VarName)
 		//SetGridLocation(true, false);
 		if(ReplicatedBase != None)
 		{
-			SetGridLocation(true, false);
+			UpdateLocation();
 		}
 		return;
 	}
