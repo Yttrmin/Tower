@@ -52,7 +52,7 @@ var private int DesiredPath;
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
-	AStarComponent.Initialize(OnPathGenerated, bDeferSearching, IterationsPerTick, bStepSearch, bDrawStepInfo);
+	AStarComponent.Initialize(OnPathGenerated, false, IterationsPerTick, bStepSearch, bDrawStepInfo);
 	/*
 	IterationsPerTick = Clamp(IterationsPerTick, 0, MaxInt);
 	if(bStepSearch)
@@ -98,7 +98,8 @@ final function Step()
 function Start()
 {
 	`log("Starting"@self);
-	DesiredPath = AStarComponent.GeneratePath(GetStartingBlock(), Hivemind.RootBlock.Target);
+	DesiredPath = AStarComponent.GeneratePath(GetStartingBlock(), 
+		Hivemind.RootBlock.Target);
 }
 
 final function GenerateObjectives()
@@ -140,15 +141,25 @@ final function TowerBlockAir GetStartingBlock()
 	HitActor = TowerBlock(Trace(HitLocation, HitNormal, Hivemind.RootBlock.Target.Location, 
 		GetFactionLocationDirection()*8192, true));
 	DesiredGridLocation = HitActor.GridLocation + GetFactionLocationDirection();
-	foreach HitActor.BasedActors(class'TowerBlockAir', Start)
-	{
-		if(Start.GridLocation == DesiredGridLocation)
-		{
-			return Start;
-		}
-	}
-	`warn("!!!!!!!!!!"@Self$"::GetStartingBlock() couldn't find a TowerBlockAir in a direction from HitActor!!!!!!!");
-	return None;
+	Start = Spawn(class'TowerBlockAir',,,GridLocationToVector(DesiredGridLocation),,
+			TowerGameBase(WorldInfo.Game).AirArchetype);
+	Start.UpdateGridLocation();
+	return Start;
+}
+
+//@TODO - Not duplicate function. Make Tower's static?
+/** AI doesn't have Towers so we have to do this here. */
+private final function Vector GridLocationToVector(out const IVector GridLocation)
+{
+	local Vector NewBlockLocation;
+
+	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
+	NewBlockLocation.X = (GridLocation.X * 256)+TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin.X;
+	NewBlockLocation.Y = (GridLocation.Y * 256)+TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin.Y;
+	NewBlockLocation.Z = (GridLocation.Z * 256)+TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin.Z;
+	// Pivot point in middle, bump it up.
+	NewBlockLocation.Z += 128;
+	return NewBlockLocation;
 }
 
 final function DebugDrawNames(Canvas Canvas)

@@ -97,6 +97,7 @@ function bool RemoveBlock(TowerBlock Block)
 	local array<TowerBlock> ToIterate;
 	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
 	{
+		//@TODO - Change me since we don't do based airs anymore.
 		if(IteratorBlock.class != class'TowerBlockAir')
 		{
 			/*
@@ -136,6 +137,7 @@ function bool RemoveBlock(TowerBlock Block)
 				{
 					DroppingBlock = TowerBlockStructural(Block.GetBaseMost());
 				}
+				`log(DroppingBlock);
 				`assert(DroppingBlock != None || Block.IsInState('Stable'));
 				if(DroppingBlock != None)
 				{
@@ -204,7 +206,7 @@ function CreateSurroundingAir(TowerBlock Block)
 		AirGridLocation = Block.GridLocation + EmptyDirections[0];
 		if(!IsThereAir(AirGridLocation))
 		{
-			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirGridLocation);
+//			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirGridLocation);
 		}
 		EmptyDirections.Remove(0, 1);
 	}
@@ -333,12 +335,12 @@ private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBloc
 	return Block.GetBaseMost().Class == class'TowerBlockRoot' && !Block.IsBasedOn(InvalidBase);
 }
 
-simulated function Vector GridLocationToVector(out const IVector GridLocation)
+simulated static final function Vector GridLocationToVector(out const IVector GridLocation)
 {
 	local Vector NewBlockLocation;
 	local Vector GridOrigin;
 	// This could be made completely static.
-	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
+	GridOrigin = TowerGameReplicationInfo(class'WorldInfo'.static.GetWorldInfo().GRI).GridOrigin;
 	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
 	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
 	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
@@ -348,10 +350,10 @@ simulated function Vector GridLocationToVector(out const IVector GridLocation)
 	return NewBlockLocation;
 }
 
-simulated function IVector VectorToGridLocation(out const Vector RealLocation)
+simulated static final function IVector VectorToGridLocation(out const Vector RealLocation)
 {
 	local Vector GridOrigin;
-	GridOrigin = TowerGameReplicationInfo(WorldInfo.GRI).GridOrigin;
+	GridOrigin = TowerGameReplicationInfo(class'WorldInfo'.static.GetWorldInfo().GRI).GridOrigin;
 	return IVect(Round(RealLocation.X-GridOrigin.X)/256, Round(RealLocation.Y-GridOrigin.Y)/256, 
 		Round(RealLocation.Z-GridOrigin.Z)/256);
 }
