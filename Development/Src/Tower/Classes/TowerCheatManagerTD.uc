@@ -347,6 +347,7 @@ exec function DebugAllBlocksPlaceable(bool bNewAllBlocksPlaceable)
 
 }
 
+`if(`isdefined(DEBUG))
 exec function DebugPossess()
 {
 	local TowerEnemyPawn IteratorPawn;
@@ -359,6 +360,7 @@ exec function DebugPossess()
 		return;
 	}
 }
+`endif
 
 exec function DebugStopMovie()
 {
@@ -593,11 +595,11 @@ exec function DebugTestIsTouchingGround(optional int IterationCount)
 	if(LookingBlock != None)
 	{
 		IterResult = LookingBlock.IsTouchingGroundIterative(true);
-		RecurResult = LookingBlock.IsTouchingGround(true);
+		RecurResult = LookingBlock.IsTouchingGroundRecursive(true);
 		for(i = 0; i < IterationCount; i++)
 		{
 			Clock(Time);
-			LookingBlock.IsTouchingGround(true);
+			LookingBlock.IsTouchingGroundRecursive(true);
 			UnClock(Time);
 			RecurSum += Time;
 			Time = 0;
@@ -629,6 +631,76 @@ function int GetBlockCountInChain(TowerBlockStructural Start)
 		ReturnInt += GetBlockCountInChain(Block);
 	}
 	return ReturnInt;
+}
+
+exec function DebugTestRandom()
+{
+	local int i;
+	for(i = 0; i < 10; i++)
+	{
+		`log(Rand(100));
+	}
+}
+
+exec function DebugTestHash()
+{
+	local IVector Start, Finish;
+	local byte bHitExtent;
+	local array<int> Hashes;
+	local int Hash;
+	local int Collisions;
+	Start = IVect(10,10,10);
+	Finish = IVect(-10,-10,0);
+	while(class'TowerGameUberTest'.static.DebugDecrementIVector(Start, Finish, bHitExtent))
+	{
+		Hash = Hash5(Start);
+//		`log(Hash);
+		if(Hashes.Find(Hash) != INDEX_NONE)
+		{
+			Collisions++;
+//			`log(`IVectStr(Start)@"collision!");
+		}
+		Hashes.AddItem(Hash);
+	}
+	`log(Collisions@"collisions out of a possible 449.");
+}
+
+function int Hash1(IVector A)
+{
+	return A.X + A.Y + A.Z;
+}
+
+function int Hash2(IVector A)
+{
+	local int Result;
+	Result += Result ^ (A.X << 13);
+	Result += Result ^ (A.X >> 17);
+	Result += Result ^ (A.X << 5);
+
+	Result += Result ^ (A.Y << 13);
+	Result += Result ^ (A.Y >> 17);
+	Result += Result ^ (A.Y << 5);
+
+	Result += Result ^ (A.Z << 13);
+	Result += Result ^ (A.Z >> 17);
+	Result += Result ^ (A.Z << 5);
+
+	return Result;
+}
+
+function int Hash3(IVector A)
+{
+	return Rand(MaxInt);
+}
+
+function int Hash4(IVector A)
+{
+	return 0;
+}
+
+function int Hash5(IVector A)
+{
+	return (A.X * 2654435761 % 2**32) + (A.Y * 2654435761 % 2**32) + (A.Z * 2654435761 % 2**32);
 }
 
 /***********************************************

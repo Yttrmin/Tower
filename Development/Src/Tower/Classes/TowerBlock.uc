@@ -362,7 +362,7 @@ event LostChild(Actor Other)
 	{
 		return;
 	}
-	OwnerPRI.Tower.AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Self, Block.GridLocation);
+//	OwnerPRI.Tower.AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Self, Block.GridLocation);
 }
 
 event GainedChild(Actor Other)

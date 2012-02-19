@@ -25,6 +25,7 @@ enum SaveType
 	ST_NULL,
 	/** The "standard" save. Saves to a file on the computer. Only happens during CoolDowns. */
 	ST_ToDisk,
+	ST_ToObject,
 	ST_ToCloud,
 	ST_ToSite,
 	/**  */
@@ -50,9 +51,9 @@ struct GlobalSaveInfo
 	var array<IntKeyValue> VirtualToRealModIndex;
 };
 
-var array<string> SaveData;
+var string SaveData;
 var transient ClassKeyValue HardcodedClassCategoryMapping[HARDCODED_MAPPINGS_COUNT];
-var array<ClassKeyValue> ClassCategoryMapping;
+var transient array<ClassKeyValue> ClassCategoryMapping;
 
 public function string SaveGame(string FileName, TowerPlayerController Player)
 {
@@ -110,6 +111,17 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 	}
 	`log(class'JSonObject'.static.EncodeJSon(SaveRoot),,'Save');
 	return class'JSonObject'.static.EncodeJSon(SaveRoot);
+}
+
+private function InternalSave(out SaveType Type)
+{
+	`assert(Type != ST_NULL);
+	switch(Type)
+	{
+	case ST_ToDisk:
+//		class'Engine'.static.BasicSaveObject()
+		break;
+	}
 }
 
 public function bool AddClassKeyMapping(class<Actor> NewClass, const String Key, class<Interface> SaveInterfaceClass)

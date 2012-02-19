@@ -12,6 +12,23 @@ event AdoptedChild()
 	UpdateGridLocation();
 }
 
+simulated function Vector GetLocation()
+{
+	if(OwnerPRI.Tower != None)
+	{
+		return class'Tower'.static.GridLocationToVector(GridLocation);
+	}
+	else
+	{
+		return Vect(0,0,0);
+	}
+}
+
+simulated function IVector GetGridLocation()
+{
+	return class'Tower'.static.VectorToGridLocation(Location);
+}
+
 DefaultProperties
 {
 	/*

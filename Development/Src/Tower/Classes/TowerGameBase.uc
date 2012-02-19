@@ -334,6 +334,7 @@ private function DetermineTowerStarts()
 event Tick(float DeltaTime)
 {
 	local delegate<TickDelegate> ToTickDelegate;
+//	`log(DeltaTime);
 	if(ToTick.Length == 0)
 	{
 		return;

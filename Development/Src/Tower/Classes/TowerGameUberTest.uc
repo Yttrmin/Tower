@@ -183,11 +183,12 @@ PostMultipleBlockTest:
 	`log("-----------------------------------------------------------------------------",,'UberTest');
 	Goto 'NoParentBlockTest';
 NoParentBlockTest:
-	`log("Testing blocks with no parents, yet not in UnstableParent (exclude TowerBlockRoots)...",,'UberTest');
+	`log("Testing blocks with no parents, yet not in UnstableParent or InActive...",,'UberTest');
 	Sleep(0);
 	foreach AllBlocks(Block)
 	{
-		if(Block.Base == None && !Block.IsInState('UnstableParent') && TowerBlockRoot(Block) == None)
+		if(Block.Base == None && !Block.IsInState('UnstableParent') && !Block.IsInState('InActive') &&
+			TowerBlockRoot(Block) == None)
 		{
 			LocalErrorCount++;
 			`log(Block@"at"@"("$Block.GridLocation.X$","@Block.GridLocation.Y$","@Block.GridLocation.Z$") fails!",,'Error');
@@ -262,7 +263,7 @@ ToDecrement = (1, -1, 1), Extent = (1, -1, 1)
 ...
 ?. (-1, 1, 0)
 ?. (-1, 1, -1) - RETURNS FALSE. */
-private final function bool DebugDecrementIVector(out IVector ToDecrement, out const IVector AreaExtent, out byte bHitAreaExtent)
+static final function bool DebugDecrementIVector(out IVector ToDecrement, out const IVector AreaExtent, out byte bHitAreaExtent)
 {
 	if(bHitAreaExtent == 1)
 	{

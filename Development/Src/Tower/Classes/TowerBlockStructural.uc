@@ -67,7 +67,7 @@ simulated final function float TimeToDrop()
 //@TODO - No recursion!
 /** Returns TRUE if the block is touching the "ground" (GridLocation.Z == 0).
 If bChildrenCheck is TRUE, returns TRUE if any block in the hierarchy is touching the ground. */
-simulated function bool IsTouchingGround(bool bChildrenCheck)
+simulated function bool IsTouchingGroundRecursive(bool bChildrenCheck)
 {
 	local TowerBlockStructural Block;
 //	SetGridLocation(false);
@@ -81,7 +81,7 @@ simulated function bool IsTouchingGround(bool bChildrenCheck)
 	{
 		foreach BasedActors(class'TowerBlockStructural', Block)
 		{
-			if(Block.IsTouchingGround(bChildrenCheck))
+			if(Block.IsTouchingGroundRecursive(bChildrenCheck))
 			{
 				return true;
 			}
@@ -90,55 +90,51 @@ simulated function bool IsTouchingGround(bool bChildrenCheck)
 	return false;
 }
 
+simulated final function bool IsTouchingGround()
+{
+	return GridLocation.Z == 0 || GetBaseMost().Class == class'TowerBlockRoot';
+}
+
 // Recursion can suck it.
 // If we ever need the specific block touching, add an optional out TowerBlockStructural.
 /** Returns TRUE if the block is touching the "ground" (GridLocation.Z == 0).
 If bCheckHierarchy is TRUE, returns TRUE if any block in the hierarchy (through parent or children) is touching the ground.
 If bCheckHierarchyFromSelf is TRUE, only this block and its children are checked for touching.
 GridLocation is NOT updated before checking anymore! */
-simulated final function bool IsTouchingGroundIterative(optional bool bCheckHierarchy=true, 
-	optional bool bCheckHierarchyFromSelf=false)
+simulated final function bool IsTouchingGroundIterative(bool bStartFromRoot)
 {
 	// "Stack" to replace recursion. Please don't do non-stack things to it (Find, RemoveItem, etc).
 	local array<TowerBlockStructural> BlockStack;
-	local TowerBlockStructural CurrentBlock, ItrBlock;
+	local TowerBlockStructural ItrBlock;
+	local TowerBlock CurrentBlock;
 
-	if(GridLocation.Z == 0 || GetBaseMost().Class == class'TowerBlockRoot')
+	if(bStartFromRoot && TowerBlock(GetBaseMost()) != None)
 	{
-		return true;
+		CurrentBlock = TowerBlock(GetBaseMost());
 	}
-	if(bCheckHierarchy)
+	else
 	{
-		// If we're checking the entire hierarchy, start from our root.
-		if(!bCheckHierarchyFromSelf)
-		{
-			if(Base != None)
-			{
-				return TowerBlockStructural(GetBaseMost()).IsTouchingGroundIterative(bCheckHierarchy,
-					bCheckHierarchyFromSelf);
-			}
-		}
-
 		CurrentBlock = Self;
-		// Convenience macros so we can think like a stack. See top of file for definitions.
-		// We know we're done if we iterate all the way back to None.
-		`Push(BlockStack, None);
-
-		// Check through children now. Loop until the stack is back at index 0...
-		while(CurrentBlock != None)
-		{
-			if(CurrentBlock.GridLocation.Z == 0)
-			{
-				return true;
-			}
-			foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
-			{
-				`Push(BlockStack, ItrBlock);
-			}
-			CurrentBlock = `Pop(BlockStack);
-		}
-		`assert(BlockStack.Length == 0); 
 	}
+	// Convenience macros so we can think like a stack. See top of file for definitions.
+	// We know we're done if we iterate all the way back to None.
+	`Push(BlockStack, None);
+
+	// Check through children now. Loop until the stack is back at index 0...
+	while(CurrentBlock != None)
+	{
+		if(CurrentBlock.GridLocation.Z == 0)
+		{
+			return true;
+		}
+		foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+		{
+			`Push(BlockStack, ItrBlock);
+		}
+		CurrentBlock = `Pop(BlockStack);
+	}
+	`assert(BlockStack.Length == 0); 
+	
 	return false;
 }
 
@@ -183,13 +179,9 @@ simulated state UnstableParent extends Unstable
 {
 	simulated event BeginState(name PreviousStateName)
 	{
-		if(PreviousStateName == 'Unstable')
+		if(PreviousStateName != 'Unstable')
 		{
-//			SetTimer(TimeToDrop(), false, NameOf(DroppedSpaceInitial));
-		}
-		else
-		{
-			if(IsTouchingGround(true))
+			if(IsTouchingGroundIterative(true))
 			{
 				GotoState('InActive');
 			}
@@ -221,7 +213,7 @@ simulated state UnstableParent extends Unstable
 	simulated event DroppedSpace()
 	{
 		UpdateGridLocation();
-		if(IsTouchingGround(true))
+		if(IsTouchingGroundIterative(true))
 		{
 			GotoState('InActive');
 		}
@@ -254,12 +246,6 @@ simulated state UnstableParent extends Unstable
 	}
 	simulated event Destroyed()
 	{
-		/*local TowerBlockStructural Block;
-		foreach BasedActors(class'TowerBlockStructural', Block)
-		{
-			`log(GetRemainingTimeForTimer(NameOf(DroppedSpace)));
-			SetTimer(GetRemainingTimeForTimer(NameOf(DroppedSpace)), false, NameOf(DroppedSpaceInitial), Block);
-		}*/
 		Super.Destroyed();
 	}
 	simulated event EndState(Name NextStateName)
@@ -277,7 +263,7 @@ simulated state InActive
 	event LostOrphan()
 	{
 		//@BUG
-		if(!IsTouchingGround(true))
+		if(!IsTouchingGroundIterative(true))
 		{
 			GotoState('UnstableParent');
 		}
@@ -382,7 +368,10 @@ public event JSonObject OnSave(const SaveType SaveType)
 
 public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo)
 {
+	/*local TowerBlockStructural NewBlock;
 
+	NewBlock = Spawn();
+	NewBlock.GridLocation.X = Data.GetIntValue(GRID_LOCATION_X_ID);*/
 }
 
 DefaultProperties

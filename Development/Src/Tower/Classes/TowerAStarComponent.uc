@@ -2,6 +2,12 @@
 class TowerAStarComponent extends ActorComponent
 	config(Tower);
 
+// A 3x3x3 cube minus the center.
+const POSSIBLE_AIRS_ALL_NEIGHBORS = 26;
+// A + sign layered three times vertically minus the center.
+const POSSIBLE_AIRS_NO_CORNERS = 14;
+const INVALID_PATH_ID = -1;
+
 struct PathRoot
 {
 	var bool bReady;
@@ -21,6 +27,7 @@ struct PathRoot
 var const private PathRoot NullPathRoot;
 
 var privatewrite array<TowerAIObjective> Paths;
+var const private IVector PossibleAirs[POSSIBLE_AIRS_NO_CORNERS];
 
 /** Enables the ability to step through a search. Overrides IterationsPerTick and bDeferSearching! */
 var privatewrite bool bStepSearch;
@@ -46,20 +53,25 @@ var private config bool bDeferSearching;
 /** How many iterations to do before deferring to the next tick. */
 var private config int IterationsPerTick;
 /** Are we currently deferring to next tick? */
-var privatewrite bool bDeferred;
+var deprecated privatewrite bool bDeferred;
 /** Is the search done but we're deferring anyways? Used so the final step is of the finished path. */
-var private bool bDeferredDone;
+var deprecated private bool bDeferredDone;
 /** To step or not. Used when step searching. */
 var private bool bStep;
 /** A copy of the OpenList and ClosedList before deferring. */
-var private PriorityQueue DeferredOpenList;
-var private array<TowerBlock> DeferredClosedList;
+var deprecated private PriorityQueue DeferredOpenList;
+var deprecated private array<TowerBlock> DeferredClosedList;
+var deprecated private array<IVector> DeferredAirList;
+var deprecated private array<IVector> DeferredAirReferenceList;
 /** Reference to the best block before deferring. */
-var private TowerBlock StepBestBlock;
+var deprecated private TowerBlock StepBestBlock;
 /** Used to represent the different nodes when stepping. */
 var private array<TowerAIObjective> StepMarkers;
 /** The ACTUAL iteration we're on, regardless of whether we defer or not. */
-var private int Iteration;
+var deprecated private int Iteration;
+
+/** Cached GridOrigin so we don't have to jump through several variables for every air block. */
+var private Vector GridOrigin;
 
 delegate OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root);
 
@@ -102,6 +114,7 @@ final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate,
 	optional int NewIterationsPerTick=default.IterationsPerTick, optional bool bNewStepSearch=false,
 	optional bool bNewDrawStepInfo=false)
 {
+	GridOrigin = TowerGameReplicationInfo(Owner.WorldInfo.GRI).GridOrigin;
 	Game = TowerGame(Owner.WorldInfo.Game);
 	Hivemind = Game.Hivemind;
 	AddOnPathGeneratedDelegate(PathGeneratedDelegate);
@@ -157,6 +170,8 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 	Explored = Looked at every node connected to this one, calculate dtheir F, G, and H, and placed them in OpenList. */
 	local PriorityQueue OpenList;
 	local array<TowerBlock> ClosedList;
+	local array<IVector> AirList;
+	local array<TowerBlockAir> AirReferenceList;
 	/** References whichever Block in the OpenList that has the lowest Fitness. */
 	local TowerBlock BestBlock;
 	local int i;
@@ -235,6 +250,7 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 			i++;
 			Iteration++;
 		}
+//		`log("Iteration"@Iteration);
 		BestBlock = OpenList.Remove();
 //		`log("Iteration"@Iteration$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,!bDeferredDone,'AStar');
 		if(BestBlock == Finish)
@@ -261,7 +277,7 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 		{
 			// No path?! How?! What?
 		}
-		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish);
+		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish, AirList, AirReferenceList);
 		ClosedList.AddItem(BestBlock);
 	}
 	`log("================== FINISHED A* ==================",,'AStar');
@@ -270,7 +286,7 @@ final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional in
 }
 
 private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<TowerBlock> ClosedList, 
-	TowerBlock SourceBlock, TowerBlock Finish)
+	TowerBlock SourceBlock, TowerBlock Finish, out array<IVector> AirList, out array<TowerBlockAir> AirReferenceList)
 {
 	local array<TowerBlock> AdjacentList;
 	local TowerBlock IteratorBlock;
@@ -283,17 +299,23 @@ private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<T
 			continue;
 		}
 		//check for each neighbor's air since it won't get picked up by CollidingActors.
-		foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
+		/*foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
 		{
-			if(IsDiagonalTo(IteratorAirBlock, SourceBlock) || IsAdjacentTo(IteratorAirBlock, SourceBlock))
+			if((IsDiagonalTo(IteratorAirBlock, SourceBlock) || IsAdjacentTo(IteratorAirBlock, SourceBlock)))
 			{
 				AdjacentList.AddItem(IteratorAirBlock);
 			}
 		}
+		*/
 		AdjacentList.AddItem(IteratorBlock);
 	}
+	AddAdjacentAirBlocks(SourceBlock.GridLocation, AdjacentList, AirList, AirReferenceList);
 	foreach AdjacentList(IteratorBlock)
 	{
+		if(IteratorBlock == SourceBlock)
+		{
+			continue;
+		}
 		if(OpenList.Contains(IteratorBlock))
 		{
 			// Already in OpenList.
@@ -324,6 +346,76 @@ private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<T
 			OpenList.Add(IteratorBlock);
 		}
 	}
+}
+
+/** Populates AdjacentList with air blocks adjacent to Center. */
+private final function AddAdjacentAirBlocks(const out IVector Center, out array<TowerBlock> AdjacentList
+	, out array<IVector> AirList, out array<TowerBlockAir> AirReferenceList)
+{
+	local array<IVector> PossibleLocations;
+	local int i, u, Index;
+	
+	/** Build up all possible block locations. */
+	for(i = 0; i < ArrayCount(PossibleAirs); i++)
+	{
+		PossibleLocations[i] = PossibleAirs[i] + Center;
+	}
+
+	/** If a block's in one of the possible locations, there can't be an air. */
+	for(i = 0; i < AdjacentList.Length; i++)
+	{
+		PossibleLocations.RemoveItem(AdjacentList[i].GridLocation);
+	}
+
+	/** Spawn an air for each possible location. */
+	for(i = 0; i < PossibleLocations.Length; i++)
+	{
+		// Set location here.
+		//@TODO - Test performance to see if we need a pool.
+		if(PossibleLocations[i].Z < 0)
+		{
+			continue;
+		}
+		Index = INDEX_NONE;
+		for(u = 0; u < AirList.Length; u++)
+		{
+			if(AirList[u] == PossibleLocations[i])
+			{
+				Index = u;
+				break;
+			}
+		}
+		if(Index != INDEX_NONE)
+		{
+			AdjacentList.AddItem(AirReferenceList[Index]);
+		}
+		else
+		{
+			AdjacentList.AddItem(Owner.Spawn(class'TowerBlockAir',,,GridLocationToVector(PossibleLocations[i]),,
+				TowerGameBase(Owner.WorldInfo.Game).AirArchetype));
+			AdjacentList[AdjacentList.Length-1].UpdateGridLocation();
+
+			AirList.AddItem(PossibleLocations[i]);
+			AirReferenceList.AddItem(TowerBlockAir(AdjacentList[AdjacentList.Length-1]));
+		}
+//		AdjacentList.AddItem(class'AStarNode'.static.CreateNodeFromArchetype(
+//			TowerGameBase(Owner.WorldInfo.Game).AirArchetype, PossibleLocations[i])); 
+	}
+}
+
+//@TODO - Not duplicate function. Make Tower's static?
+/** AI doesn't have Towers so we have to do this here. */
+private final function Vector GridLocationToVector(out const IVector GridLocation)
+{
+	local Vector NewBlockLocation;
+
+	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
+	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
+	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
+	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
+	// Pivot point in middle, bump it up.
+	NewBlockLocation.Z += 128;
+	return NewBlockLocation;
 }
 
 /** Returns true if both blocks share just an edge. */
@@ -694,4 +786,22 @@ DefaultProperties
 {
 	NextPathID=0
 	NullPathRoot=(ID=-1,bReady=true,bSuccess=false)
+
+	// Top +
+	PossibleAirs(0)=(X=0,Y=0,Z=1)
+	PossibleAirs(1)=(X=1,Y=0,Z=1)
+	PossibleAirs(2)=(X=-1,Y=0,Z=1)
+	PossibleAirs(3)=(X=0,Y=1,Z=1)
+	PossibleAirs(4)=(X=0,Y=-1,Z=1)
+	// Middle + minus middle
+	PossibleAirs(5)=(X=1,Y=0,Z=0)
+	PossibleAirs(6)=(X=-1,Y=0,Z=0)
+	PossibleAirs(7)=(X=0,Y=1,Z=0)
+	PossibleAirs(8)=(X=0,Y=-1,Z=0)
+	// Bottom +
+	PossibleAirs(9)=(X=0,Y=0,Z=-1)
+	PossibleAirs(10)=(X=1,Y=0,Z=-1)
+	PossibleAirs(11)=(X=-1,Y=0,Z=-1)
+	PossibleAirs(12)=(X=0,Y=1,Z=-1)
+	PossibleAirs(13)=(X=0,Y=-1,Z=-1)
 }
