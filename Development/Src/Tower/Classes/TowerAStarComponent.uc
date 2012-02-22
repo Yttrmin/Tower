@@ -8,24 +8,6 @@ const POSSIBLE_AIRS_ALL_NEIGHBORS = 26;
 const POSSIBLE_AIRS_NO_CORNERS = 14;
 const INVALID_PATH_ID = -1;
 
-struct PathRoot
-{
-	var bool bReady;
-	var bool bSuccess;
-	var TowerAIObjective ObjectiveStart;
-	var TowerBlock Start, Finish;
-	var int ID;
-	
-	/*structdefaultproperties
-	{
-		ID=-1
-		bReady=true
-		bSuccess=false
-	}*/
-};
-
-var const private PathRoot NullPathRoot;
-
 var privatewrite array<TowerAIObjective> Paths;
 var const private IVector PossibleAirs[POSSIBLE_AIRS_NO_CORNERS];
 
@@ -42,9 +24,10 @@ var private TowerFactionAIHivemind Hivemind;
 /** Next PathID to use when we need one for GeneratePath. */
 var private int NextPathID;
 /** Current Path we're working on. Should it be first-come first-serve or what? */
-var private PathRoot CurrentPath;
+var private PathInfo CurrentPath;
 /** Holds all the paths that need generating, including the CurrentPathID one. */
-var private array<PathRoot> QueuedPaths;
+var private array<PathInfo> QueuedPaths;
+var private array<PathInfo> ToNotifyPaths;
 
 //=============================================================================
 // Deferred search variables.
@@ -63,6 +46,7 @@ var deprecated private PriorityQueue DeferredOpenList;
 var deprecated private array<TowerBlock> DeferredClosedList;
 var deprecated private array<IVector> DeferredAirList;
 var deprecated private array<IVector> DeferredAirReferenceList;
+var private array<TowerBlockAir> AirBlocks;
 /** Reference to the best block before deferring. */
 var deprecated private TowerBlock StepBestBlock;
 /** Used to represent the different nodes when stepping. */
@@ -73,40 +57,40 @@ var deprecated private int Iteration;
 /** Cached GridOrigin so we don't have to jump through several variables for every air block. */
 var private Vector GridOrigin;
 
-delegate OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root);
+delegate OnPathGenerated(const PathInfo Path);
 
 /** Called from TowerGame when requested.
 Used to call OnPathGenerated during PreAsync so factions can actually spawn/queue stuff in response. */
 final event PreAsyncTick(float DeltaTime)
 {
+	HandleCompletedPaths();
+	Game.UnRegisterForPreAsyncTick(PreAsyncTick);
+}
+
+private final function HandleCompletedPaths()
+{
 	local int i;
 	local delegate<OnPathGenerated> PathGeneratedDelegate;
-	// I'm fairly sure a foreach would result in copying the struct for every iteration.
-	for(i = 0; i < QueuedPaths.Length; i++)
+
+	for(i = 0; i < ToNotifyPaths.Length; i++)
 	{
-		if(QueuedPaths[i].bReady)
+		foreach PathGeneratedDelegates(PathGeneratedDelegate)
 		{
-			if(QueuedPaths[i].bSuccess)
-			{
-				Paths.AddItem(QueuedPaths[i].ObjectiveStart);
-			}
-			foreach PathGeneratedDelegates(PathGeneratedDelegate)
-			{
-				PathGeneratedDelegate(QueuedPaths[i].bSuccess, QueuedPaths[i].ID, 
-					QueuedPaths[i].ObjectiveStart);
-			}
-			QueuedPaths[i] = NullPathRoot;
+			PathGeneratedDelegate(ToNotifyPaths[i]);
 		}
+		//@TODO - Add to some master list?
 	}
-	QueuedPaths.RemoveItem(NullPathRoot);
-	Game.UnRegisterForPreAsyncTick(PreAsyncTick);
+
+	ToNotifyPaths.Remove(0, ToNotifyPaths.Length);
 }
 
 /** Called from TowerFactionAIHivemind when requested.
 Used to call GeneratePath for our CurrentPathID, for maximum efficiency. */
 final event AsyncTick(float DeltaTime)
 {
-	GeneratePath(CurrentPath.Start,CurrentPath.Finish,CurrentPath.ID);
+	//@TODO - 
+	//@TODO - Remove from queuedpaths at some point.
+	GeneratePath(QueuedPaths[0]);
 }
 
 final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate, 
@@ -159,174 +143,110 @@ final function RemoveOnPathGeneratedDelegate(delegate<OnPathGenerated> ToRemove)
 	}
 }
 
-/** Runs the A* search from Start to Finish.
-YOU should NEVER supply a PathID! It's used internally by other classes to handle deferred/queued searching.
-*/
-//@TODO - Return PathID. Either the one passed in or a generated one if -1.
-final function int GeneratePath(TowerBlock Start, TowerBlock Finish, optional int PathID=-1)
+public final function int StartGeneratePath(const IVector Start, const IVector Finish)
 {
-	local PathRoot Path;
-	/** OpenList = Blocks that haven't been explored yet. ClosedList = Blocks that have been explored.
-	Explored = Looked at every node connected to this one, calculate dtheir F, G, and H, and placed them in OpenList. */
-	local PriorityQueue OpenList;
-	local array<TowerBlock> ClosedList;
-	local array<IVector> AirList;
-	local array<TowerBlockAir> AirReferenceList;
-	/** References whichever Block in the OpenList that has the lowest Fitness. */
-	local TowerBlock BestBlock;
-	local int i;
-	// To avoid warning with using variable before assigned.
-	BestBlock = None;
-	if(PathID == -1)
-	{
-		PathID = NextPathID;
-		NextPathID++;
-		Path.ID = PathID;
-		Path.Start = Start;
-		Path.Finish = Finish;
-		CurrentPath = Path;
-		QueuedPaths.AddItem(Path);
-		if(CurrentPath.ID == -1)
-		{
-			CurrentPath.ID = PathID;
-		}
-		if(bDeferSearching && IterationsPerTick > 0)
-		{
-			// Could be deferring, register for AsyncTick.
-			Hivemind.RegisterForAsyncTick(AsyncTick);
-		}
-	}
-	//@TODO - `if `isdefined debug
+	QueuedPaths.AddItem(class'PathInfo'.static.CreateNewPathInfo(GetNextPathID(), GetBlockAt(Start), GetBlockAt(Finish)));
+	Hivemind.RegisterForAsyncTick(AsyncTick);
+	return QueuedPaths[QueuedPaths.Length-1].PathID;
+}
+
+private final function int GetNextPathID()
+{
+	NextPathID++;
+	return NextPathID-1;
+}
+
+private final function GeneratePath(PathInfo Path)
+{
+	local int IterationsThisTick;
+	local TowerBlock BestNode;
+	local array<TowerBlock> AdjacentList;
+
 	if(bStepSearch && !bStep)
 	{
-		// If we're step searching but haven't been told to step, get out of here!
-		return PathID;
+		return;
 	}
 	else
 	{
-		// Set to false so the user has to press step again to step.
 		bStep = false;
 	}
-	// If we just got back from deferring, copy the deferred data back.
-	if(bDeferSearching && bDeferred)
+	if(Path.Iteration == 0)
 	{
-		OpenList = DeferredOpenList;
-		ClosedList = DeferredClosedList;
-		bDeferred = false;
-	}
-	else
-	{
-		Iteration = 0;
+		Path.OpenList.Add(Path.Start);
 		`log("================== STARTING A* ==================",,'AStar');
-		`log("Start:"@Start@" "@"Finish:"@Finish,,'AStar');
-		Start.BaseCost = 0;
-		// #2
-		CalculateCosts(Start, Finish, GetGoalCost(Start));
-		// Add our Starting block to the OpenList and start pathfinding!
-		// #3
-		OpenList = new class'PriorityQueue';
-		OpenList.Add(Start);
+		`log("Start:"@Path.Start$`IVectStr(Path.Start.GridLocation)@" "
+			@"Finish:"@Path.Finish$`IVectStr(Path.Finish.GridLocation),,'AStar');
 	}
-	while(OpenList.Length() > 0)
+	while(Path.OpenList.Length() > 0)
 	{
-		// If we're defer searching and hit IterationsPerTick, defer!
-		if(bDeferSearching && i >= IterationsPerTick)
+		`log("Iteration"@IterationsThisTick);
+		if(bDeferSearching && IterationsThisTick >= IterationsPerTick)
 		{
-			// Defer.
-			StepBestBlock = BestBlock;
 			if(bStepSearch)
 			{
 				// If we're stepping, draw debug information.
-				DebugCreateStepMarkers(OpenList, ClosedList);
+				//DebugCreateStepMarkers(OpenList, ClosedList);
 			}
-			bDeferred = true;
-			DeferredOpenList = OpenList;
-			DeferredClosedList = ClosedList;
-			return PathID;
+			return;
 		}
-		// bDeferredDone means the search IS done, so don't increment any iterator values.
-		if(!bDeferredDone)
+		BestNode = Path.OpenList.Remove();
+		Path.ClosedList.AddItem(BestNode);
+		if(BestNode.GridLocation == Path.Finish.GridLocation)
 		{
-			i++;
-			Iteration++;
-		}
-//		`log("Iteration"@Iteration);
-		BestBlock = OpenList.Remove();
-//		`log("Iteration"@Iteration$": Best:"@BestBlock@"Score:"@BestBlock.Fitness,!bDeferredDone,'AStar');
-		if(BestBlock == Finish)
-		{
-			// We're done.
-			// Buy us one more step so the user can see the final result before the search is finished.
-			bDeferredDone = !bDeferredDone;
-			if(bStepSearch && bDeferredDone)
-			{
-				StepBestBlock = BestBlock;
-				// If we're stepping, draw debug information.
-				DebugCreateStepMarkers(OpenList, ClosedList);
-				// Defer one last time so we can see the end.
-				bDeferred = true;
-				DeferredOpenList = OpenList;
-				DeferredClosedList = ClosedList;
-				return PathID;
-			}
-			bDeferredDone = false;
-			ConstructPath(Finish);
+			ConstructPath(Path);
 			break;
 		}
-		else if(BestBlock == None)
-		{
-			// No path?! How?! What?
-		}
-		AddAdjacentBlocks(OpenList, ClosedList, BestBlock, Finish, AirList, AirReferenceList);
-		ClosedList.AddItem(BestBlock);
+		AddAdjacentBlocks(AdjacentList, BestNode);
+		AdjacentLogic(AdjacentList, BestNode, Path);
+		IterationsThisTick++;
+		Path.Iteration++;
 	}
 	`log("================== FINISHED A* ==================",,'AStar');
-	OpenList.Dispose();
-	return PathID;
+	Path.OpenList.Dispose();
 }
 
-private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<TowerBlock> ClosedList, 
-	TowerBlock SourceBlock, TowerBlock Finish, out array<IVector> AirList, out array<TowerBlockAir> AirReferenceList)
+private final function DebugUberTest()
 {
-	local array<TowerBlock> AdjacentList;
-	local TowerBlock IteratorBlock;
-	local TowerBlockAir IteratorAirBlock;
-	// Add everything to a single array so we can iterate through it easily.
-	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
+	local TOwerplayerController PC;
+	foreach Owner.WorldInfo.AllControllers(class'TowerPlayerController', PC)
 	{
-		if(IteratorBlock.bDebugIgnoreForAStar)
-		{
-			continue;
-		}
-		//check for each neighbor's air since it won't get picked up by CollidingActors.
-		/*foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
-		{
-			if((IsDiagonalTo(IteratorAirBlock, SourceBlock) || IsAdjacentTo(IteratorAirBlock, SourceBlock)))
-			{
-				AdjacentList.AddItem(IteratorAirBlock);
-			}
-		}
-		*/
-		AdjacentList.AddItem(IteratorBlock);
+		TowerCheatManagerTD(PC.CheatManager).DebugUberBlockTest();
 	}
-	AddAdjacentAirBlocks(SourceBlock.GridLocation, AdjacentList, AirList, AirReferenceList);
+}
+
+private final function TowerBlock GetBlockAt(out const IVector GridLocation)
+{
+	local TowerBlock Block;
+	foreach Owner.CollidingActors(class'TowerBlock', Block, 32,
+		class'Tower'.static.GridLocationToVector(GridLocation), true)
+	{
+		return Block;
+	}
+	Block = Owner.Spawn(class'TowerBlockAir',,, class'Tower'.static.GridLocationToVector(GridLocation),, 
+		TowerGameBase(Owner.WorldInfo.Game).AirArchetype);
+	Block.UpdateGridLocation();
+	return Block;
+}
+
+private final function AdjacentLogic(out array<TowerBlock> AdjacentList, const TowerBlock SourceBlock,
+	const PathInfo Path)
+{
+	local TowerBlock IteratorBlock;
+
 	foreach AdjacentList(IteratorBlock)
 	{
-		if(IteratorBlock == SourceBlock)
-		{
-			continue;
-		}
-		if(OpenList.Contains(IteratorBlock))
+		`assert(IteratorBlock != SourceBlock);
+		if(Path.OpenList.Contains(IteratorBlock))
 		{
 			// Already in OpenList.
 			if(IteratorBlock.GoalCost > SourceBlock.GoalCost)
 			{
 				// Better path?
 				IteratorBlock.AStarParent = SourceBlock;
-				CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
+				CalculateCosts(IteratorBlock, Path.Finish, GetGoalCost(IteratorBlock));
 			}
 		}
-		else if(ClosedList.Find(IteratorBlock) != -1)
+		else if(Path.ClosedList.Find(IteratorBlock) != INDEX_NONE)
 		{
 			// Already in ClosedList.
 			if(IteratorBlock.GoalCost > SourceBlock.GoalCost)
@@ -334,26 +254,47 @@ private final function AddAdjacentBlocks(out PriorityQueue OpenList, out array<T
 				// Better path?
 //				`log("Better path in the closed list shouldn't happen!(?)",,'AStar');
 				IteratorBlock.AStarParent = SourceBlock;
-				CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
-				UpdateParents(IteratorBlock, Finish);
+				CalculateCosts(IteratorBlock, Path.Finish, GetGoalCost(IteratorBlock));
+				UpdateParents(IteratorBlock, Path.Finish);
 			}
 		}
 		else
 		{
 			// Not in either list.
 			IteratorBlock.AStarParent = SourceBlock;
-			CalculateCosts(IteratorBlock, Finish, GetGoalCost(IteratorBlock));
-			OpenList.Add(IteratorBlock);
+			CalculateCosts(IteratorBlock, Path.Finish, GetGoalCost(IteratorBlock));
+			Path.OpenList.Add(IteratorBlock);
 		}
 	}
 }
 
+/** Populates OutAdjacentList with all blocks adjacent to SourceBlock.
+Will create air blocks if needed. Will handle clearing the list if not already empty. */
+private final function AddAdjacentBlocks(out array<TowerBlock> OutAdjacentList, const out TowerBlock SourceBlock)
+{
+	local TowerBlock IteratorBlock;
+
+	if(OutAdjacentList.Length != 0)
+	{
+		OutAdjacentList.Remove(0, OutAdjacentList.Length);
+	}
+	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200, 
+		class'Tower'.static.GridLocationToVector(SourceBlock.GridLocation), true)
+	{
+		if(!IteratorBlock.bDebugIgnoreForAStar && IteratorBlock != SourceBlock)
+		{
+			OutAdjacentList.AddItem(IteratorBlock);
+		}
+	}
+	AddAdjacentAirBlocks(SourceBlock.GridLocation, OutAdjacentList);
+}
+
 /** Populates AdjacentList with air blocks adjacent to Center. */
-private final function AddAdjacentAirBlocks(const out IVector Center, out array<TowerBlock> AdjacentList
-	, out array<IVector> AirList, out array<TowerBlockAir> AirReferenceList)
+private final function AddAdjacentAirBlocks(const out IVector Center, out array<TowerBlock> AdjacentList)
 {
 	local array<IVector> PossibleLocations;
-	local int i, u, Index;
+	local TowerBlockAir AirIterator, OccupyingAir;
+	local int i;
 	
 	/** Build up all possible block locations. */
 	for(i = 0; i < ArrayCount(PossibleAirs); i++)
@@ -370,52 +311,37 @@ private final function AddAdjacentAirBlocks(const out IVector Center, out array<
 	/** Spawn an air for each possible location. */
 	for(i = 0; i < PossibleLocations.Length; i++)
 	{
-		// Set location here.
-		//@TODO - Test performance to see if we need a pool.
 		if(PossibleLocations[i].Z < 0)
 		{
 			continue;
 		}
-		Index = INDEX_NONE;
-		for(u = 0; u < AirList.Length; u++)
+		foreach AirBlocks(AirIterator)
 		{
-			if(AirList[u] == PossibleLocations[i])
+			if(AirIterator.GridLocation == PossibleLocations[i])
 			{
-				Index = u;
+				OccupyingAir = AirIterator;
 				break;
 			}
 		}
-		if(Index != INDEX_NONE)
+		// Set location here.
+		//@TODO - Test performance to see if we need a pool.
+		if(OccupyingAir != None)
 		{
-			AdjacentList.AddItem(AirReferenceList[Index]);
+			AdjacentList.AddItem(OccupyingAir);
 		}
 		else
 		{
-			AdjacentList.AddItem(Owner.Spawn(class'TowerBlockAir',,,GridLocationToVector(PossibleLocations[i]),,
+			AdjacentList.AddItem(Owner.Spawn(class'TowerBlockAir',,,
+			class'Tower'.static.GridLocationToVector(PossibleLocations[i]),,
 				TowerGameBase(Owner.WorldInfo.Game).AirArchetype));
+
 			AdjacentList[AdjacentList.Length-1].UpdateGridLocation();
 
-			AirList.AddItem(PossibleLocations[i]);
-			AirReferenceList.AddItem(TowerBlockAir(AdjacentList[AdjacentList.Length-1]));
+			AirBlocks.AddItem(TowerBlockAir(AdjacentList[AdjacentList.Length-1]));
 		}
 //		AdjacentList.AddItem(class'AStarNode'.static.CreateNodeFromArchetype(
 //			TowerGameBase(Owner.WorldInfo.Game).AirArchetype, PossibleLocations[i])); 
 	}
-}
-
-//@TODO - Not duplicate function. Make Tower's static?
-/** AI doesn't have Towers so we have to do this here. */
-private final function Vector GridLocationToVector(out const IVector GridLocation)
-{
-	local Vector NewBlockLocation;
-
-	//@FIXME: Block dimensions. Constant? At least have a constant, traceable part?
-	NewBlockLocation.X = (GridLocation.X * 256)+GridOrigin.X;
-	NewBlockLocation.Y = (GridLocation.Y * 256)+GridOrigin.Y;
-	NewBlockLocation.Z = (GridLocation.Z * 256)+GridOrigin.Z;
-	// Pivot point in middle, bump it up.
-	NewBlockLocation.Z += 128;
-	return NewBlockLocation;
 }
 
 /** Returns true if both blocks share just an edge. */
@@ -434,24 +360,11 @@ private final function bool IsAdjacentTo(TowerBlock A, TowerBlock B)
 private final function UpdateParents(TowerBlock Block, TowerBlock Finish)
 {
 	local TowerBlock IteratorBlock;
-	local TowerBlockAir IteratorAirBlock;
 	local array<TowerBlock> AdjacentList;
 	local int GoalCost;
 	GoalCost = Block.GoalCost;
 	`log("UPDATEPARENTD* **********************",,'AStar');
-	ScriptTrace();
-	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 200,, true)
-	{
-		//check for each neighbor's air since it won't get picked up by CollidingActors.
-		foreach IteratorBlock.BasedActors(class'TowerBlockAir', IteratorAirBlock)
-		{
-			if(IsDiagonalTo(IteratorAirBlock, Block))
-			{
-				AdjacentList.AddItem(IteratorAirBlock);
-			}
-		}
-		AdjacentList.AddItem(IteratorBlock);
-	}
+	AddAdjacentBlocks(AdjacentList, Block);
 	foreach AdjacentList(IteratorBlock)
 	{
 		IteratorBlock.AStarParent = Block;
@@ -474,13 +387,20 @@ private final function CalculateCosts(TowerBlock Block, TowerBlock Finish, optio
 	Block.Fitness = Block.HeuristicCost + Block.GoalCost;
 }
 
+//@NOTE - Can't just do Manhattan!
 private final function int GetGoalCost(TowerBlock Block)
 {
-	if(Block.AStarParent != None)
+	local int GoalCost;
+	for(Block = Block; Block != None; Block = Block.AStarParent)
+	{
+		`log(Block@Block.AStarParent);
+		GoalCost += Block.BaseCost;
+	}
+	/*if(Block.AStarParent != None)
 	{
 		return Block.BaseCost + GetGoalCost(Block.AStarParent);
-	}
-	return 0;
+	}*/
+	return GoalCost;
 }
 
 private final function int GetHeuristicCost(TowerBlock Block, TowerBlock Finish)
@@ -488,32 +408,8 @@ private final function int GetHeuristicCost(TowerBlock Block, TowerBlock Finish)
 	return ISizeSq(Block.GridLocation - Finish.GridLocation);
 }
 
-/** The best block in a list is whichever has the lowest score. */
-private final function TowerBlock GetBestBlock(out array<TowerBlock> OpenList, TowerBlock Finish)
-{
-	local TowerBlock BestBlock, IteratorBlock;
-	foreach OpenList(IteratorBlock)
-	{
-//		`log("Checking for best:"@IteratorBlock@IteratorBlock.Fitness,,'AStar');
-		if(BestBlock == None)
-		{
-			BestBlock = IteratorBlock;
-		}
-		else if(IteratorBlock.Fitness < BestBlock.FitNess)
-		{
-			BestBlock = IteratorBlock;
-		}
-		//@TODO - Should we really do this?
-		if(IteratorBlock == Finish)
-		{
-			return IteratorBlock;
-		}
-	}
-	return BestBlock;
-}
-
 /** Called when a path was found. Builds a linked list of objectives so the AI can navigate it. */
-private final function ConstructPath(TowerBlock Finish)
+private final function ConstructPath(const out PathInfo Path)
 {
 	local TowerBlock Block;
 	local Vector SpawnLocation;
@@ -521,7 +417,7 @@ private final function ConstructPath(TowerBlock Finish)
 	local TowerAIObjective PreviousObjective, Objective;
 	`log("* * Path complete, constructing!",,'AStar');
 
-	for(Block = Finish; Block != None; Block = Block.AStarParent)
+	for(Block = Path.Finish; Block != None; Block = Block.AStarParent)
 	{
 		`log("Adding block to PathToRoot..."@Block,,'AStar');
 		PathToRoot.AddItem(Block);
@@ -537,23 +433,18 @@ private final function ConstructPath(TowerBlock Finish)
 	}
 	`log("Path construction complete!",,'AStar');
 	DebugLogPaths();
-	PathReady(CurrentPath.ID, true);
+	PathReady(Path);
 	Hivemind.UnRegisterForAsyncTick(AsyncTick);
-	CurrentPath.ID = -1;
-	CurrentPath = NullPathRoot;
 }
 
-private final function PathReady(const int PathID, const bool bSuccess)
+private final function PathReady(const PathInfo Path)
 {
-	local int PathIndex;
-	PathIndex = QueuedPaths.Find('ID', PathID);
-	if(PathIndex == -1)
-	{
-		`log("WHY");
-	}
+	local int Index;
+	ToNotifyPaths.AddItem(Path);
+	Index = QueuedPaths.Find(Path);
+	`assert(Index != INDEX_NONE);
+	QueuedPaths.Remove(Index, 1);
 	Game.RegisterForPreAsyncTick(PreAsyncTick);
-	QueuedPaths[PathIndex].bReady = true;
-	QueuedPaths[PathIndex].bSuccess = bSuccess;
 }
 
 private final function InitializeObjective(TowerAIObjective Objective, TowerBlock Block, out TowerAIObjective PreviousObjective)
@@ -626,7 +517,7 @@ final function Clear()
 
 final simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
 {
-	if(bStepSearch && bDeferred && bDrawStepInfo)
+	if(bStepSearch && bDrawStepInfo)
 	{
 		DebugDrawStepInfo(Canvas);
 	}
@@ -649,30 +540,32 @@ private final function DebugCreateStepMarkers(out PriorityQueue OpenList, out ar
 	OpenList.AsArray(BlockArray);
 	foreach BlockArray(Block)
 	{
-		if(Block == StepBestBlock)
+		/*if(Block == StepBestBlock)
 		{
 			continue;
-		}
+		}*/
 		Marker = Owner.Spawn(class'TowerAIObjective',,,Block.Location);
 		Marker.Mesh.SetMaterial(0, Material'EditorMaterials.WidgetMaterial_Y');
 		StepMarkers.AddItem(Marker);
 	}
 	foreach ClosedList(Block)
 	{
-		if(Block == StepBestBlock)
+		/*if(Block == StepBestBlock)
 		{
 			continue;
-		}
+		}*/
 		Marker = Owner.Spawn(class'TowerAIObjective',,,Block.Location);
 		Marker.Mesh.SetMaterial(0, Material'NodeBuddies.Materials.NodeBuddy_Brown1');
 		StepMarkers.AddItem(Marker);
 	}
+	/*
 	if(StepBestBlock != None)
 	{
 		Marker = Owner.Spawn(class'TowerAIObjective',,,StepBestBlock.Location);
 		Marker.Mesh.SetMaterial(0, Material'EditorMaterials.WidgetMaterial_Z');
 		StepMarkers.AddItem(Marker);
 	}
+	*/
 }
 
 private final function DebugLogPaths()
@@ -720,6 +613,7 @@ private final function DebugDrawPath(TowerBlock Start, TowerBlock Finish, Canvas
 
 private final function DebugDrawStepInfo(Canvas Canvas)
 {
+	/*
 	local TowerBlock Block;
 	local int i;
 	Canvas.SetDrawColor(255,255,255);
@@ -768,7 +662,7 @@ private final function DebugDrawStepInfo(Canvas Canvas)
 		}
 		i += 12;
 	}
-
+	*/
 }
 
 private final function DebugDrawBlockFitness(Canvas Canvas)
@@ -785,7 +679,6 @@ private final function DebugDrawBlockFitness(Canvas Canvas)
 DefaultProperties
 {
 	NextPathID=0
-	NullPathRoot=(ID=-1,bReady=true,bSuccess=false)
 
 	// Top +
 	PossibleAirs(0)=(X=0,Y=0,Z=1)

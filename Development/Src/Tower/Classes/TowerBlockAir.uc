@@ -42,6 +42,7 @@ DefaultProperties
 	bTickIsDisabled=true
 	bCollideActors=false
 	bCollideWorld=false
+	bBlockActors=false
 	Components.Remove(MyLightEnvironment)
 	LightEnvironment=None
 	CollisionComponent=None
