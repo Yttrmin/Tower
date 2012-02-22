@@ -188,7 +188,7 @@ NoParentBlockTest:
 	foreach AllBlocks(Block)
 	{
 		if(Block.Base == None && !Block.IsInState('UnstableParent') && !Block.IsInState('InActive') &&
-			TowerBlockRoot(Block) == None)
+			TowerBlockRoot(Block) == None && TowerBlockAir(Block) == None)
 		{
 			LocalErrorCount++;
 			`log(Block@"at"@"("$Block.GridLocation.X$","@Block.GridLocation.Y$","@Block.GridLocation.Z$") fails!",,'Error');

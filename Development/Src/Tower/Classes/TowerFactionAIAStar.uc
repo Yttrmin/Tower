@@ -98,8 +98,8 @@ final function Step()
 function Start()
 {
 	`log("Starting"@self);
-	DesiredPath = AStarComponent.GeneratePath(GetStartingBlock(), 
-		Hivemind.RootBlock.Target);
+	DesiredPath = AStarComponent.StartGeneratePath(GetStartingBlock(), 
+		Hivemind.RootBlock.Target.GridLocation);
 }
 
 final function GenerateObjectives()
@@ -107,7 +107,7 @@ final function GenerateObjectives()
 
 }
 
-event OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root)
+event OnPathGenerated(const PathInfo Path)
 {
 	`warn(self@"ONPATHGENERATED CALLED OUTSIDE ACTIVE");
 }
@@ -119,7 +119,7 @@ state Active
 		
 	}
 
-	event OnPathGenerated(const bool bSuccessful, const int PathID, TowerAIObjective Root)
+	event OnPathGenerated(const PathInfo Path)
 	{
 		`log("Path generated! GO GO GO!");
 		SpawnFormation(0, SpawnPoints[0], AStarComponent.Paths[0]);
@@ -132,7 +132,7 @@ state Active
 	}
 }
 
-final function TowerBlockAir GetStartingBlock()
+final function IVector GetStartingBlock()
 {
 	local TowerBlock HitActor;
 	local TowerBlockAir Start;
@@ -141,10 +141,11 @@ final function TowerBlockAir GetStartingBlock()
 	HitActor = TowerBlock(Trace(HitLocation, HitNormal, Hivemind.RootBlock.Target.Location, 
 		GetFactionLocationDirection()*8192, true));
 	DesiredGridLocation = HitActor.GridLocation + GetFactionLocationDirection();
+	return DesiredGridLocation;
 	Start = Spawn(class'TowerBlockAir',,,GridLocationToVector(DesiredGridLocation),,
 			TowerGameBase(WorldInfo.Game).AirArchetype);
 	Start.UpdateGridLocation();
-	return Start;
+//	return Start;
 }
 
 //@TODO - Not duplicate function. Make Tower's static?
@@ -177,7 +178,7 @@ final function DebugDrawNames(Canvas Canvas)
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
 {
 	AStarComponent.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
-	if(!AStarComponent.bStepSearch || !AStarComponent.bDeferred)
+	if(!AStarComponent.bStepSearch)
 	{
 		Super.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
 	}
