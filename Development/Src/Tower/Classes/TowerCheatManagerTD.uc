@@ -703,6 +703,18 @@ function int Hash5(IVector A)
 	return (A.X * 2654435761 % 2**32) + (A.Y * 2654435761 % 2**32) + (A.Z * 2654435761 % 2**32);
 }
 
+exec function DebugBitFlags()
+{
+	`log(AStar.PR_Air); // 2
+	`log(AStar.PR_Ground); // 1
+	`log(AStar.PR_GroundAndAir); // 3
+	`log(AStar.PR_Air | AStar.PR_Ground); // 3
+	`log((AStar.PR_Air | AStar.PR_Ground) == AStar.PR_GroundAndAir); // true
+	`log((AStar.PR_GroundAndAir & AStar.PR_Ground) == AStar.PR_Ground); // true
+	`log((AStar.PR_GroundAndAir & AStar.PR_Air) == AStar.PR_Air); // true
+	`log((AStar.PR_BlocksAndModules & AStar.PR_Modules) == AStar.PR_Modules); // true
+}
+
 /***********************************************
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -810,6 +822,10 @@ exec function DebugUberBlockTest()
 exec function DebugStep()
 {
 	local TeamInfo Faction;
+	
+	Outer.AStar.Step();
+	
+	
 	foreach Game.GameReplicationInfo.Teams(Faction)
 	{
 		if(TowerFactionAIAStar(Faction) != None)
@@ -817,6 +833,7 @@ exec function DebugStep()
 			TowerFactionAIAStar(Faction).Step();
 		}
 	}
+	
 }
 
 /** STEAM */

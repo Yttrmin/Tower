@@ -99,7 +99,7 @@ function Start()
 {
 	`log("Starting"@self);
 	DesiredPath = AStarComponent.StartGeneratePath(GetStartingBlock(), 
-		Hivemind.RootBlock.Target.GridLocation);
+		Hivemind.RootBlock.Target.GridLocation, AStarComponent.PR_NULL);
 }
 
 final function GenerateObjectives()

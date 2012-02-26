@@ -34,6 +34,7 @@ var private globalconfig const bool bPauseLevelOnEmptyServer;
 var private Tower DedicatedServerTower;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
+var privatewrite AirManager AirManager;
 
 var private array<delegate<TickDelegate> > ToTick;
 
@@ -67,6 +68,7 @@ event PostBeginPlay()
 	Super.PostBeginPlay();
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
+	AirManager = Spawn(class'AirManager');
 	if(WorldInfo.NetMode == NM_DedicatedServer)
 	{
 		`log("Starting NM_DedicatedServer game. LoadFile:"@DedicatedServerLoadFile);

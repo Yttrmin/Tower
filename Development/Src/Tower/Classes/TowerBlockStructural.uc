@@ -123,6 +123,7 @@ simulated final function bool IsTouchingGroundIterative(bool bStartFromRoot)
 	// Check through children now. Loop until the stack is back at index 0...
 	while(CurrentBlock != None)
 	{
+		//@TODO - TowerBlock, not just TowerBlockStructural.
 		if(CurrentBlock.GridLocation.Z == 0)
 		{
 			return true;
