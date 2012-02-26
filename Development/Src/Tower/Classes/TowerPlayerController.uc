@@ -13,6 +13,11 @@ const ROTATION_ROLL = "R_R";
 
 var float NextAdminCmdTime;
 
+var TowerAStarComponent AStar;
+var IVector Start, Finish;
+var PathInfo DebugPath;
+var bool bDrawDebugAStarInfo;
+
 var TowerSaveSystem SaveSystem;
 var byte PreviewAreaIndex;
 `if(`isdefined(DEBUG))
@@ -185,6 +190,7 @@ exec function SaveGame(string FileName, optional bool bUseJSON)
 	if(bUseJSON)
 	{
 		JSONSave = new class'SaveSystemJSON';
+		`log("Saving...");
 		JSONSave.SaveGame("TEST", self);
 	}
 	else
@@ -345,8 +351,35 @@ function TowerPlayerReplicationInfo GetTPRI()
 	return TowerPlayerReplicationInfo(PlayerReplicationInfo);
 }
 
+exec function DebugSetupAStar(IVector NewStart, IVector NewFinish)
+{
+	Start = NewStart;
+	Finish = NewFinish;
+	if(!bDrawDebugAStarInfo)
+	{
+		AStar.Initialize(OnPathGenerated, true,100, true, true);
+	}
+	bDrawDebugAStarInfo = true;
+	myHUD.AddPostRenderedActor(self);
+}
+
+exec function DebugGeneratePath()
+{
+	AStar.StartGeneratePath(Start, Finish, AStar.PR_Ground | AStar.PR_Air);
+}
+
+private function OnPathGenerated(PathInfo Path)
+{
+	`log("Path generated! Path info:");
+	`log("Result:"@Path.Result@"Took"@Path.Iteration@"iterations to generate path.");
+	DebugPath = Path;
+}
+
 simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraPosition, vector CameraDir)
 {
+	local Vector BoxCenter;
+	//@FIXME
+	/*
 	Canvas.SetDrawColor(255,255,255);
 	Canvas.SetPos(0,430);
 	Canvas.DrawText("Pawn:"@Pawn);
@@ -356,6 +389,22 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 	`if(`isdefined(DEBUG))
 		Canvas.DrawText("PawnFactionOwner:"@PossessedPawnController.Owner);
 	`endif
+	*/
+	if(bDrawDebugAStarInfo)
+	{
+		BoxCenter = class'Tower'.static.GridLocationToVector(Start);
+		BoxCenter.Z += 64;
+		DrawDebugBox(BoxCenter, Vect(164, 164, 164), 255, 0, 0, false);
+
+		BoxCenter = class'Tower'.static.GridLocationToVector(Finish);
+		BoxCenter.Z += 64;
+		DrawDebugBox(BoxCenter, Vect(164, 164, 164), 0, 255, 0, false);
+		AStar.PostRenderFor(PC, Canvas, CameraPosition, CameraDir);
+		if(DebugPath != None)
+		{
+			DebugPath.DebugDrawPath();
+		}
+	}
 }
 
 /******************************************
@@ -553,4 +602,9 @@ DefaultProperties
 		bDrawNonColliding=true
 	End Object
 	CollisionComponent=CollisionCylinder
+
+	Begin Object Class=TowerAStarComponent Name=AStarComp
+	End Object
+	Components.Add(AStarComp)
+	AStar=AStarComp
 }
