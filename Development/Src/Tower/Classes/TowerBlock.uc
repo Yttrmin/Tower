@@ -171,7 +171,6 @@ simulated final function UpdateGridLocationIterative(bool bStartFromRoot)
 	local array<TowerBlockStructural> BlockStack;
 	local TowerBlockStructural ItrBlock;
 	local TowerBlock CurrentBlock;
-	local TowerBlockAir AirBlock;
 	local TowerBlockModule ModuleBlock;
 
 	if(bStartFromRoot && (TowerBlockStructural(GetBaseMost()) != None || TowerBlockRoot(GetBaseMost()) != None))
@@ -191,11 +190,6 @@ simulated final function UpdateGridLocationIterative(bool bStartFromRoot)
 		foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
 		{
 			`Push(BlockStack, ItrBlock);
-		}
-		// Don't bother pushing airs onto stack, they can't have children.
-		foreach CurrentBlock.BasedActors(class'TowerBlockAir', AirBlock)
-		{
-			AirBlock.UpdateGridLocation();
 		}
 		foreach CurrentBlock.BasedActors(class'TowerBlockModule', ModuleBlock)
 		{
@@ -302,12 +296,6 @@ final simulated function SetColor()
 
 }
 
-/** */
-reliable server function Remove()
-{
-	`log(Self@"Says to remove self!");
-}
-
 /** Blocks don't care about Targetables. */
 simulated function OnEnterRange(TowerTargetable Targetable)
 {
@@ -352,26 +340,6 @@ auto simulated state Stable
 simulated state InActive
 {
 };
-
-/** Called on blocks who's child is getting destroyed. */
-event LostChild(Actor Other)
-{
-	local TowerBlock Block;
-	Block = TowerBlock(Other);
-	if(TowerBlockAir(Block) != None)
-	{
-		return;
-	}
-//	OwnerPRI.Tower.AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Self, Block.GridLocation);
-}
-
-event GainedChild(Actor Other)
-{
-	if(TowerBlockAir(Other) == None)
-	{
-		OwnerPRI.Tower.DestroyOccupiedAir(Self, TowerBlock(Other));
-	}
-}
 
 /** Called on root blocks of an orphan branch that lost an orphan child. */
 event LostOrphan();

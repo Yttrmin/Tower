@@ -93,6 +93,12 @@ private function LogStringArray(out array<String> StrArray, String Category)
 	`log(Output,,Name(Category));
 }
 
+event InitGame( string Options, out string ErrorMessage )
+{
+	Super.InitGame(Options, ErrorMessage);
+	//@TODO - Loading here, not the Login functions.
+}
+
 /** Only called for joining clients in network games. */
 event PreLogin(string Options, string Address, const UniqueNetId UniqueId, bool bSupportsAuth, out string ErrorMessage)
 {

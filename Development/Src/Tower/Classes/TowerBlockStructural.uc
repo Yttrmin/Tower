@@ -64,32 +64,6 @@ simulated final function float TimeToDrop()
 	return 256 / DropRate; 
 }
 
-//@TODO - No recursion!
-/** Returns TRUE if the block is touching the "ground" (GridLocation.Z == 0).
-If bChildrenCheck is TRUE, returns TRUE if any block in the hierarchy is touching the ground. */
-simulated function bool IsTouchingGroundRecursive(bool bChildrenCheck)
-{
-	local TowerBlockStructural Block;
-//	SetGridLocation(false);
-	if(GridLocation.Z == 0)
-	{
-//		`log(Self@"is touching the ground!");
-		return true;
-	}
-	//@BUG - Need to SetGridLocation for children even when we're on the ground. Why here?
-	if(bChildrenCheck)
-	{
-		foreach BasedActors(class'TowerBlockStructural', Block)
-		{
-			if(Block.IsTouchingGroundRecursive(bChildrenCheck))
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
 simulated final function bool IsTouchingGround()
 {
 	return GridLocation.Z == 0 || GetBaseMost().Class == class'TowerBlockRoot';
