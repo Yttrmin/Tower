@@ -25,23 +25,6 @@ struct AIBlockInfo
 	var TowerBlock BlockArchetype;
 	var BlockUsage Flags;
 };
-/*
-struct BlockNode
-{
-	var int Cost;
-};
-
-struct BlockInfo
-{
-	var TowerBlock Block;
-	var int Cost;
-};
-
-struct TowerBlockAir extends BlockNode
-{
-	var IVector GridLocation;
-};
-*/
 
 //@TODO - Transient? Will it still be saved to config?
 var private config bool bSaveToDisk;

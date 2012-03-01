@@ -37,29 +37,12 @@ const PR_Blocks						= 0x8; // Check done in AL.
 /** Includes all modules. */
 const PR_Modules					= 0x10; // Check done in AL.
 
-/**== Rules for what locations we check for blocks. ==**/
-/** Check all adjacent locations (ISizeSq(A - B) == 1). */
-const PR_Adjacent					= 0x20; // Check in AAB.
-/** Check all diagonal locations (ISizeSq(A - B) == 2). */
-const PR_Diagonal					= 0x40; // Check in AAB.
-
-// These are all exclusive. E.g., PR_ShareCorners checks blocks that share ONLY a corner, even though
-// edges and sides technically must also share corners.
-/** Check all blocks that share a side with the test block. */
-const PR_ShareSides = 0x20;
-/** Check all blocks that share an edge with the test block. */
-const PR_ShareEdges = 0x40;
-/** Check all blocks that share a corner with the test block. */
-const PR_ShareCorners = 0x80;
-
 /**== Composite values. ==**/
 /** Includes all air blocks. */
 const PR_GroundAndAir				= 0x3; // PR_Air | PR_Ground
 /** Includes all blocks and all modules. */
 const PR_BlocksAndModules			= 0xC; // PR_Blocks | PR_Modules
 
-/***/
-const PR_AllLocations				= 0x60; // PR_Adjacent | PR_Diagonal
 /** Same rules as your bog-standard 2D A* demo. */
 const PR_XYSearch					= 0x21; // PR_Ground | PR_Adjacent
 /**==================================================================================*/
@@ -87,6 +70,7 @@ var private bool bInitialized;
 var private array<delegate<OnPathGenerated> > PathGeneratedDelegates;
 
 var private TowerGame Game;
+var private AirManager AirManager;
 var private TowerFactionAIHivemind Hivemind;
 
 /** Next PathID to use when we need one for GeneratePath. */
@@ -105,7 +89,6 @@ var private config bool bDeferSearching;
 var private config int IterationsPerTick;
 /** To step or not. Used when step searching. */
 var private bool bStep;
-var private deprecated array<TowerBlockAir> AirBlocks;
 
 /** Cached GridOrigin so we don't have to jump through several variables for every air block. */
 var private Vector GridOrigin;
@@ -152,6 +135,7 @@ final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate,
 {
 	GridOrigin = TowerGameReplicationInfo(Owner.WorldInfo.GRI).GridOrigin;
 	Game = TowerGame(Owner.WorldInfo.Game);
+	AirManager = Game.AirManager;
 	Hivemind = Game.Hivemind;
 	AddOnPathGeneratedDelegate(PathGeneratedDelegate);
 	bDeferSearching = bNewDeferSearching;
@@ -194,14 +178,6 @@ public final function int StartGeneratePath(const IVector Start, const IVector F
 	BStart = GetBlockAt(Start);
 	BFinish = GetBlockAt(Finish);
 	QueuedPaths.AddItem(class'PathInfo'.static.CreateNewPathInfo(GetNextPathID(), BStart, BFinish, Rules, self));
-	if(TowerBlockAir(BStart) != None)
-	{
-		AirBlocks.AddItem(TowerBlockAir(BStart));
-	}
-	if(TowerBlockAir(BFinish) != None)
-	{
-		AirBlocks.AddItem(TowerBlockAir(BFinish));
-	}
 	Hivemind.RegisterForAsyncTick(AsyncTick);
 	return QueuedPaths[QueuedPaths.Length-1].PathID;
 }
@@ -296,10 +272,7 @@ private final function TowerBlock GetBlockAt(out const IVector GridLocation)
 	{
 		return Block;
 	}
-	Block = Owner.Spawn(class'TowerBlockAir',,, class'Tower'.static.GridLocationToVector(GridLocation),, 
-		TowerGameBase(Owner.WorldInfo.Game).AirArchetype);
-	Block.UpdateGridLocation();
-	return Block;
+	return AirManager.GetAir(GridLocation);
 }
 
 private final function AdjacentLogic(out array<TowerBlock> AdjacentList, const TowerBlock SourceBlock,
@@ -382,9 +355,7 @@ private final function AddAdjacentAirBlocks(const out IVector Center, out array<
 	const PathInfo Path)
 {
 	local array<IVector> PossibleLocations;
-	local TowerBlockAir AirIterator;
 	local int i;
-	local bool bContinue;
 	
 	/** Build up all possible block locations. */
 	for(i = 0; i < ArrayCount(PossibleAirs); i++)
@@ -415,42 +386,9 @@ private final function AddAdjacentAirBlocks(const out IVector Center, out array<
 //			`log("Aborting PossibleLocations"@IVectStr(PossibleLocations[i]);
 			continue;
 		}
-		foreach AirBlocks(AirIterator)
-		{
-			if(AirIterator.GridLocation == PossibleLocations[i])
-			{
-				AdjacentList.AddItem(AirIterator);
-				bContinue = true;
-				break;
-			}
-		}
-		if(bContinue)
-		{
-			bContinue = false;
-			continue;
-		}
-		// Set location here.
-		//@TODO - Test performance to see if we need a pool.
-		
-		AdjacentList.AddItem(Owner.Spawn(class'TowerBlockAir',,,
-		class'Tower'.static.GridLocationToVector(PossibleLocations[i]),,
-			TowerGameBase(Owner.WorldInfo.Game).AirArchetype));
 
-		AdjacentList[AdjacentList.Length-1].UpdateGridLocation();
-
-		AirBlocks.AddItem(TowerBlockAir(AdjacentList[AdjacentList.Length-1]));
-		
-//		AdjacentList.AddItem(class'AStarNode'.static.CreateNodeFromArchetype(
-//			TowerGameBase(Owner.WorldInfo.Game).AirArchetype, PossibleLocations[i])); 
+		AdjacentList.AddItem(AirManager.GetAir(PossibleLocations[i]));
 	}
-}
-
-private final function bool ObeysPossibleLocationRules(IVector Source, IVector Check, const out int Rules)
-{
-	local bool bResult;
-	bResult = bResult || (`HasFlag(Rules, PR_Adjacent) && IsAdjacentTo(Source, Check));
-	bResult = bResult || (`HasFlag(Rules, PR_Diagonal) && IsDiagonalTo(Source, Check));
-	return bResult;
 }
 
 `define IsDiagonalTo(A,B) (ISizeSq(`A - `B) == 2)

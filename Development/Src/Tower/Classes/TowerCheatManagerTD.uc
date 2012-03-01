@@ -595,11 +595,11 @@ exec function DebugTestIsTouchingGround(optional int IterationCount)
 	if(LookingBlock != None)
 	{
 		IterResult = LookingBlock.IsTouchingGroundIterative(true);
-		RecurResult = LookingBlock.IsTouchingGroundRecursive(true);
+		RecurResult = false;//LookingBlock.IsTouchingGroundRecursive(true);
 		for(i = 0; i < IterationCount; i++)
 		{
 			Clock(Time);
-			LookingBlock.IsTouchingGroundRecursive(true);
+//			LookingBlock.IsTouchingGroundRecursive(true);
 			UnClock(Time);
 			RecurSum += Time;
 			Time = 0;
@@ -610,6 +610,7 @@ exec function DebugTestIsTouchingGround(optional int IterationCount)
 			IterSum += Time;
 			Time = 0;
 		}
+		`log("IsTouchingGroundRecursive() no longer implemented. Results invalid.");
 		`log("Recursive Result:"@RecurResult@"      "@"Iterative Result:"@IterResult,,'ITG');
 		`log("Did"@IterationCount@"iterations over"@GetBlockCountInChain(LookingBlock)@"children. Avg Recursive Time:"
 			@RecurSum/IterationCount@"Avg Iteration Time:"@IterSum/IterationCount,,'ITG');

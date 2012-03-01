@@ -27,7 +27,7 @@ var(InGame) editconst string TowerName;
 var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
 
 var array<TowerBlockStructural> OrphanRoots;
-var const config bool bDebugDrawHierarchy, bDebugDrawHierarchyOnlyVisible, bDebugDrawHierarchyIncludeAir;
+var const config bool bDebugDrawHierarchy, bDebugDrawHierarchyOnlyVisible;
 var const Color RegularColor, OrphanColor, OrphanRootColor;
 
 replication
@@ -55,7 +55,7 @@ final function SetRootBlock(TowerBlockRoot RootBlock)
 
 //@TODO - We really only need one of the locations. Probably Grid.
 function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, 
-	out IVector GridLocation, optional bool bAddAir=true)
+	out IVector GridLocation)
 {
 	local TowerBlock NewBlock;
 	local IVector ParentDir;
@@ -68,21 +68,11 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 	if(Parent != None)
 	{
 		NewBlock.SetBase(Parent);
-		if(NewBlock.class != class'TowerBlockAir')
-		{
-			// Why do only TBS get this? // NOT JUST THEM ANYMORE.
-			// Because they don't replicate actor stuff IDIOT.
-			NewBlock.ReplicatedBase = Parent;
-			NewBlock.CalculateBlockRotation();
-		}
+		NewBlock.ReplicatedBase = Parent;
+		NewBlock.CalculateBlockRotation();
 		ParentDir = FromVect(Normal(Parent.Location - NewBlock.Location));
 	}
 	NewBlock.Initialize(GridLocation, ParentDir, OwnerPRI);
-	if(bAddAir && NewBlock.class != class'TowerBlockAir')
-	{
-		CreateSurroundingAir(NewBlock);
-	}
-	
 	
 	//@TODO - Tell AI about this?
 	return NewBlock;
@@ -91,33 +81,11 @@ function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent,
 function bool RemoveBlock(TowerBlock Block)
 {
 	local TowerBlock IteratorBlock;
-	local TowerBlockAir IteratorAir;
 	local TowerBlockStructural DroppingBlock;
-	local array<TowerBlockAir> ToDelete;
 	local array<TowerBlock> ToIterate;
 	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
 	{
-		//@TODO - Change me since we don't do based airs anymore.
-		if(IteratorBlock.class != class'TowerBlockAir')
-		{
-			/*
-			if(TowerBlockModule(IteratorBlock) != None)
-			{
-				// @BUG - VERY A BUG vvvvvv
-				//@BUG (?) - The module will Destroy() itself. That's fine in a foreach since the array isn't actually
-				// being modified, right?
-				IteratorBlock.OrphanedParent();
-				continue;
-			}
-			*/
-			ToIterate.AddItem(IteratorBlock);
-			//@README DON'T DO THIS YOU IDIOT, FINDNEWPARENT CHANGES BASES, AND WE'RE IN A BASEDACTORS() ITERATOR. THINK.
-			//FindNewParent(IteratorBlock, Block, true);
-		}
-		else
-		{
-			ToDelete.AddItem(TowerBlockAir(IteratorBlock));
-		}
+		ToIterate.AddItem(IteratorBlock);
 	}
 	foreach ToIterate(IteratorBlock)
 	{
@@ -156,80 +124,8 @@ function bool RemoveBlock(TowerBlock Block)
 			}
 		}
 	}
-	foreach ToDelete(IteratorAir)
-	{
-		IteratorAir.Destroy();
-	}
 	Block.Destroy();
 	return true;
-}
-
-function DestroyOccupiedAir(TowerBlock BlockToDestroyAirs, TowerBlock BlockToTestIfOccupying)
-{
-	local TowerBlockAir AirBlock;
-	foreach BlockToDestroyAirs.BasedActors(class'TowerBlockAir', Airblock)
-	{
-		if(AirBlock.GridLocation == BlockToTestIfOccupying.GridLocation)
-		{
-			AirBlock.Destroy();
-		}
-	}
-}
-
-function CreateSurroundingAir(TowerBlock Block)
-{
-	local IVector AirGridLocation;
-	local TowerBlock IteratorBlock;
-	local array<IVector> EmptyDirections;
-	EmptyDirections[0] = IVect(1,0,0);
-	EmptyDirections[1] = IVect(-1,0,0);
-
-	EmptyDirections[2] = IVect(0,1,0);
-	EmptyDirections[3] = IVect(0,-1,0);
-
-	EmptyDirections[4] = IVect(0,0,1);
-	if(Block.GridLocation.Z != 0)
-	{
-		EmptyDirections[5] = IVect(0,0,-1);
-	}
-	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 136,, true)
-	{
-		if(Block != IteratorBlock)
-		{
-			DestroyOccupiedAir(IteratorBlock, Block);
-			EmptyDirections.RemoveItem(GetBlockDirection(Block, IteratorBlock));
-		}
-	}
-	`assert(EmptyDirections.Length <= 5);
-	while(EmptyDirections.Length > 0)
-	{
-		AirGridLocation = Block.GridLocation + EmptyDirections[0];
-		if(!IsThereAir(AirGridLocation))
-		{
-//			AddBlock(TowerGame(WorldInfo.Game).AirArchetype, Block, AirGridLocation);
-		}
-		EmptyDirections.Remove(0, 1);
-	}
-}
-
-private function bool IsThereAir(out IVector GridLocation)
-{
-	local TowerBlock Block;
-	local TowerBlockAir Air;
-	local Vector StartLocation;
-	StartLocation = GridLocationToVector(GridLocation);
-	//@TODO - If there's a block adjacent to the air assume there must be air?
-	foreach OverlappingActors(class'TowerBlock', Block, 130,StartLocation,true)
-	{
-		foreach Block.BasedActors(class'TowerBlockAir', Air)
-		{
-			if(Air.GridLocation == GridLocation)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
 }
 
 function IVector GetBlockDirection(TowerBlock Origin, TowerBlock Other)
@@ -391,6 +287,28 @@ simulated event PostRenderFor(PlayerController PC, Canvas Canvas, vector CameraP
 
 simulated function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBlock, Color DrawColor)
 {
+	/*
+	local array<TowerBlock> BlockStack;
+	local TowerBlock ItrBlock;
+
+	`Push(BlockStack, None);
+
+	while(CurrentBlock != None)
+	{
+		if(CurrentBlock.Base != None)
+		{
+			CurrentBlock.DrawDebugLine(CurrentBlock.Location, CurrentBlock.Base.Location, DrawColor.R, DrawColor.G,
+				DrawColor.B);
+		}
+		foreach CurrentBlock.BasedActors(class'TowerBlock', ItrBlock)
+		{
+			`Push(BlockStack, ItrBlock);
+		}
+		CurrentBlock = `Pop(BlockStack);
+	}
+	`assert(BlockStack.Length == 0); 
+	*/
+	
 	local TowerBlock Block;
 	local Vector Begin, End;
 	Begin = Canvas.Project(CurrentBlock.Location);
@@ -398,8 +316,7 @@ simulated function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBl
 	{
 		if(bDebugDrawHierarchyOnlyVisible)
 		{
-			if(Block.Rendered() || (bDebugDrawHierarchyIncludeAir && Block.class == class'TowerBlockAir' 
-				&& TowerBlock(Block.Base).Rendered()))
+			if(Block.Rendered())
 			{
 				End = Canvas.Project(Block.Location);
 				Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
@@ -411,11 +328,8 @@ simulated function DrawDebugRelationship(out Canvas Canvas, TowerBlock CurrentBl
 		}
 		else
 		{
-			if(Block.class != class'TowerBlockAir' || bDebugDrawHierarchyIncludeAir)
-			{
-				End = Canvas.Project(Block.Location);
-				Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
-			}
+			End = Canvas.Project(Block.Location);
+			Canvas.Draw2DLine(Begin.X, Begin.Y, End.X, End.Y, DrawColor);
 		}
 		DrawDebugRelationship(Canvas, Block, DrawColor);
 	}
@@ -429,7 +343,7 @@ function DestroyAllBlocks()
 	{
 		if(Block.OwnerPRI.Tower == Self)
 		{
-			Block.TakeDamage(99999, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
+			Block.TakeDamage(MAXINT, None, Vect(0,0,0), Vect(0,0,0), class'DmgType_Telefragged');
 		}
 	}
 }
@@ -464,7 +378,7 @@ simulated state Inactive
 	ignores AddBlock, RemoveBlock, PostRenderFor, OnTargetableDeath;
 	`else
 	function TowerBlock AddBlock(TowerBlock BlockArchetype, TowerBlock Parent, 
-		out IVector GridLocation, optional bool bAddAir=true)
+		out IVector GridLocation)
 	{
 		`warn("AddBlock called during Inactive! How could this happen?!");
 		return None;

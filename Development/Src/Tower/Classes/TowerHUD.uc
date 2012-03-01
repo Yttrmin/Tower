@@ -27,15 +27,28 @@ event PostBeginPlay()
 	HUDMovie.SetKeyBindings();
 }
 
+event PostRender()
+{
+	local int i;
+	local vector ViewPoint;
+	local rotator ViewRotation;
+	Super.PostRender();
+
+	PlayerOwner.GetPlayerViewpoint(ViewPoint, ViewRotation);
+	for(i = 0; i < PostRenderedActors.Length; i++)
+	{
+		if(PostRenderedActors[i] != None)
+		{
+			PostRenderedActors[i].PostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
+		}
+	}
+}
+
 /**
  * The Main Draw loop for the hud.  Gets called before any messaging.  Should be subclassed
  */
 function DrawHUD()
 {
-	local int i;
-	local vector ViewPoint;
-	local rotator ViewRotation;
-
 	local Vector HitNormal;
 //	local TowerBlock IterateBlock;
 	local TowerBlock TracedBlock;
@@ -53,14 +66,6 @@ function DrawHUD()
 		LastHighlightedBlock = TracedBlock;
 	}
 	
-	PlayerOwner.GetPlayerViewpoint(ViewPoint, ViewRotation);
-	for(i = 0; i < PostRenderedActors.Length; i++)
-	{
-		if(PostRenderedActors[i] != None)
-		{
-			PostRenderedActors[i].PostRenderFor(PlayerOwner, Canvas, ViewPoint, Vector(ViewRotation));
-		}
-	}
 	if(HUDMovie.bInMenu)
 	{
 		HUDMovie.DrawHUD(Canvas);

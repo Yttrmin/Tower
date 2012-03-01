@@ -190,7 +190,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	foreach Blocks(BlockInfo, i)
 	{
 		BlockArchetype = ModsArray[TranslatedMods[BlockInfo.M]].ModBlocks[BlockInfo.I];
-		Block = Player.GetTower().AddBlock(BlockArchetype, None, BlockInfo.G, false);
+		Block = Player.GetTower().AddBlock(BlockArchetype, None, BlockInfo.G);
 		Block.Initialize(BlockInfo.G, BlockInfo.P, TowerPlayerReplicationInfo(Player.PlayerReplicationInfo));
 		if(BlockArchetype == TowerGame(Player.WorldInfo.Game).RootArchetype)
 		{
@@ -215,7 +215,6 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 				TowerBlockStructural(Block).ReplicatedBase = TowerBlock(Block.Base);
 			}
 		}
-		Player.GetTower().CreateSurroundingAir(Block);
 	}
 
 	// Mods don't need the extension.
