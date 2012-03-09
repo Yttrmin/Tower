@@ -154,16 +154,14 @@ simulated state UnstableParent extends Unstable
 {
 	simulated event BeginState(name PreviousStateName)
 	{
-		if(PreviousStateName != 'Unstable')
+		SetBase(None);
+		if(IsTouchingGroundIterative(true))
 		{
-			if(IsTouchingGroundIterative(true))
-			{
-				GotoState('InActive');
-			}
-			else
-			{
-				SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
-			}
+			GotoState('InActive');
+		}
+		else
+		{
+			SetTimer(TimeToDrop(), true, NameOf(DroppedSpace));
 		}
 	}
 	simulated event Tick(float DeltaTime)
@@ -187,7 +185,7 @@ simulated state UnstableParent extends Unstable
 	/** Called after block should have dropped 256 units.  */
 	simulated event DroppedSpace()
 	{
-		UpdateGridLocation();
+		UpdateGridLocationIterative(true);
 		if(IsTouchingGroundIterative(true))
 		{
 			GotoState('InActive');
@@ -226,15 +224,13 @@ simulated state UnstableParent extends Unstable
 	simulated event EndState(Name NextStateName)
 	{
 		ClearTimer(NameOf(DroppedSpace));
+		ClearTimer('DroppedSpaceInitial');
 	}
 };
 
+//@TODO - Remove?
 simulated state InActive
 {
-	event BeginState(name PreviousStateName)
-	{
-		ClearTimer('DroppedSpace');
-	}
 	event LostOrphan()
 	{
 		//@BUG
@@ -243,9 +239,17 @@ simulated state InActive
 			GotoState('UnstableParent');
 		}
 	}
-Begin:
-	if(OwnerPRI.Tower.FindNewParent(Self))
+	// Need this since that FindNewParentInterative call could immediately change state to Stable.
+	simulated event EndState(Name NextStateName)
 	{
+		OwnerPRI.Tower.OrphanRoots.RemoveItem(Self);
+	}
+Begin:
+	`log(Self@"Checking for parent in InActive...");
+	if(OwnerPRI.Tower.FindNewParentAStar(Self))
+	{
+		//@BUG - Dead code, see GotoState in FNPI.
+		ScriptTrace();
 		`log(Self@"Found parent:"@Base);
 		GotoState('Stable');
 	}

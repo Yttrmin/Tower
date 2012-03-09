@@ -45,6 +45,9 @@ const PR_BlocksAndModules			= 0xC; // PR_Blocks | PR_Modules
 
 /** Same rules as your bog-standard 2D A* demo. */
 const PR_XYSearch					= 0x21; // PR_Ground | PR_Adjacent
+
+//@TODO - Custom rule support instead? Custom evaluators?
+const PR_Goal_ConnectedToRoot		= 0x20;
 /**==================================================================================*/
 
 enum SearchResult
@@ -171,6 +174,7 @@ final function RemoveOnPathGeneratedDelegate(delegate<OnPathGenerated> ToRemove)
 public final function int StartGeneratePath(const IVector Start, const IVector Finish, int Rules)
 {
 	local TowerBlock BStart, BFinish;
+	local int PathId;
 	if(!bInitialized)
 	{
 
@@ -178,8 +182,21 @@ public final function int StartGeneratePath(const IVector Start, const IVector F
 	BStart = GetBlockAt(Start);
 	BFinish = GetBlockAt(Finish);
 	QueuedPaths.AddItem(class'PathInfo'.static.CreateNewPathInfo(GetNextPathID(), BStart, BFinish, Rules, self));
-	Hivemind.RegisterForAsyncTick(AsyncTick);
-	return QueuedPaths[QueuedPaths.Length-1].PathID;
+	if(!IsPathPossibleWithRules(BStart, BFinish, Rules))
+	{
+		ConstructPath(QueuedPaths[QueuedPaths.Length-1], BFinish, SR_ImpossiblePath);
+	}
+	if(!bDeferSearching)
+	{
+		PathID = NextPathID;
+		GeneratePath(QueuedPaths[QueuedPaths.Length-1]);
+		return PathID;
+	}
+	else
+	{
+		Hivemind.RegisterForAsyncTick(AsyncTick);
+		return QueuedPaths[QueuedPaths.Length-1].PathID;
+	}
 }
 
 private final function bool IsPathPossibleWithRules(TowerBlock Start, TowerBlock Finish, const out int Rules)
@@ -239,17 +256,22 @@ private final function GeneratePath(PathInfo Path)
 		}
 		BestNode = Path.OpenList.Remove();
 		Path.ClosedList.AddItem(BestNode);
-		if(BestNode.GridLocation == Path.Finish.GridLocation)
+		if(BestNode.GridLocation == Path.Finish.GridLocation 
+			|| (`HasFlag(Path.PathRules, PR_Goal_ConnectedToRoot) && class'Tower'.static.TraceNodeToRoot(BestNode)))
 		{
 			`log(BestNode == Path.Finish);
 			`log(BestNode.AStarParent@PAth.Finish.AStarParent);
-			ConstructPath(Path);
+			ConstructPath(Path, BestNode, SR_Success);
 			break;
 		}
 		AddAdjacentBlocks(AdjacentList, BestNode, Path);
 		AdjacentLogic(AdjacentList, BestNode, Path);
 		IterationsThisTick++;
 		Path.Iteration++;
+	}
+	if(Path.Result == SR_NULL)
+	{
+		ConstructPath(Path, Path.Start, SR_NoPath);
 	}
 	`log("================== FINISHED A* ==================",,'AStar');
 	Path.OpenList.Dispose();
@@ -330,21 +352,12 @@ private final function AddAdjacentBlocks(out array<TowerBlock> OutAdjacentList, 
 	{
 		OutAdjacentList.Remove(0, OutAdjacentList.Length);
 	}
-	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 200, 
+	foreach SourceBlock.CollidingActors(class'TowerBlock', IteratorBlock, 132, 
 		class'Tower'.static.GridLocationToVector(SourceBlock.GridLocation), true)
 	{
 		if(!IteratorBlock.bDebugIgnoreForAStar && IteratorBlock != SourceBlock)
 		{
-			// We can't do PR_Block checks and such here since otherwise AddAdjacentAir will treat them
-			// as air blocks.
-			if(/*(`HasFlag(Path.PathRules, PR_Ground) && IteratorBlock.GridLocation.Z == 0)
-				|| (`HasFlag(Path.PathRules, PR_Air) && IteratorBlock.GridLocation.Z > 0)
-				|| (`HasFlag(Path.PathRules, PR_Blocks) && TowerBlockStructural(IteratorBlock) != None)
-				|| (`HasFlag(Path.PathRules, PR_Modules) && TowerBlockModule(IteratorBlock) != None)*/
-				true)
-			{
-				OutAdjacentList.AddItem(IteratorBlock);
-			}
+			OutAdjacentList.AddItem(IteratorBlock);
 		}
 	}
 	AddAdjacentAirBlocks(SourceBlock.GridLocation, OutAdjacentList, Path);
@@ -454,15 +467,16 @@ private final function int GetHeuristicCost(TowerBlock Block, TowerBlock Finish)
 }
 
 /** Called when a path was found. Builds a linked list of objectives so the AI can navigate it. */
-private final function ConstructPath(const out PathInfo Path)
+private final function ConstructPath(const PathInfo Path, TowerBlock Finish, SearchResult Result)
 {
 	local TowerBlock Block;
 	local Vector SpawnLocation;
 	local array<TowerBlock> PathToRoot;
 	local TowerAIObjective PreviousObjective, Objective;
 	`log("* * Path complete, constructing!",,'AStar');
+	Path.Result = Result;
 
-	for(Block = Path.Finish; Block != None; Block = Block.AStarParent)
+	for(Block = Finish; Block != None; Block = Block.AStarParent)
 	{
 		`log("Adding block to PathToRoot..."@Block@"P:"@Block.AStarParent,,'AStar');
 		PathToRoot.AddItem(Block);
@@ -489,11 +503,34 @@ private final function ConstructPath(const out PathInfo Path)
 private final function PathReady(const PathInfo Path)
 {
 	local int Index;
-	ToNotifyPaths.AddItem(Path);
 	Index = QueuedPaths.Find(Path);
 	`assert(Index != INDEX_NONE);
 	QueuedPaths.Remove(Index, 1);
-	Game.RegisterForPreAsyncTick(PreAsyncTick);
+	ToNotifyPaths.AddItem(Path);
+	ZeroAllAStarParents(Path);
+	if(bDeferSearching)
+	{
+		Game.RegisterForPreAsyncTick(PreAsyncTick);
+	}
+	else
+	{
+		HandleCompletedPaths();
+	}
+}
+
+private final function ZeroAllAStarParents(const PathInfo Path)
+{
+	local TowerBlock Block;
+	local array<TowerBlock> OpenList;
+	foreach Path.ClosedList(Block)
+	{
+		Block.AStarParent = None;
+	}
+	Path.OpenList.AsArray(OpenList);
+	foreach OpenList(Block)
+	{
+		Block.AStarParent = None;
+	}
 }
 
 private final function InitializeObjective(TowerAIObjective Objective, TowerBlock Block, out TowerAIObjective PreviousObjective)
