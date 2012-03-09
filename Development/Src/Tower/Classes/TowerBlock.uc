@@ -34,7 +34,7 @@ var const LinearColor UnownedColor;
 /** Base cost to go "through" (destroy) this block in AStar. */
 var() int BaseCost<DisplayName=A* Base Cost>;
 //@DEBUG @DELETEME
-var() privatewrite const bool bDebugIgnoreForAStar<DisplayName=Debug Ignore For A*?>;
+var() bool bDebugIgnoreForAStar<DisplayName=Debug Ignore For A*?>;
 var(InGame) int GoalCost, HeuristicCost, Fitness;
 var TowerBlock AStarParent;
 //=========================================================
@@ -335,10 +335,6 @@ function Died(Controller Killer, class<DamageType> DamageType, vector HitLocatio
 auto simulated state Stable
 {
 
-};
-
-simulated state InActive
-{
 };
 
 /** Called on root blocks of an orphan branch that lost an orphan child. */

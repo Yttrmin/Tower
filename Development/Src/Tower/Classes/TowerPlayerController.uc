@@ -365,7 +365,7 @@ exec function DebugSetupAStar(IVector NewStart, IVector NewFinish)
 
 exec function DebugGeneratePath()
 {
-	AStar.StartGeneratePath(Start, Finish, AStar.PR_Ground | AStar.PR_Air);
+	AStar.StartGeneratePath(Start, Finish, class'Tower'.const.ASTAR_RULES);
 }
 
 private function OnPathGenerated(PathInfo Path)

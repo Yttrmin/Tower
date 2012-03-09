@@ -11,6 +11,8 @@ class Tower extends TowerFaction
 const TOWER_NAME_ID = "N";
 const PLAYER_NUMBER_ID = "P";
 
+const ASTAR_RULES = 0x28;
+
 `if(`isdefined(debug)) 
 	`define simulateddebug simulated 
 	`else 
@@ -25,6 +27,8 @@ var(InGame) editconst private array<TowerBlock> DebugBlocks;
 
 var(InGame) editconst string TowerName;
 var(InGame) editconst TowerPlayerReplicationInfo OwnerPRI;
+var private TowerAStarComponent AStar;
+var private PathInfo PathToRoot;
 
 var array<TowerBlockStructural> OrphanRoots;
 var const config bool bDebugDrawHierarchy, bDebugDrawHierarchyOnlyVisible;
@@ -45,6 +49,7 @@ simulated event Initialize()
 	{
 		TowerPlayerController(GetALocalPlayerController()).myHUD.AddPostRenderedActor(Self);
 	}
+	AStar.Initialize(OnPathToRootFound, false);
 }
 
 final function SetRootBlock(TowerBlockRoot RootBlock)
@@ -83,21 +88,30 @@ function bool RemoveBlock(TowerBlock Block)
 	local TowerBlock IteratorBlock;
 	local TowerBlockStructural DroppingBlock;
 	local array<TowerBlock> ToIterate;
+	`log("Removing"@Block$"...");
 	foreach Block.BasedActors(class'TowerBlock', IteratorBlock)
 	{
 		ToIterate.AddItem(IteratorBlock);
 	}
 	foreach ToIterate(IteratorBlock)
 	{
+		IteratorBlock.SetBase(None);
+	}
+	foreach ToIterate(IteratorBlock)
+	{
+		Block.bDebugIgnoreForAStar = true;
+		`log("ITERATE"@IteratorBlock);
 		if(TowerBlockModule(IteratorBlock) != None)
 		{
 			IteratorBlock.OrphanedParent();
 		}
 		else
 		{
-			if(!FindNewParent(IteratorBlock, Block, true))
+			if(!FindNewParentAStar(IteratorBlock))
 			{
-				if(Block.IsInState('UnstableParent'))
+				`log(IteratorBlock@"couldn't get a new parent...");
+				IteratorBlock.OrphanedParent();
+				if(Block.IsInState('UnstableParent') || Block.IsInState('InActive'))
 				{
 					DroppingBlock = TowerBlockStructural(Block);
 				}
@@ -107,7 +121,7 @@ function bool RemoveBlock(TowerBlock Block)
 				}
 				`log(DroppingBlock);
 				`assert(DroppingBlock != None || Block.IsInState('Stable'));
-				if(DroppingBlock != None)
+				if(DroppingBlock != None && DroppingBlock.GridLocation.Z != 0)
 				{
 					if(DroppingBlock.IsTimerActive('DroppedSpace'))
 					{
@@ -122,7 +136,13 @@ function bool RemoveBlock(TowerBlock Block)
 					}
 				}
 			}
+			else
+			{
+				`log(IteratorBlock@"could get a new parent!");
+			}
+
 		}
+		Block.bDebugIgnoreForAStar = false;
 	}
 	Block.Destroy();
 	return true;
@@ -165,6 +185,96 @@ function bool CheckForParent(TowerBlock Block)
 	return FindNewParent(Block);
 }
 
+final function bool FindNewParentAStar(TowerBlock FromBlock)
+{
+	local TowerAIObjective O;
+	AStar.StartGeneratePath(FromBlock.GridLocation, Root.GridLocation, ASTAR_RULES);
+	`assert(PathToRoot != None);
+	`log("TowerA*Results:"@`IVectStr(FromBlock.GridLocation)@PathToRoot.Result);
+	if(PathToRoot.Result != SR_Success)
+	{
+		return false;
+	}
+	for(O = PathToRoot.ObjectiveRoot; O.NextObjective != None; O = O.NextObjective)
+	{
+		if(O.NextObjective.NextObjective != None)
+		{
+			O.NextObjective.Target.SetBase(None);
+		}
+		O.Target.SetBase(O.NextObjective.Target);
+	}
+	PathToRoot = None;
+	return true;
+}
+
+private final event OnPathToRootFound(const PathInfo Path)
+{
+	`log("TowerA*Done:"@`IVectStr(Path.Start.GridLocation));
+	PathToRoot = Path;
+}
+/*
+final function bool FindNewParentIterative(TowerBlock FromBlock, optional TowerBlock OldBlock=None)
+{
+	local array<TowerBlockStructural> BlockStack;
+	local TowerBlockStructural ItrBlock;
+	local TowerBlock CurrentBlock;
+
+	`Push(BlockStack, None);
+	CurrentBlock = FromBlock;
+	`log("FNPI"@FromBlock);
+	//@TODO @BUG - Need to construct the chain of bases if someone in our hierarchy finds a new base!
+	while(CurrentBlock != None)
+	{
+		//@TODO - TowerBlock, not just TowerBlockStructural.
+		if(FindNewParentNew(CurrentBlock, OldBlock))
+		{
+			`log(CurrentBlock@"FPNI Success!"@"(From"@FroMBlock$")");
+			ScriptTrace();
+			return true;
+		}
+		else
+		{
+			foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
+			{
+				`Push(BlockStack, ItrBlock);
+			}
+		}
+		CurrentBlock = `Pop(BlockStack);
+	}
+	`assert(BlockStack.Length == 0); 
+	`log("FNPI failed...");
+	return false;
+}
+
+final function bool FindNewParentNew(TowerBlock Block, optional TowerBlock OldParent=None)
+{
+	local TowerBlock IteratorBlock, OldBase;
+	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 132, , true)
+	{
+		if(TowerBlockModule(IteratorBlock) != None || OldParent == IteratorBlock)
+		{
+			continue;
+		}
+		if(TraceNodeToRoot(IteratorBlock, OldParent)// && Block.Base != IteratorBlock
+			// If we're falling onto a block, we really have no choice but to connect with it.
+			|| (IteratorBlock.GridLocation.Z == Block.GridLocation.Z - 1 && IteratorBlock.Base != Block
+					&& (Block.IsInState('UnstableParent') || Block.IsInState('Unstable'))))
+		{
+			OldBase = TowerBlock(Block.Base);
+			Block.SetBase(None);
+			OldBase.SetBase(Block);
+			Block.SetBase(IteratorBlock);
+			Block.SetOwner(IteratorBlock);
+			TowerBlockStructural(Block).ReplicatedBase = IteratorBlock;
+			IteratorBlock.AdoptedParent();
+			`log(Block@"And it's good!"@IteratorBlock);
+			return TRUE;
+		}
+		`log(Block@"does potential"@IteratorBlock@"touch root?"@TraceNodeToRoot(IteratorBlock, OldParent));
+	}
+	return false;
+}
+*/
 /** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
 have all this nodes' children (and their children and so forth) perform a FindNewParent as well. */
 final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent=None,
@@ -172,7 +282,9 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 {
 	local TowerBlock Block;
 	local TraceHitInfo HitInfo;
-//	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
+//	return FindNewParentIterative(Node, OldParent);
+
+	`log(Node@"Finding parent for node. Current parent:"@Node.Base);
 	if(!bChild)
 	{
 		Node.SetBase(None); // Redundant with the last SetBase?
@@ -187,7 +299,9 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 			//@TODO - Destroy block? Module? Check direction first.
 			continue;
 		}
-		else if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block)
+		// If the block is under us (but not getting removed, and not our base), we have no choice but to parent.
+		else if(OldParent != Block && TraceNodeToRoot(Block, OldParent) && Node != Block
+			|| (OldParent != Block && Block.GridLocation.Z == Node.GridLocation.Z - 1 && Block.Base != Node))
 		{
 			Node.SetBase(Block);
 			Node.SetOwner(Block);
@@ -225,7 +339,7 @@ final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent
 }
 
 /** Returns TRUE if there is a path to the root through parents, otherwise FALSE. */
-private final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBlock InvalidBase)
+public static final function bool TraceNodeToRoot(TowerBlock Block, optional TowerBlock InvalidBase)
 {
 	// IBO and GBM both clocked out at 0.0250 ms. Virtually identical.
 	return Block.GetBaseMost().Class == class'TowerBlockRoot' && !Block.IsBasedOn(InvalidBase);
@@ -435,4 +549,9 @@ DefaultProperties
 	bAlwaysRelevant=True
 	bStatic=False
 	bNoDelete=False
+
+	Begin Object Class=TowerAStarComponent Name=AStarComp
+	End Object
+	Components.Add(AStarComp);
+	AStar=AStarComp
 }

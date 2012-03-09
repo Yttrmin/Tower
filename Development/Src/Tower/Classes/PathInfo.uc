@@ -3,7 +3,7 @@ class PathInfo extends Object within TowerAStarComponent
 
 var privatewrite int PathID;
 var privatewrite TowerBlock Start, Finish;
-var privatewrite SearchResult Result;
+var SearchResult Result;
 var TowerAIObjective ObjectiveRoot;
 
 var int Iteration;
@@ -31,7 +31,7 @@ public function DebugDrawPath()
 {
 	local TowerAIObjective O;
 
-	for(O = ObjectiveRoot.NextObjective; O.Target != Finish; O = O.NextObjective)
+	for(O = ObjectiveRoot.NextObjective; O != None && O.Target != Finish; O = O.NextObjective)
 	{
 		O.DrawDebugBox(O.Location, Vect(80, 80, 80), 255, 0, 255, false);
 		O.DrawDebugString(Vect(0,0,32), O.Type, O, , 0.01);

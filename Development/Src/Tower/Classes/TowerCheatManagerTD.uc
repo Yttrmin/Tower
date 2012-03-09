@@ -484,16 +484,18 @@ exec function TestBugReport()
 {
 	local SaveSystemJSON SS;
 	local HttpRequestInterface R;
+	local array<byte> Content;
 	local string Query;
 
 	SS = new class'SaveSystemJSON';
 	Query = "JSON="$SS.SaveGame("TEST", Outer);
 //	Query="fname=NAME&age=AGE";
 	R = class'HttpFactory'.static.CreateRequest();
-	R.SetRequestCompleteDelegate(OnRequestComplete);
+	R.SetProcessRequestCompleteDelegate(OnRequestComplete);
 	R.SetURL(class'SaveSystemJSON'.const.SITE_URL);
 	R.SetVerb("POST");
-	R.SetContent(ConvertToByteArray(Query));
+	Content = ConvertToByteArray(Query);
+	R.SetContent(Content);
 	R.SetHeader("Host", "www.cubedefense.com");
 	R.SetHeader("User-Agent", "Cube Defense");
 	
@@ -531,17 +533,17 @@ private function array<byte> ConvertToByteArray(out String String)
 	return OutArray;
 }
 
-function OnRequestComplete(HttpResponseInterface Response, bool bSucceeded)
+function OnRequestComplete(HttpRequestInterface OriginalRequest, HttpResponseInterface InHttpResponse, bool bDidSucceed)
 {
 	local array<String> Headers;
 	local String Header;
 
-	`log("Got response!!!!!!! Succeeded="@bSucceeded);
-	`log("URL="@Response.GetURL());
+	`log("Got response!!!!!!! Succeeded="@bDidSucceed);
+	`log("URL="@InHttpResponse.GetURL());
 	// if we didn't succeed, we can't really trust the payload, so you should always really check this.
-	if (bSucceeded)
+	if (bDidSucceed)
 	{
-		Headers = Response.GetHeaders();
+		Headers = InHttpResponse.GetHeaders();
 		foreach Headers(Header)
 		{
 			`log("Header:"@Header);
@@ -552,7 +554,7 @@ function OnRequestComplete(HttpResponseInterface Response, bool bSucceeded)
 		// is content-type dependent.
 		// You also can't trust the content-length as you don't always get one. You should instead
 		// always trust the length of the content payload you receive.
-		`log("Payload:"@Response.GetContentAsString());
+		`log("Payload:"@InHttpResponse.GetContentAsString());
 	}
 }
 
@@ -1060,8 +1062,10 @@ exec function TestRTHUD(bool bUseRenderTargetTexture)
 	local GFxMoviePlayer Movie;
 	Movie = new class'GFxMoviePlayer';
 	Movie.MovieInfo = SwfMovie'TestRTHUD.RTHUD';
+	`log(Movie.MovieInfo);
 	Movie.bAutoPlay = true;
 	Movie.Init();
+	`log(Movie.MovieInfo);
 	if(bUseRenderTargetTexture)
 	{
 		Movie.SetExternalTexture("MyRenderTarget", TextureRenderTarget2D'TestRTHUD.RenderTargetTexture');
