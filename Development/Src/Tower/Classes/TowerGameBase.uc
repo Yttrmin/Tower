@@ -27,7 +27,7 @@ var privatewrite TowerBlock AirArchetype;
 var protected bool bPendingLoad;
 var protected string PendingLoadFile;
 
-var private globalconfig const string DedicatedServerLoadFile;
+var private deprecated globalconfig const string DedicatedServerLoadFile;
 var protected globalconfig const bool bAIGame;
 var private globalconfig const bool bResetLevelOnEmptyServer;
 var private globalconfig const bool bPauseLevelOnEmptyServer;
@@ -95,8 +95,15 @@ private function LogStringArray(out array<String> StrArray, String Category)
 
 event InitGame( string Options, out string ErrorMessage )
 {
+	local string LoadFileName;
 	Super.InitGame(Options, ErrorMessage);
 	//@TODO - Loading here, not the Login functions.
+	`log("TowerGameBase::InitGame(). "@Options);
+	LoadFileName = ParseOption(Options, "LoadGame");
+	if(LoadFileName != "")
+	{
+
+	}
 }
 
 /** Only called for joining clients in network games. */
@@ -255,7 +262,7 @@ function ProcessServerTravel(string URL, optional bool bAbsolute)
 	Super.ProcessServerTravel(URL, bAbsolute);
 }
 
-protected event OnLoadGame();
+public event OnLoadGame(JSONObject Data);
 
 /** Called from PreBeginPlay. Loads any mods listed in the config file. */
 private final function CheckForMods()

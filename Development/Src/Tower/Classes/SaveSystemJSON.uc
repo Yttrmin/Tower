@@ -15,6 +15,10 @@ const SITE_URL = "http://www.cubedefense.com/BugReport.php";
 const SAVE_VERSION = 1;
 const HARDCODED_MAPPINGS_COUNT = 4;
 
+const SAVE_FILE_VERSION = 1;
+const SAVE_FILE_EXTENSION = ".bin";
+const SAVE_FILE_PATH = "../../UDKGame/Saves/";
+
 const MOD_NAME_ID = "SafeName";
 const MOD_VERSION_ID = "Version";
 const COUNT_ID = "INTERNAL_COUNT";
@@ -51,6 +55,7 @@ struct GlobalSaveInfo
 	var array<IntKeyValue> VirtualToRealModIndex;
 };
 
+//var SaveType Type;
 var string SaveData;
 var transient ClassKeyValue HardcodedClassCategoryMapping[HARDCODED_MAPPINGS_COUNT];
 var transient array<ClassKeyValue> ClassCategoryMapping;
@@ -112,6 +117,28 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 	`log(class'JSonObject'.static.EncodeJSon(SaveRoot),,'Save');
 	return class'JSonObject'.static.EncodeJSon(SaveRoot);
 }
+
+public function bool LoadGame(string FileName, TowerGameBase Game)
+{
+	local string RealFileName;
+	local JSONObject Data;
+	RealFileName = GetFilePath(FileName);
+	if(!class'Engine'.static.BasicLoadObject(self, RealFileName, true, SAVE_FILE_VERSION))
+	{
+		`warn("Failed to load file at"@RealFileName);
+		return false;
+	}
+	Data = class'JSONObject'.static.DecodeJSON(SaveData);
+	if(Data == None)
+	{
+		`warn("Failed to convert SaveData to JSONObject!");
+		return false;
+	}
+	Game.OnLoadGame(Data);
+	return true;
+}
+
+public function byte GetSavedPlayerCount(){}
 
 private function InternalSave(out SaveType Type)
 {
@@ -198,6 +225,11 @@ private final function PopulateModList(TowerGameReplicationInfo GRI, out JSonObj
 		JSon.SetObject(string(i), ModObject);
 		i++;
 	}
+}
+
+private final function String GetFilePath(out const String FileName)
+{
+	return SAVE_FILE_PATH$FileName;
 }
 
 DefaultProperties

@@ -565,13 +565,13 @@ public event JSonObject OnSave(const SaveType SaveType)
 		return None;
 	}
 
-	JSON.SetFloatValue(LOCATION_X, Pawn.Location.X);
-	JSON.SetFloatValue(LOCATION_Y, Pawn.Location.Y);
-	JSON.SetFloatValue(LOCATION_Z, Pawn.Location.Z);
+	JSON.SetFloatValue(LOCATION_X, Location.X);
+	JSON.SetFloatValue(LOCATION_Y, Location.Y);
+	JSON.SetFloatValue(LOCATION_Z, Location.Z);
 
-	JSON.SetIntValue(ROTATION_PITCH, Pawn.Rotation.Pitch);
-	JSON.SetIntValue(ROTATION_YAW, Pawn.Rotation.Yaw);
-	JSON.SetIntValue(ROTATION_ROLL, Pawn.Rotation.Roll);
+	JSON.SetIntValue(ROTATION_PITCH, Rotation.Pitch);
+	JSON.SetIntValue(ROTATION_YAW, Rotation.Yaw);
+	JSON.SetIntValue(ROTATION_ROLL, Rotation.Roll);
 
 	return JSON;
 }

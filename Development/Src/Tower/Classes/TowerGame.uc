@@ -669,6 +669,12 @@ function int GetRemainingTime()
 	return (GetTimerRate('GameTimerExpired') - GetTimerCount('GameTimerExpired')+1);
 }
 
+public event OnLoadGame(JSONObject Data)
+{
+	Super.OnLoadGame(Data);
+
+}
+
 DefaultProperties
 {
 	MaxPlayersAllowed=4

@@ -480,6 +480,7 @@ exec function DebugTestJSON()
 	/*`log(class'JSonObject'.static.EncodeJson(Root));*/ // Crashes.
 }
 
+/** Works as of 3/17/2012. */
 exec function TestBugReport()
 {
 	local SaveSystemJSON SS;
