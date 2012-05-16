@@ -1,4 +1,4 @@
-class TowerDebugMarker extends DynamicSMActor_Spawnable;
+class DebugMarker extends DynamicSMActor_Spawnable;
 
 `define SCALE 2
 

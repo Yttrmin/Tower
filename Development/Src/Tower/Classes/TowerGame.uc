@@ -46,6 +46,9 @@ var const config bool bLogGameplayEvents;
 var const config float GameplayEventsHeartbeatDelta;
 var const config bool bUsePlayerPawns;
 
+/** A box that contains every Block. Never shrinks. */
+var privatewrite IBox WorldBounds;
+
 /** Path to a TowerMusicList. It will be DynamicLoadObject()'d. */
 var globalconfig string MusicListPath;
 var TowerMusicList CurrentMusicList;
@@ -585,6 +588,8 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 		&& Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' || bPendingLoad)
 	{
 		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
+
+		ExpandBoundsTo(Block.GridLocation);
 		/*
 		if(Block != None)
 		{
@@ -593,6 +598,18 @@ function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock 
 		*/
 	}
 	return Block;
+}
+
+/** Expands the world bounds to GridLocation +/-1. */
+final function ExpandBoundsTo(const out IVector GridLocation)
+{
+	WorldBounds.Min.X = Min(WorldBounds.Min.X, GridLocation.X-1);
+	WorldBounds.Min.Y = Min(WorldBounds.Min.Y, GridLocation.Y-1);
+	// A* throws away all nodes where Z < 0 anyways.
+	WorldBounds.Min.Z = Min(WorldBounds.Min.Z, Gridlocation.Z-1);
+	WorldBounds.Max.X = Max(WorldBounds.Max.X, GridLocation.X+1);
+	WorldBounds.Max.Y = Max(WorldBounds.Max.Y, GridLocation.Y+1);
+	WorldBounds.Max.Z = Max(WorldBounds.Max.Z, GridLocation.Z+1);
 }
 
 function RemoveBlock(Tower Tower, TowerBlock Block)

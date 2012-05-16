@@ -357,15 +357,15 @@ exec function DebugSetupAStar(IVector NewStart, IVector NewFinish)
 	Finish = NewFinish;
 	if(!bDrawDebugAStarInfo)
 	{
-		AStar.Initialize(OnPathGenerated, true,100, true, true);
+		AStar.Initialize(OnPathGenerated, true,100, false, true);
 	}
 	bDrawDebugAStarInfo = true;
 	myHUD.AddPostRenderedActor(self);
 }
 
-exec function DebugGeneratePath()
+exec function DebugGeneratePath(optional int Ruleset=class'Tower'.const.ASTAR_RULES)
 {
-	AStar.StartGeneratePath(Start, Finish, class'Tower'.const.ASTAR_RULES);
+	AStar.StartGeneratePath(Start, Finish, Ruleset);
 }
 
 private function OnPathGenerated(PathInfo Path)

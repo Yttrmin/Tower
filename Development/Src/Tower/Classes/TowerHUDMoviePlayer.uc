@@ -70,6 +70,7 @@ function ExpandBuildMenu()
 	if(bUseGFxBlockPreview)
 	{
 		SetVariableBool("_root.BuildMenu.BlockPreview._visible", true);
+		//@BUG Camera output is black for some reason? Lights don't work? Works in editor except for block.
 		SetExternalTexture("HUDPreview", HUD.GetPreviewRenderTarget());
 	}
 	GetVariableObject("_root.BuildMenu").GotoAndStopI(2);
@@ -185,7 +186,7 @@ DefaultProperties
 	WidgetBindings(0)={(WidgetName=PlaceablesList,WidgetClass=class'Tower.GFxScrollingList')}
 	// Nope, crashes too.
 //	ExternalTextures(0)={(Resource="HUDPreview",Texture=TextureRenderTarget2D'TowerHUD.HUDPreview0')}
-	bUseGFxBlockPreview=false
+	bUseGFxBlockPreview=true
 	bDisplayWithHudOff=false
 	bLogUnhandedWidgetInitializations=true
 	TimingMode=TM_Game

@@ -11,7 +11,8 @@ class Tower extends TowerFaction
 const TOWER_NAME_ID = "N";
 const PLAYER_NUMBER_ID = "P";
 
-const ASTAR_RULES = 0x28;
+/** Used to find a new parent for a block. */
+const ASTAR_RULES = 0x28; // PR_Goal_ConnectedToRoot | PR_Blocks
 
 `if(`isdefined(debug)) 
 	`define simulateddebug simulated 

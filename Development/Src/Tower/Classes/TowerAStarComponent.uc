@@ -2,6 +2,9 @@
 class TowerAStarComponent extends ActorComponent
 	config(Tower);
 
+`define CHECK_WORLD_BOUNDS
+`define CHECK_MAX_ITERATIONS
+
 // A 3x3x3 cube minus the center. Edges and corners.
 const POSSIBLE_AIRS_ALL_NEIGHBORS = 26;
 // A + sign layered three times vertically minus the center. Only edges.
@@ -15,10 +18,11 @@ const POSSIBLE_AIRS_ONLY_CORNERS = 8;
 
 const POSSIBLE_AIRS_ADJACENT_AND_DIAGONAL = 10;
 const INVALID_PATH_ID = -1;
+const NONDEFERRED_PATH_ID = -2;
 
 `define POSSIBLE_AIRS_COUNT POSSIBLE_AIRS_ONLY_SIDES
 
-// Since there's no bigflag support...
+// Since there's no bitflag support...
 /**================================= Path Rule Flags ================================*/
 // At least one flag for each category must be set for a valid search.
 // Use the `HasFlag() macro to check instead of doing the bitwise stuff yourself.
@@ -31,6 +35,7 @@ const PR_Ground						= 0x1; // Check done in AAA.
 /** Not implemented. */
 const PR_ClimbableAir				= 0x2;
 /** Includes air blocks at Z>0. */
+//@TODO - Make me less ridiculously misleading.
 const PR_Air						= 0x4; // PR_AboveGround? // Check done in AAA.
 /** Includes all blocks. */
 const PR_Blocks						= 0x8; // Check done in AL.
@@ -39,14 +44,14 @@ const PR_Modules					= 0x10; // Check done in AL.
 
 /**== Composite values. ==**/
 /** Includes all air blocks. */
-const PR_GroundAndAir				= 0x3; // PR_Air | PR_Ground
+const PR_GroundAndAir				= 0x5; // PR_Air | PR_Ground
 /** Includes all blocks and all modules. */
-const PR_BlocksAndModules			= 0xC; // PR_Blocks | PR_Modules
-
+const PR_BlocksAndModules			= 0x18; // PR_Blocks | PR_Modules
 /** Same rules as your bog-standard 2D A* demo. */
-const PR_XYSearch					= 0x21; // PR_Ground | PR_Adjacent
+const PR_XYSearch					= 0x19; // PR_Ground | PR_BlocksAndModules
 
-//@TODO - Custom rule support instead? Custom evaluators?
+/** Optional, there's no "normal" goal. Immediately returns a valid path 
+on the first node that's connected to the root. */
 const PR_Goal_ConnectedToRoot		= 0x20;
 /**==================================================================================*/
 
@@ -55,12 +60,14 @@ enum SearchResult
 	SR_NULL,
 	/** Everything went fine and there's a valid path. */
 	SR_Success,
-	/** Given the rules, there's no valid path between Start and Finish. */
+	/** Given the rules, there's no valid path between Start and Finish.
+	All values should be considered garbage. */
 	SR_NoPath,
 	/** Given the rules, without doing any pathfinding, it's impossible for there to be a valid path. */
 	SR_ImpossiblePath,
 };
 
+//@TODO - Privatize.
 var privatewrite array<TowerAIObjective> Paths;
 var const private IVector PossibleAirs[`POSSIBLE_AIRS_COUNT];
 
@@ -70,11 +77,18 @@ var privatewrite bool bStepSearch;
 var private bool bDrawStepInfo;
 var private bool bLogIterationTime;
 var private bool bInitialized;
+/** If we exceed this many iterations with no path, return SR_NoPath. */
+`if(`isdefined(CHECK_MAX_ITERATIONS))
+var private const int MaxIterations;
+`endif
 var private array<delegate<OnPathGenerated> > PathGeneratedDelegates;
 
 var private TowerGame Game;
 var private AirManager AirManager;
 var private TowerFactionAIHivemind Hivemind;
+`if(`isdefined(CHECK_WORLD_BOUNDS))
+var private IBox WorldBounds;
+`endif
 
 /** Next PathID to use when we need one for GeneratePath. */
 var private int NextPathID;
@@ -130,7 +144,7 @@ final event AsyncTick(float DeltaTime)
 	GeneratePath(QueuedPaths[0]);
 }
 
-//@DEPRECATED
+//@DEPRECATED ? How should we do this?
 final event Initialize(optional delegate<OnPathGenerated> PathGeneratedDelegate, 
 	optional bool bNewDeferSearching=default.bDeferSearching,
 	optional int NewIterationsPerTick=default.IterationsPerTick, optional bool bNewStepSearch=false,
@@ -181,15 +195,22 @@ public final function int StartGeneratePath(const IVector Start, const IVector F
 	}
 	BStart = GetBlockAt(Start);
 	BFinish = GetBlockAt(Finish);
+	`if(`isdefined(CHECK_WORLD_BOUNDS))
+	Game.ExpandBoundsTo(BStart.GridLocation);
+	Game.ExpandBoundsTo(BFinish.GridLocation);
+	`endif
 	QueuedPaths.AddItem(class'PathInfo'.static.CreateNewPathInfo(GetNextPathID(), BStart, BFinish, Rules, self));
 	if(!IsPathPossibleWithRules(BStart, BFinish, Rules))
 	{
 		ConstructPath(QueuedPaths[QueuedPaths.Length-1], BFinish, SR_ImpossiblePath);
+		return INVALID_PATH_ID;
 	}
 	if(!bDeferSearching)
 	{
 		PathID = NextPathID;
 		GeneratePath(QueuedPaths[QueuedPaths.Length-1]);
+		//@TODO - Why bother returning a PathID if not doing a deferred search?
+		// It'll be useless by the time the caller gets it.
 		return PathID;
 	}
 	else
@@ -201,7 +222,46 @@ public final function int StartGeneratePath(const IVector Start, const IVector F
 
 private final function bool IsPathPossibleWithRules(TowerBlock Start, TowerBlock Finish, const out int Rules)
 {
-	return true;
+	local string Error;
+	if(!`HasFlag(Rules, PR_Blocks) && (TowerBlockStructural(Finish) != None || TowerBlockRoot(Finish) != None))
+	{
+		Error @= "IMPOSSIBLE: Goal is occupied by a block ("$Finish$") but the PR_Blocks rule is not set!";
+	}
+	if(!`HasFlag(Rules, PR_Modules) && TowerBlockModule(Finish) != None)
+	{
+		Error @= "IMPOSSIBLE: Goal is occupied by a module ("$Finish$") but the PR_Modules rule is not set!";
+	}
+	/** PR_Air/PR_Ground sanity checks only done when there's no PR_Blocks or PR_Modules. 
+		Otherwise it's too hard to tell if there's no Air AND no blocks/modules for a path without, well,
+		doing an A* search. */
+	if(!`HasFlag(Rules, PR_Modules) && !`HasFlag(Rules, PR_Blocks))
+	{
+		/* Technically the Start block is never checked, so it's fine if its Z=1. 
+			It just means the block under it is the only choice. 
+			We could do a check on that under block, but it'll fail the first step anyways if its bad. */
+		if(!`HasFlag(Rules, PR_Air) && (Start.GridLocation.Z > 1 || Finish.GridLocation.Z > 0))
+		{
+			Error @= "IMPOSSIBLE: Either Start ("$`IVectStr(Start.GridLocation)$") or Finish ("
+				$`IVectStr(Finish.GridLocation)$") is above ground but the PR_Air rule is not set!";
+		}
+		/** Don't check Start here since if it was at Z=0, the block above it is the only choice.
+			Again we could do a check on that block but see above. */
+		if(!`HasFlag(Rules, PR_Ground) && Finish.GridLocation.Z == 0)
+		{
+			Error @= "IMPOSSIBLE: Finish ("$`IVectStr(Finish.GridLocation)
+				$") is on the ground but the PR_Ground rule is not set!";
+		}
+	}
+
+	if(Error != "")
+	{
+		`log(Error,,'AStarFailure');
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 private final function int GetNextPathID()
@@ -233,9 +293,20 @@ private final function GeneratePath(PathInfo Path)
 		`log("Start:"@Path.Start$`IVectStr(Path.Start.GridLocation)@" "
 			@"Finish:"@Path.Finish$`IVectStr(Path.Finish.GridLocation),,'AStar');
 	}
+	`if(`isdefined(CHECK_WORLD_BOUNDS))
+	WorldBounds = Game.WorldBounds;
+	`endif
 	while(Path.OpenList.Length() > 0)
 	{
 //		`log("Iteration"@IterationsThisTick);
+		`if(`isdefined(CHECK_MAX_ITERATIONS))
+		if(Path.Iteration > MaxIterations)
+		{
+			`log("Exceeded"@MaxIterations@"iterations, aborting search!",,'AStar');
+			ConstructPath(Path, None, SR_NoPath);
+			break;
+		}
+		`endif
 		if(bStepSearch)
 		{
 			if(bDoStep)
@@ -251,7 +322,6 @@ private final function GeneratePath(PathInfo Path)
 		}
 		if(bDeferSearching && IterationsThisTick >= IterationsPerTick)
 		{
-			`log("Deferring!"@Path.Iteration);
 			return;
 		}
 		BestNode = Path.OpenList.Remove();
@@ -277,15 +347,6 @@ private final function GeneratePath(PathInfo Path)
 	Path.OpenList.Dispose();
 }
 
-private final function DebugUberTest()
-{
-	local TOwerplayerController PC;
-	foreach Owner.WorldInfo.AllControllers(class'TowerPlayerController', PC)
-	{
-		TowerCheatManagerTD(PC.CheatManager).DebugUberBlockTest();
-	}
-}
-
 private final function TowerBlock GetBlockAt(out const IVector GridLocation)
 {
 	local TowerBlock Block;
@@ -305,8 +366,10 @@ private final function AdjacentLogic(out array<TowerBlock> AdjacentList, const T
 	foreach AdjacentList(IteratorBlock)
 	{
 		`assert(IteratorBlock != SourceBlock);
+		//@TODO - Really.
 		if(TowerBlockAir(IteratorBlock) != None
-				|| (`HasFlag(Path.PathRules, PR_Blocks) && TowerBlockStructural(IteratorBlock) != None)
+				|| (`HasFlag(Path.PathRules, PR_Blocks) && (TowerBlockStructural(IteratorBlock) != None
+																|| TowerBlockRoot(IteratorBlock) != None))
 				|| (`HasFlag(Path.PathRules, PR_Modules) && TowerBlockModule(IteratorBlock) != None))
 		{
 
@@ -399,7 +462,14 @@ private final function AddAdjacentAirBlocks(const out IVector Center, out array<
 //			`log("Aborting PossibleLocations"@IVectStr(PossibleLocations[i]);
 			continue;
 		}
-
+		`if(`isdefined(CHECK_WORLD_BOUNDS))
+		if(PossibleLocations[i].X < WorldBounds.Min.X || PossibleLocations[i].X > WorldBounds.Max.X
+			|| PossibleLocations[i].Y < WorldBounds.Min.Y || PossibleLocations[i].Y > WorldBounds.Max.Y
+			|| PossibleLocations[i].Z < WorldBounds.Min.Z || PossibleLocations[i].Z > WorldBounds.Max.Z)
+		{
+			continue;
+		}
+		`endif
 		AdjacentList.AddItem(AirManager.GetAir(PossibleLocations[i]));
 	}
 }
@@ -436,6 +506,12 @@ private final function UpdateParents(TowerBlock Block, TowerBlock Finish, const 
 
 private final function CalculateCosts(TowerBlock Block, TowerBlock Finish, optional int GoalCost)
 {
+	// Fix for A* dancing around the goal. If it's there just go for it!
+	if(Block.GridLocation == Finish.GridLocation)
+	{
+		Block.Fitness = 0;
+		return;
+	}
 	Block.HeuristicCost = GetHeuristicCost(Block, Finish);
 	if(Block.AStarParent != None)
 	{
@@ -661,6 +737,9 @@ private final function DebugDrawStepInfo(Canvas Canvas)
 DefaultProperties
 {
 	NextPathID=0
+	`if(`isdefined(CHECK_MAX_ITERATIONS))
+	MaxIterations=400
+	`endif
 	/*
 	// Top +
 	PossibleAirs(0)=(X=0,Y=0,Z=1)
