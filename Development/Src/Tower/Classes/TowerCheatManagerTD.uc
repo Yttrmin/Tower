@@ -330,7 +330,7 @@ exec function WhereIs(int X, int Y, int Z)
 	local IVector V;
 	V =	IVect(X,Y,Z);
 	SpawnLocation = GetTower().GridLocationToVector(V);
-	Spawn(class'TowerDebugMarker',,,SpawnLocation);
+	Spawn(class'DebugMarker',,,SpawnLocation);
 }
 
 exec function DrawAt(int X, int Y, int Z)
@@ -646,77 +646,20 @@ exec function DebugTestRandom()
 	}
 }
 
-exec function DebugTestHash()
-{
-	local IVector Start, Finish;
-	local byte bHitExtent;
-	local array<int> Hashes;
-	local int Hash;
-	local int Collisions;
-	Start = IVect(10,10,10);
-	Finish = IVect(-10,-10,0);
-	while(class'TowerGameUberTest'.static.DebugDecrementIVector(Start, Finish, bHitExtent))
-	{
-		Hash = Hash5(Start);
-//		`log(Hash);
-		if(Hashes.Find(Hash) != INDEX_NONE)
-		{
-			Collisions++;
-//			`log(`IVectStr(Start)@"collision!");
-		}
-		Hashes.AddItem(Hash);
-	}
-	`log(Collisions@"collisions out of a possible 449.");
-}
-
-function int Hash1(IVector A)
-{
-	return A.X + A.Y + A.Z;
-}
-
-function int Hash2(IVector A)
-{
-	local int Result;
-	Result += Result ^ (A.X << 13);
-	Result += Result ^ (A.X >> 17);
-	Result += Result ^ (A.X << 5);
-
-	Result += Result ^ (A.Y << 13);
-	Result += Result ^ (A.Y >> 17);
-	Result += Result ^ (A.Y << 5);
-
-	Result += Result ^ (A.Z << 13);
-	Result += Result ^ (A.Z >> 17);
-	Result += Result ^ (A.Z << 5);
-
-	return Result;
-}
-
-function int Hash3(IVector A)
-{
-	return Rand(MaxInt);
-}
-
-function int Hash4(IVector A)
-{
-	return 0;
-}
-
-function int Hash5(IVector A)
-{
-	return (A.X * 2654435761 % 2**32) + (A.Y * 2654435761 % 2**32) + (A.Z * 2654435761 % 2**32);
-}
-
 exec function DebugBitFlags()
 {
-	`log(AStar.PR_Air); // 2
-	`log(AStar.PR_Ground); // 1
-	`log(AStar.PR_GroundAndAir); // 3
-	`log(AStar.PR_Air | AStar.PR_Ground); // 3
-	`log((AStar.PR_Air | AStar.PR_Ground) == AStar.PR_GroundAndAir); // true
-	`log((AStar.PR_GroundAndAir & AStar.PR_Ground) == AStar.PR_Ground); // true
-	`log((AStar.PR_GroundAndAir & AStar.PR_Air) == AStar.PR_Air); // true
-	`log((AStar.PR_BlocksAndModules & AStar.PR_Modules) == AStar.PR_Modules); // true
+	`log("4"@AStar.PR_Air);
+	`log("1"@AStar.PR_Ground);
+	`log("5"@AStar.PR_GroundAndAir);
+	`log("5"@AStar.PR_Air | AStar.PR_Ground);
+	`log("25"@AStar.PR_Ground | AStar.PR_Blocks | AStar.PR_Modules);
+	`log("TRUE"@(AStar.PR_Air | AStar.PR_Ground) == AStar.PR_GroundAndAir);
+	`log("TRUE"@(AStar.PR_GroundAndAir & AStar.PR_Ground) == AStar.PR_Ground);
+	`log("TRUE"@(AStar.PR_GroundAndAir & AStar.PR_Air) == AStar.PR_Air);
+	`log("TRUE"@(AStar.PR_BlocksAndModules & AStar.PR_Modules) == AStar.PR_Modules);
+	`log("TRUE"@`HasFlag(0x2D, AStar.PR_Blocks));
+	`log("TRUE"@`HasFlag(0x2D, AStar.PR_GroundAndAir));
+	`log("TRUE"@`HasFlag(0x2D, AStar.PR_Goal_ConnectedToRoot));
 }
 
 /***********************************************

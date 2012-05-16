@@ -30,10 +30,12 @@ public static final function PathInfo CreateNewPathInfo(const int NewPathID, con
 public function DebugDrawPath()
 {
 	local TowerAIObjective O;
-
-	for(O = ObjectiveRoot.NextObjective; O != None && O.Target != Finish; O = O.NextObjective)
+	if(Result == SR_Success)
 	{
-		O.DrawDebugBox(O.Location, Vect(80, 80, 80), 255, 0, 255, false);
-		O.DrawDebugString(Vect(0,0,32), O.Type, O, , 0.01);
+		for(O = ObjectiveRoot.NextObjective; O != None && O.Target != Finish; O = O.NextObjective)
+		{
+			O.DrawDebugBox(O.Location, Vect(80, 80, 80), 255, 0, 255, false);
+			O.DrawDebugString(Vect(0,0,32), O.Type, O, , 0.01);
+		}
 	}
 }

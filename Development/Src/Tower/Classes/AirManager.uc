@@ -16,6 +16,9 @@ event PostBeginPlay()
 public final function TowerBlockAir GetAir(const out IVector GridLocation)
 {
 	local TowerBlockAir Air;
+	/* //@BUG (Fixedish) - Danger of crashing here from runaway loop if too many airs. 
+	At 100 ticks per defer, crashes between 2400-2500 iterations, 2560 airs.
+	Iteration limit and world bounds check should prevent this. */
 	foreach AirBlocks(Air)
 	{
 		if(Air.GridLocation == GridLocation)
