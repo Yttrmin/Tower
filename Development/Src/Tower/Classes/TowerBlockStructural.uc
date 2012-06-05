@@ -345,12 +345,30 @@ public event JSonObject OnSave(const SaveType SaveType)
 	return JSon;
 }
 
-public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo)
+public static event OnLoad(JSONObject Data, TowerGameBase GameInfo, out const GlobalSaveInfo SaveInfo)
 {
-	/*local TowerBlockStructural NewBlock;
+	local TowerBlockStructural NewBlock;
+	// WHY does the compiler complain about name conflicts in a static function?
+	local int SavedModIndex, BlockIndex;
+	local IVector SavedGridLocation;
 
-	NewBlock = Spawn();
-	NewBlock.GridLocation.X = Data.GetIntValue(GRID_LOCATION_X_ID);*/
+	SavedModIndex = Data.GetIntValue(MOD_INDEX_ID);
+	BlockIndex = Data.GetIntValue(MOD_BLOCK_ID);
+	SavedGridLocation.X = Data.GetIntValue(GRID_LOCATION_X_ID);
+	SavedGridLocation.Y = Data.GetIntValue(GRID_LOCATION_Y_ID);
+	SavedGridLocation.Z = Data.GetIntValue(GRID_LOCATION_Z_ID);
+
+	//@TODO - TransferBlocks()
+	NewBlock = TowerBlockStructural(GameInfo.ServerTower.AddBlock(GetSavedBlockArchetype(SavedModIndex, BlockIndex, SaveInfo),
+		None, SavedGridLocation));
+	//NewBlock = class'WorldInfo'.static.GetWorldInfo().Spawn(class'TowerBlockStrutural);
+
+//	NewBlock.ModIndex = ModInde
+//	NewBlock.ModBlockIndex = 
+
+	NewBlock.ParentDirection.X = Data.GetIntValue(PARENT_DIRECTION_X_ID);
+	NewBlock.ParentDirection.X = Data.GetIntValue(PARENT_DIRECTION_Y_ID);
+	NewBlock.ParentDirection.X = Data.GetIntValue(PARENT_DIRECTION_Z_ID);
 }
 
 DefaultProperties

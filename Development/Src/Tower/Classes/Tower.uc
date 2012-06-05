@@ -46,7 +46,8 @@ replication
 //@TODO - Take all needed vars here.
 simulated event Initialize()
 {
-	if(bDebugDrawHierarchy && WorldInfo.NetMode != NM_DedicatedServer)
+	// PlayerController check done to avoid Accessed None when creating the server's Tower.
+	if(bDebugDrawHierarchy && WorldInfo.NetMode != NM_DedicatedServer && GetALocalPlayerController() != None)
 	{
 		TowerPlayerController(GetALocalPlayerController()).myHUD.AddPostRenderedActor(Self);
 	}
@@ -213,69 +214,7 @@ private final event OnPathToRootFound(const PathInfo Path)
 	`log("TowerA*Done:"@`IVectStr(Path.Start.GridLocation));
 	PathToRoot = Path;
 }
-/*
-final function bool FindNewParentIterative(TowerBlock FromBlock, optional TowerBlock OldBlock=None)
-{
-	local array<TowerBlockStructural> BlockStack;
-	local TowerBlockStructural ItrBlock;
-	local TowerBlock CurrentBlock;
 
-	`Push(BlockStack, None);
-	CurrentBlock = FromBlock;
-	`log("FNPI"@FromBlock);
-	//@TODO @BUG - Need to construct the chain of bases if someone in our hierarchy finds a new base!
-	while(CurrentBlock != None)
-	{
-		//@TODO - TowerBlock, not just TowerBlockStructural.
-		if(FindNewParentNew(CurrentBlock, OldBlock))
-		{
-			`log(CurrentBlock@"FPNI Success!"@"(From"@FroMBlock$")");
-			ScriptTrace();
-			return true;
-		}
-		else
-		{
-			foreach CurrentBlock.BasedActors(class'TowerBlockStructural', ItrBlock)
-			{
-				`Push(BlockStack, ItrBlock);
-			}
-		}
-		CurrentBlock = `Pop(BlockStack);
-	}
-	`assert(BlockStack.Length == 0); 
-	`log("FNPI failed...");
-	return false;
-}
-
-final function bool FindNewParentNew(TowerBlock Block, optional TowerBlock OldParent=None)
-{
-	local TowerBlock IteratorBlock, OldBase;
-	foreach Block.CollidingActors(class'TowerBlock', IteratorBlock, 132, , true)
-	{
-		if(TowerBlockModule(IteratorBlock) != None || OldParent == IteratorBlock)
-		{
-			continue;
-		}
-		if(TraceNodeToRoot(IteratorBlock, OldParent)// && Block.Base != IteratorBlock
-			// If we're falling onto a block, we really have no choice but to connect with it.
-			|| (IteratorBlock.GridLocation.Z == Block.GridLocation.Z - 1 && IteratorBlock.Base != Block
-					&& (Block.IsInState('UnstableParent') || Block.IsInState('Unstable'))))
-		{
-			OldBase = TowerBlock(Block.Base);
-			Block.SetBase(None);
-			OldBase.SetBase(Block);
-			Block.SetBase(IteratorBlock);
-			Block.SetOwner(IteratorBlock);
-			TowerBlockStructural(Block).ReplicatedBase = IteratorBlock;
-			IteratorBlock.AdoptedParent();
-			`log(Block@"And it's good!"@IteratorBlock);
-			return TRUE;
-		}
-		`log(Block@"does potential"@IteratorBlock@"touch root?"@TraceNodeToRoot(IteratorBlock, OldParent));
-	}
-	return false;
-}
-*/
 /** Tries to find any nodes physically adjacent to the given one. If TRUE, bChildrenFindParent will
 have all this nodes' children (and their children and so forth) perform a FindNewParent as well. */
 final function bool FindNewParent(TowerBlock Node, optional TowerBlock OldParent=None,
@@ -536,7 +475,7 @@ public event JSonObject OnSave(const SaveType SaveType)
 
 /** Called when loading a game. This function is intended for dynamic objects, who should create a new object and load
 this data into it. */
-public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo)
+public static event OnLoad(JSONObject Data, TowerGameBase GameInfo, out const GlobalSaveInfo SaveInfo)
 {
 //	TowerName = Data.GetStringValue(TOWER_NAME_ID, TowerName);
 }

@@ -77,6 +77,11 @@ reliable server function SetHighlightColor(LinearColor NewColor)
 	HighlightColor = NewColor;
 }
 
+reliable server function RequestSaveGame()
+{
+
+}
+
 simulated function TowerPlayerController GetPlayerController()
 {
 	//@TODO - Doesn't handle split screen.

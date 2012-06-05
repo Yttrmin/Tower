@@ -25,13 +25,16 @@ var privatewrite TowerBlock AirArchetype;
 
 //@TODO - Decouple loading from Tower/TowerGame. Make these private.
 var protected bool bPendingLoad;
+// Multiple player controllers can be saved, so do a check if this is TRUE.
+var protected bool bWasLoadedFromFile;
 var protected string PendingLoadFile;
 
 var private deprecated globalconfig const string DedicatedServerLoadFile;
 var protected globalconfig const bool bAIGame;
 var private globalconfig const bool bResetLevelOnEmptyServer;
 var private globalconfig const bool bPauseLevelOnEmptyServer;
-var private Tower DedicatedServerTower;
+var privatewrite Tower ServerTower;
+var private SaveSystemJSON SaveSystem;
 
 var privatewrite TowerFactionAIHivemind Hivemind;
 var privatewrite AirManager AirManager;
@@ -57,26 +60,36 @@ event PreBeginPlay()
 	TowerMapInfo(WorldInfo.GetMapInfo()).Initialize();
 	DetermineTowerStarts();
 	CheckForMods();
+	// Don't use AddTower() since it requires a player. This is a special case.
+	ServerTower = Spawn(class'Tower');
+	ServerTower.Initialize();
 	if(WorldInfo.NetMode != NM_DedicatedServer)
 	{
 		WorldInfo.MyFractureManager.Destroy();
 	}
 }
 
+/** Called after InitGame(). */
 event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	Hivemind = Spawn(class'TowerFactionAIHivemind');
 	Hivemind.Initialize();
 	AirManager = Spawn(class'AirManager');
+	SaveSystem = new class'SaveSystemJSON';
 	if(WorldInfo.NetMode == NM_DedicatedServer)
 	{
 		`log("Starting NM_DedicatedServer game. LoadFile:"@DedicatedServerLoadFile);
+		//@TODO - Why is this in here and not InitGame()?
 		if(DedicatedServerLoadFile != "")
 		{
 			bPendingLoad = true;
 			PendingLoadFile = DedicatedServerLoadFile;
 		}
+	}
+	if(bPendingLoad)
+	{
+		SaveSystem.LoadGame(PendingLoadFile, Self);
 	}
 }
 
@@ -102,7 +115,7 @@ event InitGame( string Options, out string ErrorMessage )
 	LoadFileName = ParseOption(Options, "LoadGame");
 	if(LoadFileName != "")
 	{
-
+		bPendingLoad = true;
 	}
 }
 
@@ -203,6 +216,10 @@ event PostLogin( PlayerController NewPlayer )
 	{
 		TowerHUD(NewPlayer.myHUD).SetupBuildList();
 	}
+	if(bWasLoadedFromFile)
+	{
+
+	}
 	if(bPendingLoad)
 	{
 		`log("Load from file:"@PendingLoadFile);
@@ -216,6 +233,16 @@ function Logout( Controller Exiting )
 	{
 		OnEmptyServer();
 	}
+}
+
+public function SaveGame()
+{
+
+}
+
+public function LoadGame()
+{
+
 }
 
 /** Only called on NM_DedicatedServer. Called from LogOut when NumPlayers is 0.*/

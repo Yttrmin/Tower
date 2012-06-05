@@ -6,4 +6,4 @@ public event JSonObject OnSave(const SaveType SaveType);
 
 /** Called when loading a game. This function is intended for dynamic objects, who should create a new object and load
 this data into it. */
-public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo);
+public static event OnLoad(JSONObject Data, TowerGameBase GameInfo, out const GlobalSaveInfo SaveInfo);

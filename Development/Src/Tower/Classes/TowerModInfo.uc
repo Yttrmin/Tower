@@ -104,6 +104,20 @@ final simulated function int GetModCount(optional int InternalCount=0)
 	*/
 }
 
+final function TowerModInfo GetModAtIndex(int Index)
+{
+	local TowerModInfo Mod;
+	local int i;
+	`assert(Index < GetModCount());
+
+	Mod = self;
+	for(i = 0; i < Index; i++)
+	{
+		Mod = Mod.NextMod;
+	}
+	return Mod;
+}
+
 /** Counting through all mods' ModBlocks, returns the Index block.
 No consideration is made based on whether the block is bAddToBuildList or not. 
 ReservedCurrentCount is used internally by the function, don't pass anything in. */
