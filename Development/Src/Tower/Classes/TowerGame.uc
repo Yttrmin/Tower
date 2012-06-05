@@ -325,8 +325,8 @@ function AddTower(TowerPlayerController Player, bool bAddRootBlock, optional str
 {
 	local Tower Tower;
 	
-	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower = Spawn(class'Tower', self);
-	Tower = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower;
+	Tower = Spawn(class'Tower', self);
+	TowerPlayerReplicationInfo(Player.PlayerReplicationInfo).Tower = Tower;
 	Tower.OwnerPRI = TowerPlayerReplicationInfo(Player.PlayerReplicationInfo);
 	// Initial budget!
 	//@FIXME
@@ -356,6 +356,34 @@ function AddRootBlock(TowerPlayerController Player)
 	Tower.SetRootBlock(TowerBlockRoot(AddBlock(Tower, RootArchetype, None, GridLocation)));
 	//@FIXME - Have Root do this by itself?
 	Hivemind.OnRootBlockSpawn(Tower.Root);
+}
+
+function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
+	out IVector GridLocation)
+{
+	local TowerBlock Block;
+	`assert(BlockArchetype != None);
+//	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
+//		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
+	if(CanAddBlock(GridLocation, Parent, Tower) && (Parent != None && TowerBlockModule(Parent) == None 
+		&& Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' || bPendingLoad)
+	{
+		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
+
+		ExpandBoundsTo(Block.GridLocation);
+		/*
+		if(Block != None)
+		{
+			`RecordGamePositionStat(PLAYER_SPAWNED_BLOCK, SpawnLocation, 5);
+		}
+		*/
+	}
+	return Block;
+}
+
+function RemoveBlock(Tower Tower, TowerBlock Block)
+{
+	Tower.RemoveBlock(Block);
 }
 
 function SetTowerName(Tower Tower, string NewTowerName)
@@ -577,29 +605,6 @@ function CalculateRemainingActiveFactions()
 	RemainingActiveFactions = GetFactionAICount();
 }
 
-function TowerBlock AddBlock(Tower Tower, TowerBlock BlockArchetype, TowerBlock Parent, 
-	out IVector GridLocation)
-{
-	local TowerBlock Block;
-	`assert(BlockArchetype != None);
-//	if((Parent != None && TowerBlockModule(Parent) == None && Parent.IsInState('Stable')) 
-//		|| BlockArchetype.class == class'TowerBlockRoot' || TowerGame(WorldInfo.Game).bPendingLoad)
-	if(CanAddBlock(GridLocation, Parent, Tower) && (Parent != None && TowerBlockModule(Parent) == None 
-		&& Parent.IsInState('Stable')) || BlockArchetype.class == class'TowerBlockRoot' || bPendingLoad)
-	{
-		Block = Tower.AddBlock(BlockArchetype, Parent, GridLocation);
-
-		ExpandBoundsTo(Block.GridLocation);
-		/*
-		if(Block != None)
-		{
-			`RecordGamePositionStat(PLAYER_SPAWNED_BLOCK, SpawnLocation, 5);
-		}
-		*/
-	}
-	return Block;
-}
-
 /** Expands the world bounds to GridLocation +/-1. */
 final function ExpandBoundsTo(const out IVector GridLocation)
 {
@@ -610,11 +615,6 @@ final function ExpandBoundsTo(const out IVector GridLocation)
 	WorldBounds.Max.X = Max(WorldBounds.Max.X, GridLocation.X+1);
 	WorldBounds.Max.Y = Max(WorldBounds.Max.Y, GridLocation.Y+1);
 	WorldBounds.Max.Z = Max(WorldBounds.Max.Z, GridLocation.Z+1);
-}
-
-function RemoveBlock(Tower Tower, TowerBlock Block)
-{
-	Tower.RemoveBlock(Block);
 }
 
 /** Returns TRUE if GridLocation is on the grid and there's no Unstable blocks currently falling into GridLocation. */

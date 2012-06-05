@@ -1,4 +1,4 @@
-/** A component for performing A* searches between two blocks. */
+/** A component for performing A* searches between two arbitrary grid locations. */
 class TowerAStarComponent extends ActorComponent
 	config(Tower);
 
@@ -63,7 +63,8 @@ enum SearchResult
 	/** Given the rules, there's no valid path between Start and Finish.
 	All values should be considered garbage. */
 	SR_NoPath,
-	/** Given the rules, without doing any pathfinding, it's impossible for there to be a valid path. */
+	/** Given the rules, without doing any pathfinding, it's impossible for there to be a valid path.
+	All values should be considered garbage. */
 	SR_ImpossiblePath,
 };
 
@@ -191,7 +192,9 @@ public final function int StartGeneratePath(const IVector Start, const IVector F
 	local int PathId;
 	if(!bInitialized)
 	{
-
+		//@TODO - Why is initializing a thing.
+		`log(self@"wasn't Initialize()'d before use!");
+		return INVALID_PATH_ID;
 	}
 	BStart = GetBlockAt(Start);
 	BFinish = GetBlockAt(Finish);

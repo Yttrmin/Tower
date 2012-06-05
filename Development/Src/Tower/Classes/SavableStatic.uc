@@ -1,8 +1,8 @@
 interface SavableStatic 
 	dependson(SaveSystemJSON);
 
-/** Called when saving a game. Returns a string representation of a JSON object, or an empty string to not save this. */
-public event String OnStaticSave(SaveType SaveType);
+/** Called when saving a game. Returns a JSON object, or None to not save this. */
+public event JSonObject OnStaticSave(const SaveType SaveType);
 
-/** Called when loading a game. This function is intended for bStatic objects. */
-public event OnStaticLoad(JSONObject Data);
+/** Called when loading a game. */
+public event OnStaticLoad(out const JSONObject Data/*, out const GlobalSaveInfo SaveInfo*/);

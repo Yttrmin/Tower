@@ -1,5 +1,5 @@
 class TowerPlayerController extends GamePlayerController
-	implements(SavableDynamic)
+	implements(SavableStatic)
 	dependson(TowerSaveSystem)
 	config(Tower);
 
@@ -18,7 +18,7 @@ var IVector Start, Finish;
 var PathInfo DebugPath;
 var bool bDrawDebugAStarInfo;
 
-var TowerSaveSystem SaveSystem;
+var /*deprecated*/ TowerSaveSystem SaveSystem;
 var byte PreviewAreaIndex;
 `if(`isdefined(DEBUG))
 var TowerEnemyController PossessedPawnController;
@@ -182,15 +182,17 @@ exec function QuickLoad();
 
 exec function SaveGame(string FileName, optional bool bUseJSON)
 {
+	//@TODO - Find a permanent place.
 	local SaveSystemJSON JSONSave;
 	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
 		`log("Trying to save while the round is in progress! This isn't allowed!");
+		//return;
 	}
 	if(bUseJSON)
 	{
 		JSONSave = new class'SaveSystemJSON';
-		`log("Saving...");
+		`log("Saving with JSON...");
 		JSONSave.SaveGame("TEST", self);
 	}
 	else
@@ -199,15 +201,22 @@ exec function SaveGame(string FileName, optional bool bUseJSON)
 	}
 }
 
-exec function LoadGame(string FileName/*, bool bTowerOnly*/)
+exec function LoadGame(string FileName, optional bool bUseJSON/*, bool bTowerOnly*/)
 {
-	if(SaveSystem.CheckSaveExist(FileName))
+	if(bUseJSON)
 	{
-		ConsoleCommand("open"@WorldInfo.GetMapName(true)$"?LoadGame="$FileName);
+
 	}
 	else
 	{
-		`log("Save file:"@"'"$FileName$"'"@"does not exist.",,'Loading');
+		if(SaveSystem.CheckSaveExist(FileName))
+		{
+			ConsoleCommand("open"@WorldInfo.GetMapName(true)$"?LoadGame="$FileName);
+		}
+		else
+		{
+			`log("Save file:"@"'"$FileName$"'"@"does not exist.",,'Loading');
+		}
 	}
 //	SaveSystem.LoadGame(FileName, bTowerOnly, self);
 }
@@ -555,7 +564,7 @@ Save/Loading
 ********************************/
 
 /** Called when saving a game. Returns a JSON object, or None to not save this. */
-public event JSonObject OnSave(const SaveType SaveType)
+public event JSonObject OnStaticSave(const SaveType SaveType)
 {
 	local JSonObject JSON;
 	JSON = new class'JSonObject';
@@ -578,7 +587,9 @@ public event JSonObject OnSave(const SaveType SaveType)
 
 /** Called when loading a game. This function is intended for dynamic objects, who should create a new object and load
 this data into it. */
-public static event OnLoad(JSONObject Data, out const GlobalSaveInfo SaveInfo){}
+public static event OnStaticLoad(out const JSONObject Data)
+{
+}
 
 DefaultProperties
 {
