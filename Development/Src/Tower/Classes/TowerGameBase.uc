@@ -11,6 +11,8 @@ enum FactionLocation
 	FL_All
 };
 
+const SERVER_TOWER_ID = 'SERVER_TOWER_DO_NOT_SAVE';
+
 /** If TRUE, PreLogin checks the mods string before letting clients join. */
 var private globalconfig const bool bCheckClientMods;
 `if(`notdefined(DEMO))
@@ -23,11 +25,10 @@ var privatewrite TowerBlock RootArchetype;
 /** Archetype to use for spawning air surrounding blocks. */
 var privatewrite TowerBlock AirArchetype;
 
-//@TODO - Decouple loading from Tower/TowerGame. Make these private.
-var protected bool bPendingLoad;
+var protectedwrite bool bPendingLoad;
 // Multiple player controllers can be saved, so do a check if this is TRUE.
-var protected bool bWasLoadedFromFile;
-var protected string PendingLoadFile;
+var protectedwrite bool bWasLoadedFromFile;
+var private string PendingLoadFile;
 
 var private deprecated globalconfig const string DedicatedServerLoadFile;
 var protected globalconfig const bool bAIGame;
@@ -63,6 +64,8 @@ event PreBeginPlay()
 	// Don't use AddTower() since it requires a player. This is a special case.
 	ServerTower = Spawn(class'Tower');
 	ServerTower.Initialize();
+	//@TODO - Don't save this!
+	ServerTower.Tag = SERVER_TOWER_ID;
 	if(WorldInfo.NetMode != NM_DedicatedServer)
 	{
 		WorldInfo.MyFractureManager.Destroy();
@@ -89,6 +92,7 @@ event PostBeginPlay()
 	}
 	if(bPendingLoad)
 	{
+		`log("PostBeginPlay(). Attempting to load"@PendingLoadFile$"...");
 		SaveSystem.LoadGame(PendingLoadFile, Self);
 	}
 }
@@ -116,6 +120,7 @@ event InitGame( string Options, out string ErrorMessage )
 	if(LoadFileName != "")
 	{
 		bPendingLoad = true;
+		PendingLoadFile = LoadFileName;
 	}
 }
 
@@ -179,17 +184,8 @@ private function int ParseVersion(out const String ModSafeName)
 //@TODO - Why is loading done in Login? Because it can't be done in PreLogin.
 event PlayerController Login(string Portal, string Options, const UniqueNetID UniqueID, out string ErrorMessage)
 {
-	local string LoadString;
 	local PlayerController Controller;
 	Controller = Super.Login(Portal, Options, UniqueID, ErrorMessage);
-	LoadString = ParseOption(Options, "LoadGame");
-	
-//	`log("LoadString:"@LoadString;
-	if(WorldInfo.NetMode != NM_DedicatedServer && LoadString != "")
-	{
-		bPendingLoad = true;
-		PendingLoadFile = LoadString;
-	}
 	return Controller;
 }
 
@@ -235,14 +231,14 @@ function Logout( Controller Exiting )
 	}
 }
 
-public function SaveGame()
+public function bool SaveGame(string FileName)
 {
-
+	return SaveSystem.SaveGame(FileName, self);
 }
 
-public function LoadGame()
+public function bool LoadGame(string FileName)
 {
-
+	return SaveSystem.LoadGame(FileName, self);
 }
 
 /** Only called on NM_DedicatedServer. Called from LogOut when NumPlayers is 0.*/

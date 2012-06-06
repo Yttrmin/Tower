@@ -10,6 +10,9 @@ class Tower extends TowerFaction
 /** Save IDs. */
 const TOWER_NAME_ID = "N";
 const PLAYER_NUMBER_ID = "P";
+const ROOT_BLOCK_GRID_LOCATION_X_ID = "X";
+const ROOT_BLOCK_GRID_LOCATION_Y_ID = "Y";
+const ROOT_BLOCK_GRID_LOCATION_Z_ID = "Z";
 
 /** Used to find a new parent for a block. */
 const ASTAR_RULES = 0x28; // PR_Goal_ConnectedToRoot | PR_Blocks
@@ -468,7 +471,9 @@ public event JSonObject OnSave(const SaveType SaveType)
 	}
 
 	JSON.SetStringValue(TOWER_NAME_ID, TowerName);
-//	JSON.SetStringValue
+	JSON.SetIntValue(ROOT_BLOCK_GRID_LOCATION_X_ID, Root.GridLocation.X);
+	JSON.SetIntValue(ROOT_BLOCK_GRID_LOCATION_Y_ID, Root.GridLocation.Y);
+	JSON.SetIntValue(ROOT_BLOCK_GRID_LOCATION_Z_ID, Root.GridLocation.Z);
 
 	return JSON;
 }

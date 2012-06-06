@@ -167,7 +167,7 @@ final function bool NativeLoadGame(string FileName, bool bJustTower, TowerPlayer
 	}
 	else
 	{
-		`log("Load failed! Aborting!",,'NativeLoad');
+		`log("Load failed at"@GetFilePath(FileName)$"! Aborting!",,'NativeLoad');
 		return false;
 	}
 

@@ -345,7 +345,7 @@ public event JSonObject OnSave(const SaveType SaveType)
 	return JSon;
 }
 
-public static event OnLoad(JSONObject Data, TowerGameBase GameInfo, out const GlobalSaveInfo SaveInfo)
+public event OnLoad(JSONObject Data, TowerGameBase GameInfo, out const GlobalSaveInfo SaveInfo)
 {
 	local TowerBlockStructural NewBlock;
 	// WHY does the compiler complain about name conflicts in a static function?
