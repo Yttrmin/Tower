@@ -489,7 +489,7 @@ exec function TestBugReport()
 	local string Query;
 
 	SS = new class'SaveSystemJSON';
-	Query = "JSON="$SS.SaveGame("TEST", Outer);
+	Query = "JSON="$SS.SaveGame("TEST", TowerGameBase(WorldInfo.Game));
 //	Query="fname=NAME&age=AGE";
 	R = class'HttpFactory'.static.CreateRequest();
 	R.SetProcessRequestCompleteDelegate(OnRequestComplete);

@@ -335,8 +335,7 @@ function Died(Controller Killer, class<DamageType> DamageType, vector HitLocatio
 protected static function TowerBlock GetSavedBlockArchetype(out int SavedModIndex, out int BlockIndex, 
 	out const GlobalSaveInfo SaveInfo)
 {
-	return 
-		TowerGameReplicationInfo(class'WorldInfo'.static.GetWorldInfo().GRI).RootMod
+	return TowerGameReplicationInfo(class'WorldInfo'.static.GetWorldInfo().GRI).RootMod
 		.GetModAtIndex(SavedModIndex).ModBlocks[BlockIndex];
 }
 

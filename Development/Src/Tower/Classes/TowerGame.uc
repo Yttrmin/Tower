@@ -93,28 +93,7 @@ event PostLogin(PlayerController NewPlayer)
 {
 	local TowerFactionHuman Faction;
 	Super.PostLogin(NewPlayer);
-	AddTower(TowerPlayerController(NewPlayer), !bPendingLoad);
-	if(bPendingLoad)
-	{
-		if(WorldInfo.NetMode == NM_DedicatedServer)
-		{
-			TowerPlayerController(NewPlayer).SaveSystem = new class'TowerSaveSystem';
-		}
-		if(!TowerPlayerController(NewPlayer).SaveSystem.LoadGame(PendingLoadFile, false, TowerPlayerController(NewPlayer)))
-		{
-			`log("Failed to load file"@"'"$PendingLoadFile$"' (Should have NO extension)! Does the file exist?"
-				@"It might be from a previous version of save files that is no longer supported. If that's the case"
-				@"there's no solution to it for now.",,'Error');
-			`log("Continuing as a new game due to loading failure.",,'Loading');
-			AddRootBlock(TowerPlayerController(NewPlayer));
-		}
-		if(WorldInfo.NetMode == NM_DedicatedServer)
-		{
-			TowerPlayerController(NewPlayer).SaveSystem = None;
-		}
-		bPendingLoad = false;
-		PendingLoadFile = "";
-	}
+	AddTower(TowerPlayerController(NewPlayer), !bWasLoadedFromFile);
 
 	// Lazy initialize the Human faction if needed, and then add the NewPlayer to it.
 	Faction = GetHumanFaction();

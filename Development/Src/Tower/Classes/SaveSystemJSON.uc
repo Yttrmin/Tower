@@ -65,14 +65,39 @@ struct GlobalSaveInfo
 /** Holds the encoded JSON string that's then saved/loaded through BasicSave/LoadObject(). */
 var string SaveData;
 // Hardcoded for order?
-/** Holds essential, order-dependent mappings. */
-var transient ClassKeyValue HardcodedClassCategoryMapping[HARDCODED_MAPPINGS_COUNT];
-/** Holds mappings supplied by ModInfos. Order is */
+/** Holds essential, order-dependent (loading only) mappings. Saving order is arbitrary. */
+var transient deprecated ClassKeyValue HardcodedClassCategoryMapping[HARDCODED_MAPPINGS_COUNT];
+/** Holds mappings supplied by ModInfos. Loading order per-mod is the order that
+the ModInfo added them. Saving order is arbitrary. */
 var transient array<ClassKeyValue> ClassCategoryMapping;
 
 //@TODO - Type?
 /** Returns the save data, an encoded JSON string. */
-public function string SaveGame(string FileName, TowerPlayerController Player)
+public function bool SaveGame(string FileName, TowerGameBase Game)
+{
+	SaveData = InternalSave(Game);
+	if(SaveData != "")
+	{
+		if(!class'Engine'.static.BasicSaveObject(Self, GetFilePath(FileName), true, SAVE_FILE_VERSION))
+		{
+			`warn("BasicSaveObject failed!");
+			return false;
+		}
+		else
+		{
+			`log("BasicSaveObject succeeded at"@GetFilePath(FileName)$"!");
+			return true;
+		}
+		return true;
+	}
+	else
+	{
+		`warn("JSON Saving failed.");
+		return false;
+	}
+}
+
+private function string InternalSave(TowerGameBase Game)
 {
 	/** Iterator variable. */
 	local Actor Actor;
@@ -103,10 +128,10 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 	UndefinedObject.SetIntValue(COUNT_ID, 0);
 	SaveInfo = new class'JSonObject';
 
-	SaveHeader(Player, SaveInfo);
+	SaveHeader(Game, SaveInfo);
 	SaveRoot.SetObject("Header", SaveInfo);
 	// Iterates through all Actors to check for SavableDynamic ones and save them.
-	foreach Player.DynamicActors(class'Actor', Actor, class'SavableDynamic')
+	foreach Game.DynamicActors(class'Actor', Actor, class'SavableDynamic')
 	{
 		SavableDynamic = SavableDynamic(Actor);
 		SaveObject = SavableDynamic.OnSave(ST_NULL);
@@ -128,7 +153,7 @@ public function string SaveGame(string FileName, TowerPlayerController Player)
 		}
 	}
 
-	foreach Player.AllActors(class'Actor', Actor, class'SavableStatic')
+	foreach Game.AllActors(class'Actor', Actor, class'SavableStatic')
 	{
 		//@TODO - Functionize me.
 		SaveObject = SavableStatic(Actor).OnStaticSave(ST_NULL);
@@ -197,6 +222,7 @@ public function RetryLoadStatic(optional class<Actor> TargetClass)
 
 private function InternalLoad(out JSonObject Data)
 {
+	local class<Actor> AClass;
 	local JSonObject Obj, SubObj, Header;
 	local ClassKeyValue KV;
 	local GlobalSaveInfo SaveInfo;
@@ -215,6 +241,7 @@ private function InternalLoad(out JSonObject Data)
 	{
 		Obj = Data.GetObject(HardcodedClassCategoryMapping[i].Value);
 		Count = Obj.GetIntValue(COUNT_ID);
+		
 	}
 	foreach ClassCategoryMapping(KV)
 	{
@@ -237,8 +264,11 @@ private function InternalLoad(out JSonObject Data)
 			}
 			else
 			{
-				// It's a SavableDynamic. Call the static class function.
-				SavableDynamic(KV.Key).OnLoad(SubObj, Game, SaveInfo);
+				// It's a SavableDynamic.
+				//@TODO - Actually store the package name.
+				AClass = class<Actor>(DynamicLoadObject("Tower."$string(KV.Key), class'Class', false));
+				`assert(AClass != None);
+				SavableDynamic(Game.Spawn(AClass)).OnLoad(SubObj, Game, SaveInfo);
 			}
 		}
 	}
@@ -251,17 +281,6 @@ private function SavableStatic GetActorByTag(const out string Tag)
 
 //@TODO - Removed? We need some way to distinguish.
 public function byte GetSavedPlayerCount(){}
-
-private function InternalSave(out SaveType Type)
-{
-	`assert(Type != ST_NULL);
-	switch(Type)
-	{
-	case ST_ToDisk:
-//		class'Engine'.static.BasicSaveObject()
-		break;
-	}
-}
 
 //@TODO - Implement.
 public function bool AddClassKeyMapping(class<Actor> NewClass, const String Key, class<Interface> SaveInterfaceClass)
@@ -313,20 +332,20 @@ private function InitializeSaveObjects(out JSonObject Root)
 }
 
 /** Stores the Mod list and some essential WorldInfo data. Saved as the Header. */
-private function SaveHeader(TowerPlayerController Player, out JSonObject JSon)
+private function SaveHeader(TowerGameBase Game, out JSonObject JSon)
 {
 	local JSonObject Mods, World;
 	local WorldInfo WorldInfo;
 
-	WorldInfo = Player.WorldInfo;
+	WorldInfo = Game.WorldInfo;
 	Mods = new class'JSOnObject';
 	World = new class'JSONObject';
 
-	PopulateModList(TowerGameReplicationInfo(WorldInfo.GRI), Mods);
+	PopulateModList(TowerGameReplicationInfo(Game.GameReplicationInfo), Mods);
 	JSon.SetObject("Mods", Mods);
 
 	World.SetStringValue("Map", WorldInfo.GetMapName(true));
-	World.SetStringValue("GameInfo", WorldInfo.Game.class.GetPackageName()$"."$WorldInfo.Game.Class);
+	World.SetStringValue("GameInfo", Game.class.GetPackageName()$"."$Game.Class);
 	JSon.SetObject("WorldInfo", World);
 }
 
@@ -395,5 +414,6 @@ DefaultProperties
 	HardcodedClassCategoryMapping(0)=(Key=class'Tower', Value="Towers")
 	HardcodedClassCategoryMapping(2)=(Key=class'TowerFactionAI', Value="Factions")
 	HardcodedClassCategoryMapping(3)=(Key=class'TowerPlayerController', Value="Players")
+	ClassCategoryMapping(0)=(Key=class'TowerBlockStructural', Value="Blocks")
 //	HardcodedClassCategoryMapping(4)=(Key=class'TowerModInfo', Value="Mods")
 }

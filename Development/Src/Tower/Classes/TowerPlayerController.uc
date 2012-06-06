@@ -182,8 +182,6 @@ exec function QuickLoad();
 
 exec function SaveGame(string FileName, optional bool bUseJSON)
 {
-	//@TODO - Find a permanent place.
-	local SaveSystemJSON JSONSave;
 	if(TowerGameReplicationInfo(WorldInfo.GRI).bRoundInProgress)
 	{
 		`log("Trying to save while the round is in progress! This isn't allowed!");
@@ -191,9 +189,8 @@ exec function SaveGame(string FileName, optional bool bUseJSON)
 	}
 	if(bUseJSON)
 	{
-		JSONSave = new class'SaveSystemJSON';
 		`log("Saving with JSON...");
-		JSONSave.SaveGame("TEST", self);
+		TowerGameBase(WorldInfo.Game).SaveGame(FileName);
 	}
 	else
 	{
@@ -205,7 +202,9 @@ exec function LoadGame(string FileName, optional bool bUseJSON/*, bool bTowerOnl
 {
 	if(bUseJSON)
 	{
-
+		`log("JSON loading...");
+		TowerGameBase(WorldInfo.Game).LoadGame(FileName);
+		return;
 	}
 	else
 	{
